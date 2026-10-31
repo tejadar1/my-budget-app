@@ -38,8 +38,8 @@ Mockups: the "Upside Mockups" canvas (Apple Music / Wallet style, dark, money gr
 
 - [x] iPhone app built from Actual, renamed Upside, auto-uploaded to TestFlight
 - [x] 1. Look and feel: follows the iPhone light/dark setting, money green, Apple system font, rounded cards
-- [ ] 2. New home + 4-tab bar (Budget, Who spent, Accounts, Trips); no prominent add-transaction button
-- [ ] 3. People and owners: names in Settings, owner (Ron / Wife / Shared) on each account,
+- [x] 2. New home + 4-tab bar (Budget, Who spent, Accounts, Trips); no prominent add-transaction button
+- [x] 3. People and owners: names in Settings, owner (Ron / Wife / Shared) on each account,
       Wallet-style Accounts, "Connect a bank" flow that asks whose each new account is
 - [ ] 4. Averages and trips: 3-month average per category and overall, pace vs. average,
       trip tags kept out of Everyday and out of averages, prepaid vs. during-trip
