@@ -131,10 +131,10 @@ index 33e4e7d..806bd25 100644
 +  --color-floatingActionBarText: #ffffff;
 +}
 diff --git a/packages/component-library/src/themes/light.css b/packages/component-library/src/themes/light.css
-index d8ecb6d..f0c6cf0 100644
+index d8ecb6d..4954f9c 100644
 --- a/packages/component-library/src/themes/light.css
 +++ b/packages/component-library/src/themes/light.css
-@@ -288,3 +288,47 @@
+@@ -288,3 +288,49 @@
    --color-chartQual8: var(--palette-chartQual8);
    --color-chartQual9: var(--palette-chartQual9);
  }
@@ -148,6 +148,8 @@ index d8ecb6d..f0c6cf0 100644
 +  --color-pageBackgroundBottomRight: #f2f2f7;
 +  --color-pageTextLink: #15803d;
 +  --color-pageTextPositive: #15803d;
++  --color-pageTextSubdued: #6c6c70;
++  --color-tableTextSubdued: #6c6c70;
 +
 +  --color-cardBackground: #ffffff;
 +  --color-cardBorder: #e5e5ea;

@@ -403,11 +403,11 @@ index de289dd..ab4ea98 100644
 +}
 diff --git a/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx b/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
 new file mode 100644
-index 0000000..201ed87
+index 0000000..4d68afe
 --- /dev/null
 +++ b/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
-@@ -0,0 +1,465 @@
-+import { useEffect } from 'react';
+@@ -0,0 +1,486 @@
++import { useEffect, useState } from 'react';
 +import type { CSSProperties, ReactNode } from 'react';
 +import { useTranslation } from 'react-i18next';
 +import { Link } from 'react-router';
@@ -448,9 +448,24 @@ index 0000000..201ed87
 +  return name as Field;
 +}
 +
-+/** A value from a specific month's sheet, e.g. ('budget202610', 'total-spent'). */
++/** A value from a specific month's sheet, e.g. ('budget202609', 'total-spent'). */
 +function useMonthValue(sheet: string, name: string): number | null {
-+  return useSheetValue<'tracking-budget', Field>(field(`${sheet}!${name}`));
++  const spreadsheet = useSpreadsheet();
++  const [value, setValue] = useState<number | null>(null);
++  useEffect(() => {
++    let isMounted = true;
++    const binding = { name } as Parameters<typeof spreadsheet.bind>[1];
++    const unbind = spreadsheet.bind(sheet, binding, result => {
++      if (isMounted) {
++        setValue(typeof result.value === 'number' ? result.value : null);
++      }
++    });
++    return () => {
++      isMounted = false;
++      unbind();
++    };
++  }, [spreadsheet, sheet, name]);
++  return value;
 +}
 +
 +function usePreviousMonths(month: string) {
@@ -477,6 +492,7 @@ index 0000000..201ed87
 +  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
 +  return last - now.getDate();
 +}
++
 +
 +export function UpsideBudgetPage() {
 +  const { t } = useTranslation();
@@ -618,6 +634,7 @@ index 0000000..201ed87
 +
 +  const left = budgeted - spent;
 +  const isOver = left < 0;
++  const daysLeft = daysLeftInMonth();
 +  const usedPct = budgeted > 0 ? Math.min(100, (spent / budgeted) * 100) : 0;
 +  const avgPct =
 +    avg != null && budgeted > 0 ? Math.min(100, (avg / budgeted) * 100) : null;
@@ -660,9 +677,13 @@ index 0000000..201ed87
 +        </span>
 +        <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.86)' }}>
 +          {budgeted > 0
-+            ? t('of {{limit}} · {{days}} days to go', {
++            ? t('of {{limit}} · {{when}}', {
 +                limit: money(budgeted),
-+                days: daysLeftInMonth(),
++                when: daysLeft === 0
++                  ? t('last day of the month')
++                  : daysLeft === 1
++                    ? t('1 day to go')
++                    : t('{{days}} days to go', { days: daysLeft }),
 +              })
 +            : t('Set limits to see what’s left')}
 +        </span>
