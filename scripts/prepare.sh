@@ -47,6 +47,9 @@ data["CFBundleDisplayName"] = name
 # Only standard HTTPS encryption: answers TestFlight's export-compliance
 # question up front so builds don't sit in "Missing Compliance".
 data["ITSAppUsesNonExemptEncryption"] = False
+# Dark status-bar text in light mode, light text in dark mode (Actual forces
+# white text, which disappears on Upside's light background).
+data["UIStatusBarStyle"] = "UIStatusBarStyleDefault"
 with open(path, "wb") as f:
     plistlib.dump(data, f)
 PY
@@ -73,6 +76,8 @@ PLIST
 # Our own assets (e.g. a custom app icon) overwrite Actual's when present.
 if [ -d "$ROOT/overrides" ]; then
   echo "==> Copying overrides"
+  # Our launch screen ships light + dark images under new names.
+  rm -f "$MOBILE"/ios/App/App/Assets.xcassets/Splash.imageset/*.png
   cp -R "$ROOT/overrides/." "$SRC/"
 fi
 

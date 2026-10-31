@@ -1,0 +1,289 @@
+diff --git a/packages/component-library/src/Button.tsx b/packages/component-library/src/Button.tsx
+index 262531c..79c2527 100644
+--- a/packages/component-library/src/Button.tsx
++++ b/packages/component-library/src/Button.tsx
+@@ -222,7 +222,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+           margin: 0,
+           overflow: 'hidden',
+           display: 'flex',
+-          borderRadius: 4,
++          borderRadius: 10,
+           backgroundColor: backgroundColor[variantWithDisabled],
+           border: _getBorder(variant, variantWithDisabled),
+           color: textColor[variantWithDisabled],
+diff --git a/packages/component-library/src/Card.tsx b/packages/component-library/src/Card.tsx
+index 3a6463b..958066a 100644
+--- a/packages/component-library/src/Card.tsx
++++ b/packages/component-library/src/Card.tsx
+@@ -16,16 +16,16 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
+           marginTop: 15,
+           marginLeft: 5,
+           marginRight: 5,
+-          borderRadius: 6,
++          borderRadius: 14,
+           backgroundColor: theme.cardBackground,
+           borderColor: theme.cardBorder,
+-          boxShadow: '0 1px 2px #9594A8',
++          boxShadow: `0 1px 3px ${theme.cardShadow}`,
+           ...props.style,
+         }}
+       >
+         <View
+           style={{
+-            borderRadius: 6,
++            borderRadius: 14,
+             overflow: 'hidden',
+           }}
+         >
+diff --git a/packages/component-library/src/themes/dark.css b/packages/component-library/src/themes/dark.css
+index 33e4e7d..806bd25 100644
+--- a/packages/component-library/src/themes/dark.css
++++ b/packages/component-library/src/themes/dark.css
+@@ -290,3 +290,90 @@
+   --color-chartQual8: var(--palette-chartQual8);
+   --color-chartQual9: var(--palette-chartQual9);
+ }
++
++/* ---------------------------------------------------------------------
++ * Upside (dark): true black, iOS elevated grays, bright money green.
++ * ------------------------------------------------------------------- */
++:root {
++  --color-pageBackground: #000000;
++  --color-pageBackgroundModalActive: #1c1c1e;
++  --color-pageBackgroundTopLeft: #000000;
++  --color-pageBackgroundBottomRight: #000000;
++  --color-pageText: #ffffff;
++  --color-pageTextLight: #d1d1d6;
++  --color-pageTextSubdued: #8e8e93;
++  --color-pageTextLink: #4ade80;
++  --color-pageTextPositive: #4ade80;
++
++  --color-cardBackground: #1c1c1e;
++  --color-cardBorder: #2c2c2e;
++  --color-cardShadow: rgba(0, 0, 0, 0.5);
++  --color-tableBackground: #1c1c1e;
++  --color-tableRowBackgroundHover: #2c2c2e;
++  --color-tableText: #ffffff;
++  --color-tableTextSelected: #ffffff;
++  --color-tableHeaderBackground: #2c2c2e;
++  --color-tableHeaderText: #aeaeb2;
++  --color-tableBorder: #2c2c2e;
++  --color-tableBorderSelected: #4ade80;
++  --color-tableBorderHover: #4ade80;
++  --color-tableBorderSeparator: #48484a;
++  --color-tableRowBackgroundHighlight: #14532d;
++  --color-tableRowHeaderBackground: #2c2c2e;
++
++  --color-numberPositive: #4ade80;
++  --color-numberNegative: #ff6961;
++
++  --color-mobilePageBackground: #000000;
++  --color-mobileHeaderBackground: #000000;
++  --color-mobileHeaderText: #ffffff;
++  --color-mobileHeaderTextSubdued: #8e8e93;
++  --color-mobileHeaderTextHover: rgba(255, 255, 255, 0.1);
++  --color-mobileNavBackground: rgba(22, 22, 24, 0.94);
++  --color-mobileNavItem: #8e8e93;
++  --color-mobileNavItemSelected: #4ade80;
++  --color-mobileTransactionSelected: #4ade80;
++  --color-mobileConfigServerViewTheme: #000000;
++
++  --color-menuBackground: #2c2c2e;
++  --color-menuItemBackground: #2c2c2e;
++  --color-menuItemBackgroundHover: #3a3a3c;
++  --color-menuItemTextSelected: #4ade80;
++  --color-menuBorder: #3a3a3c;
++  --color-menuBorderHover: #4ade80;
++  --color-menuAutoCompleteBackground: #1c1c1e;
++  --color-menuAutoCompleteBackgroundHover: #2c2c2e;
++  --color-modalBackground: #1c1c1e;
++  --color-modalBorder: #2c2c2e;
++
++  --color-buttonPrimaryText: #052e16;
++  --color-buttonPrimaryBackground: #4ade80;
++  --color-buttonPrimaryBackgroundHover: #86efac;
++  --color-buttonNormalBackground: #2c2c2e;
++  --color-buttonNormalBackgroundHover: #3a3a3c;
++  --color-buttonNormalBorder: #3a3a3c;
++  --color-buttonNormalSelectedBackground: #166534;
++
++  --color-formInputBackground: #1c1c1e;
++  --color-formInputBackgroundSelected: #2c2c2e;
++  --color-formInputBorder: #3a3a3c;
++  --color-formInputBorderSelected: #4ade80;
++  --color-formInputText: #ffffff;
++  --color-formInputShadowSelected: #166534;
++  --color-checkboxBackgroundSelected: #4ade80;
++  --color-checkboxToggleBackgroundSelected: #30d158;
++
++  --color-calendarBackground: #1c1c1e;
++  --color-calendarItemBackground: #2c2c2e;
++  --color-pillBackground: #2c2c2e;
++  --color-pillBackgroundLight: #1c1c1e;
++  --color-pillBorder: #3a3a3c;
++  --color-pillBackgroundSelected: #166534;
++
++  --color-budgetOtherMonth: #000000;
++  --color-budgetHeaderOtherMonth: #1c1c1e;
++  --color-tooltipBackground: #2c2c2e;
++  --color-tooltipBorder: #3a3a3c;
++  --color-floatingActionBarBackground: #2c2c2e;
++  --color-floatingActionBarText: #ffffff;
++}
+diff --git a/packages/component-library/src/themes/light.css b/packages/component-library/src/themes/light.css
+index d8ecb6d..f0c6cf0 100644
+--- a/packages/component-library/src/themes/light.css
++++ b/packages/component-library/src/themes/light.css
+@@ -288,3 +288,47 @@
+   --color-chartQual8: var(--palette-chartQual8);
+   --color-chartQual9: var(--palette-chartQual9);
+ }
++
++/* ---------------------------------------------------------------------
++ * Upside (light): iOS grouped-list look, white cards, money green.
++ * ------------------------------------------------------------------- */
++:root {
++  --color-pageBackground: #f2f2f7;
++  --color-pageBackgroundTopLeft: #f2f2f7;
++  --color-pageBackgroundBottomRight: #f2f2f7;
++  --color-pageTextLink: #15803d;
++  --color-pageTextPositive: #15803d;
++
++  --color-cardBackground: #ffffff;
++  --color-cardBorder: #e5e5ea;
++  --color-cardShadow: rgba(0, 0, 0, 0.06);
++  --color-tableBackground: #ffffff;
++  --color-tableBorder: #e5e5ea;
++  --color-tableBorderSelected: #15803d;
++  --color-tableRowBackgroundHighlight: #dcfce7;
++
++  --color-numberPositive: #15803d;
++
++  --color-mobilePageBackground: #f2f2f7;
++  --color-mobileHeaderBackground: #f2f2f7;
++  --color-mobileHeaderText: #000000;
++  --color-mobileHeaderTextSubdued: #6c6c70;
++  --color-mobileHeaderTextHover: rgba(0, 0, 0, 0.06);
++  --color-mobileNavBackground: rgba(249, 249, 249, 0.94);
++  --color-mobileNavItem: #8e8e93;
++  --color-mobileNavItemSelected: #15803d;
++  --color-mobileTransactionSelected: #15803d;
++  --color-mobileConfigServerViewTheme: #15803d;
++
++  --color-buttonPrimaryText: #ffffff;
++  --color-buttonPrimaryBackground: #15803d;
++  --color-buttonPrimaryBackgroundHover: #166534;
++
++  --color-formInputBorderSelected: #15803d;
++  --color-checkboxBackgroundSelected: #15803d;
++  --color-checkboxToggleBackgroundSelected: #34c759;
++  --color-pillBackgroundSelected: #dcfce7;
++
++  --color-floatingActionBarBackground: #1c1c1e;
++  --color-floatingActionBarText: #ffffff;
++}
+diff --git a/packages/component-library/src/themes/palette.css b/packages/component-library/src/themes/palette.css
+index 2a519db..f84bbe7 100644
+--- a/packages/component-library/src/themes/palette.css
++++ b/packages/component-library/src/themes/palette.css
+@@ -101,3 +101,70 @@
+   --palette-chartQual8: #efda97;
+   --palette-chartQual9: #df948a;
+ }
++
++/* ---------------------------------------------------------------------
++ * Upside: Apple-style neutrals, money-green accent and the system font.
++ * Later declarations in :root win, so these remap the palette above.
++ * ------------------------------------------------------------------- */
++:root {
++  --font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text',
++    'Helvetica Neue', system-ui, sans-serif;
++
++  /* navy -> iOS system grays (light to dark) */
++  --palette-navy50: #f9f9fb;
++  --palette-navy100: #f2f2f7;
++  --palette-navy150: #e5e5ea;
++  --palette-navy200: #d1d1d6;
++  --palette-navy300: #c7c7cc;
++  --palette-navy400: #aeaeb2;
++  --palette-navy500: #8e8e93;
++  --palette-navy600: #636366;
++  --palette-navy700: #48484a;
++  --palette-navy800: #2c2c2e;
++  --palette-navy900: #1c1c1e;
++
++  /* gray -> neutral, ending in true black */
++  --palette-gray50: #f9f9fb;
++  --palette-gray80: #f5f5f7;
++  --palette-gray100: #f2f2f7;
++  --palette-gray150: #e5e5ea;
++  --palette-gray200: #d1d1d6;
++  --palette-gray300: #aeaeb2;
++  --palette-gray400: #8e8e93;
++  --palette-gray500: #636366;
++  --palette-gray600: #3a3a3c;
++  --palette-gray700: #2c2c2e;
++  --palette-gray800: #1c1c1e;
++  --palette-gray900: #000000;
++
++  /* purple (the old accent) -> money green */
++  --palette-purple50: #f0fdf4;
++  --palette-purple100: #dcfce7;
++  --palette-purple125: #cdf8dc;
++  --palette-purple150: #bbf7d0;
++  --palette-purple200: #86efac;
++  --palette-purple300: #4ade80;
++  --palette-purple400: #16a34a;
++  --palette-purple500: #15803d;
++  --palette-purple600: #166534;
++  --palette-purple700: #14532d;
++  --palette-purple800: #0f3d22;
++  --palette-purple900: #052e16;
++
++  /* green (positive numbers, notices) -> the same family */
++  --palette-green50: #f0fdf4;
++  --palette-green100: #dcfce7;
++  --palette-green150: #bbf7d0;
++  --palette-green200: #86efac;
++  --palette-green300: #4ade80;
++  --palette-green400: #22c55e;
++  --palette-green500: #16a34a;
++  --palette-green600: #15803d;
++  --palette-green700: #15803d;
++  --palette-green800: #14532d;
++  --palette-green900: #052e16;
++
++  --palette-hover: #f2f2f7;
++  --palette-border: #e5e5ea;
++  --palette-selected: #dcfce7;
++}
+diff --git a/packages/desktop-client/index.html b/packages/desktop-client/index.html
+index 71af8fa..6a4a222 100644
+--- a/packages/desktop-client/index.html
++++ b/packages/desktop-client/index.html
+@@ -17,7 +17,8 @@
+       crossorigin="use-credentials"
+     />
+     <meta name="msapplication-TileColor" content="#5c3dbb" />
+-    <meta name="theme-color" content="#5c3dbb" />
++    <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)" />
++    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+ 
+     <style type="text/css">
+       html,
+diff --git a/packages/desktop-client/src/components/mobile/accounts/AccountsPage.tsx b/packages/desktop-client/src/components/mobile/accounts/AccountsPage.tsx
+index 3acc2c3..e9f7c3c 100644
+--- a/packages/desktop-client/src/components/mobile/accounts/AccountsPage.tsx
++++ b/packages/desktop-client/src/components/mobile/accounts/AccountsPage.tsx
+@@ -512,9 +512,9 @@ const AccountList = forwardRef<HTMLDivElement, AccountListProps>(
+         style={{
+           display: 'flex',
+           flexDirection: 'column',
+-          margin: '0 8px',
++          margin: '0 16px',
+           border: `1px solid ${theme.tableBorder}`,
+-          borderRadius: 8,
++          borderRadius: 14,
+           overflow: 'hidden',
+         }}
+       >
