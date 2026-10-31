@@ -117,11 +117,33 @@ jobs:
           API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
         run: |
-          export XCODEBUILD_AUTH_ARGS="-authenticationKeyPath $RUNNER_TEMP/AuthKey.p8 -authenticationKeyID $API_KEY_ID -authenticationKeyIssuerID $API_ISSUER_ID"
+          AUTH=(-authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" -authenticationKeyID "$API_KEY_ID" -authenticationKeyIssuerID "$API_ISSUER_ID")
+          MOBILE=packages/mobile-client
+          VERSION="$(node -p "require('./$MOBILE/package.json').version")"
+          plutil -replace teamID -string "$APPLE_TEAM_ID" "$MOBILE/ios/App/ExportOptions.plist"
+
+          # Archive WITHOUT signing (a signed archive needs a development
+          # profile, which needs a registered device), then let the export
+          # step sign it for the App Store with Apple's cloud signing.
+          build() {
+            NODE_ENV=production yarn workspace mobile-client sync:ios
+            xcodebuild -workspace "$MOBILE/ios/App/App.xcworkspace" -scheme App \
+              -configuration Release -destination generic/platform=iOS \
+              -archivePath "$MOBILE/build/App.xcarchive" \
+              DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+              MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$(date -u +%Y%m%d%H%M)" \
+              CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+              archive
+            xcodebuild -exportArchive -archivePath "$MOBILE/build/App.xcarchive" \
+              -exportOptionsPlist "$MOBILE/ios/App/ExportOptions.plist" \
+              -exportPath "$MOBILE/build/export" \
+              -allowProvisioningUpdates "${AUTH[@]}"
+          }
+
           set -o pipefail
-          if ! yarn workspace mobile-client build:ipa 2>&1 | tee "$RUNNER_TEMP/xcodebuild.log"; then
+          if ! build 2>&1 | tee "$RUNNER_TEMP/xcodebuild.log"; then
             # Surface the real errors as annotations (visible on the run page).
-            grep -E 'error:|\*\* (ARCHIVE|EXPORT) FAILED|No profiles|No signing certificate|Provisioning profile|not available|Error Domain' "$RUNNER_TEMP/xcodebuild.log" \
+            grep -E 'error:|\*\* (ARCHIVE|EXPORT) FAILED|No profiles|No signing certificate|Provisioning profile|not available|Error Domain|[Pp]ermission|Upload|upload failed' "$RUNNER_TEMP/xcodebuild.log" \
               | grep -v 'warning:' | sort -u | head -12 \
               | while IFS= read -r line; do echo "::error title=Xcode::${line:0:900}"; done
             exit 1
