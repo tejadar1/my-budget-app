@@ -118,7 +118,14 @@ jobs:
           API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
         run: |
           export XCODEBUILD_AUTH_ARGS="-authenticationKeyPath $RUNNER_TEMP/AuthKey.p8 -authenticationKeyID $API_KEY_ID -authenticationKeyIssuerID $API_ISSUER_ID"
-          yarn workspace mobile-client build:ipa
+          set -o pipefail
+          if ! yarn workspace mobile-client build:ipa 2>&1 | tee "$RUNNER_TEMP/xcodebuild.log"; then
+            # Surface the real errors as annotations (visible on the run page).
+            grep -E 'error:|\*\* (ARCHIVE|EXPORT) FAILED|No profiles|No signing certificate|Provisioning profile|not available|Error Domain' "$RUNNER_TEMP/xcodebuild.log" \
+              | grep -v 'warning:' | sort -u | head -12 \
+              | while IFS= read -r line; do echo "::error title=Xcode::${line:0:900}"; done
+            exit 1
+          fi
 
       - name: Clean up signing material
         if: always()
