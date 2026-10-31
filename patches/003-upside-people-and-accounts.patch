@@ -192,7 +192,7 @@ index 0000000..be35113
 +}
 diff --git a/packages/desktop-client/src/components/mobile/upside/UpsideAccountsPage.tsx b/packages/desktop-client/src/components/mobile/upside/UpsideAccountsPage.tsx
 new file mode 100644
-index 0000000..f557af7
+index 0000000..9f95c3a
 --- /dev/null
 +++ b/packages/desktop-client/src/components/mobile/upside/UpsideAccountsPage.tsx
 @@ -0,0 +1,460 @@
@@ -257,7 +257,7 @@ index 0000000..f557af7
 +  const { people, isSetUp } = usePeople();
 +  const syncAndDownload = useSyncAndDownloadMutation();
 +  const [openId, setOpenId] = useState<string | null>(null);
-+  const netWorth = useSheetValue(bindings.allAccountBalance()) ?? 0;
++  const netWorth = useSheetValue<'account', 'accounts-balance'>(bindings.allAccountBalance()) ?? 0;
 +  const location = useLocation();
 +
 +  const open = accounts.filter(a => a.closed === 0);
@@ -438,7 +438,7 @@ index 0000000..f557af7
 +}) {
 +  const { t } = useTranslation();
 +  const format = useFormat();
-+  const balance = useSheetValue(bindings.accountBalance(account.id)) ?? 0;
++  const balance = useSheetValue<'account', 'balance'>(bindings.accountBalance(account.id)) ?? 0;
 +  const ownerName =
 +    owner === 'shared'
 +      ? t('Shared')
