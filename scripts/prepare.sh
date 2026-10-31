@@ -44,6 +44,9 @@ path, name = sys.argv[1], sys.argv[2]
 with open(path, "rb") as f:
     data = plistlib.load(f)
 data["CFBundleDisplayName"] = name
+# Only standard HTTPS encryption: answers TestFlight's export-compliance
+# question up front so builds don't sit in "Missing Compliance".
+data["ITSAppUsesNonExemptEncryption"] = False
 with open(path, "wb") as f:
     plistlib.dump(data, f)
 PY
