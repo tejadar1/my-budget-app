@@ -881,15 +881,16 @@ index 9dfbadf..1f340a9 100644
          <span
 diff --git a/packages/desktop-client/src/components/mobile/upside/people.ts b/packages/desktop-client/src/components/mobile/upside/people.ts
 new file mode 100644
-index 0000000..4a89c28
+index 0000000..97c7ccc
 --- /dev/null
 +++ b/packages/desktop-client/src/components/mobile/upside/people.ts
-@@ -0,0 +1,173 @@
+@@ -0,0 +1,178 @@
 +import { useQuery } from '@tanstack/react-query';
 +
 +import * as monthUtils from '@actual-app/core/shared/months';
 +import { q } from '@actual-app/core/shared/query';
 +import type { AccountEntity } from '@actual-app/core/types/models';
++import type { SyncedPrefs } from '@actual-app/core/types/prefs';
 +
 +import { saveSyncedPrefs } from '#prefs/prefsSlice';
 +import { aqlQuery } from '#queries/aqlQuery';
@@ -905,9 +906,15 @@ index 0000000..4a89c28
 +
 +export type Person = { id: PersonId; name: string };
 +
-+export const PEOPLE_PREF = 'upside-people';
++// Upside's own synced prefs. They aren't in Actual's SyncedPrefs type list
++// (changing that type loosens Actual's API types), so cast at the edges.
++type PrefKey = keyof SyncedPrefs;
++export const PEOPLE_PREF = 'upside-people' as PrefKey;
 +export function ownerPref(accountId: string) {
-+  return `upside-owner-${accountId}` as const;
++  return `upside-owner-${accountId}` as PrefKey;
++}
++function savePrefs(prefs: Record<string, string>) {
++  return saveSyncedPrefs({ prefs: prefs as SyncedPrefs });
 +}
 +
 +// Fixed per-person colors, readable in both light and dark mode.
@@ -947,10 +954,8 @@ index 0000000..4a89c28
 +
 +  function setNames(p1: string, p2: string) {
 +    void dispatch(
-+      saveSyncedPrefs({
-+        prefs: {
-+          [PEOPLE_PREF]: JSON.stringify({ p1: p1.trim(), p2: p2.trim() }),
-+        },
++      savePrefs({
++        [PEOPLE_PREF]: JSON.stringify({ p1: p1.trim(), p2: p2.trim() }),
 +      }),
 +    );
 +  }
@@ -1003,7 +1008,7 @@ index 0000000..4a89c28
 +  }
 +
 +  function setOwner(accountId: string, owner: OwnerId) {
-+    void dispatch(saveSyncedPrefs({ prefs: { [ownerPref(accountId)]: owner } }));
++    void dispatch(savePrefs({ [ownerPref(accountId)]: owner }));
 +  }
 +
 +  return { ownerOf, setOwner };
@@ -1071,17 +1076,3 @@ index cae6af5..e1dab6b 100644
  export { AccountPage as Account } from '#components/mobile/accounts/AccountPage';
  
  export { MobileRulesPage as Rules } from '#components/mobile/rules/MobileRulesPage';
-diff --git a/packages/loot-core/src/types/prefs.ts b/packages/loot-core/src/types/prefs.ts
-index 040bd68..114d2db 100644
---- a/packages/loot-core/src/types/prefs.ts
-+++ b/packages/loot-core/src/types/prefs.ts
-@@ -20,6 +20,9 @@ export type FeatureFlag =
- export type SyncedPrefs = Partial<
-   Record<
-     | 'budgetType'
-+    // Upside: the two people's names (JSON) and each account's owner.
-+    | 'upside-people'
-+    | `upside-owner-${string}`
-     | 'upcomingScheduledTransactionLength'
-     | 'firstDayOfWeekIdx'
-     | 'dateFormat'
