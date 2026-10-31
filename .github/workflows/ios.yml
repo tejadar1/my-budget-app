@@ -35,8 +35,66 @@ jobs:
       - name: Prepare Actual source
         run: scripts/prepare.sh
 
-  build:
+  # Linux: type-check, build the web app and screenshot it at iPhone size
+  # (light + dark). Screenshots go to the `previews` branch for review.
+  # The paid macOS build only runs if this passes.
+  preview:
     needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Prepare Actual source
+        run: scripts/prepare.sh
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: actual/.nvmrc
+
+      - name: Install dependencies
+        working-directory: actual
+        run: |
+          corepack enable
+          yarn --immutable
+
+      - name: Type-check
+        working-directory: actual
+        run: yarn typecheck
+
+      - name: Build web app
+        working-directory: actual
+        run: yarn build:browser --skip-translations
+
+      - name: Screenshot at iPhone size
+        continue-on-error: true
+        run: |
+          (cd actual/packages/desktop-client && npx playwright install --with-deps chromium)
+          node scripts/serve.mjs actual/packages/desktop-client/build 5173 &
+          sleep 2
+          node scripts/screenshots.cjs http://localhost:5173 "$RUNNER_TEMP/previews"
+
+      - name: Publish screenshots to the previews branch
+        if: always()
+        run: |
+          OUT="$RUNNER_TEMP/previews"
+          [ -d "$OUT" ] || exit 0
+          cd "$OUT"
+          echo "Built from ${GITHUB_SHA}" > COMMIT.txt
+          git init -q -b previews
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Previews for ${GITHUB_SHA}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" previews
+
+  # Ships to TestFlight only when asked: the "Run workflow" button, or a
+  # commit message containing [ship]. Plain pushes stop after the previews.
+  build:
+    needs: preview
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[ship]')
     runs-on: macos-latest
     # Includes time for Apple to accept the upload.
     timeout-minutes: 90

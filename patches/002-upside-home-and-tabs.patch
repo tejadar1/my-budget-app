@@ -1,0 +1,895 @@
+diff --git a/packages/desktop-client/src/components/FinancesApp.tsx b/packages/desktop-client/src/components/FinancesApp.tsx
+index befb79d..c392e80 100644
+--- a/packages/desktop-client/src/components/FinancesApp.tsx
++++ b/packages/desktop-client/src/components/FinancesApp.tsx
+@@ -278,6 +278,18 @@ export function FinancesApp() {
+                       }
+                     />
+ 
++                    <Route
++                      path="/budget/limits"
++                      element={
++                        <ErrorBoundary
++                          FallbackComponent={FeatureErrorFallback}
++                          resetKeys={[location.pathname]}
++                        >
++                          <NarrowAlternate name="BudgetLimits" />
++                        </ErrorBoundary>
++                      }
++                    />
++
+                     <Route
+                       path="/schedules"
+                       element={
+@@ -560,6 +572,7 @@ export function FinancesApp() {
+ 
+                 <Routes>
+                   <Route path="/budget" element={<MobileNavTabs />} />
++                  <Route path="/budget/limits" element={<MobileNavTabs />} />
+                   <Route path="/accounts" element={<MobileNavTabs />} />
+                   <Route path="/settings/*" element={<MobileNavTabs />} />
+                   <Route path="/notifications" element={<MobileNavTabs />} />
+diff --git a/packages/desktop-client/src/components/mobile/MobileNavTabs.tsx b/packages/desktop-client/src/components/mobile/MobileNavTabs.tsx
+index de289dd..ab4ea98 100644
+--- a/packages/desktop-client/src/components/mobile/MobileNavTabs.tsx
++++ b/packages/desktop-client/src/components/mobile/MobileNavTabs.tsx
+@@ -1,264 +1,145 @@
+-import React, { useCallback, useState } from 'react';
+-import type { ComponentProps, ComponentType, CSSProperties } from 'react';
++import type { ReactNode } from 'react';
+ import { useTranslation } from 'react-i18next';
+ import { NavLink } from 'react-router';
+-import { animated, config, useSpring } from 'react-spring';
+ 
+ import { useResponsive } from '@actual-app/components/hooks/useResponsive';
+-import {
+-  SvgAdd,
+-  SvgCog,
+-  SvgPiggyBank,
+-  SvgReports,
+-  SvgWallet,
+-} from '@actual-app/components/icons/v1';
+-import { SvgCalendar3 } from '@actual-app/components/icons/v2';
+ import { styles } from '@actual-app/components/styles';
+ import { theme } from '@actual-app/components/theme';
+-import { View } from '@actual-app/components/view';
+-import { useDrag } from '@use-gesture/react';
+ 
+-import { useIsTestEnv } from '#hooks/useIsTestEnv';
+-import { useScrollListener } from '#hooks/useScrollListener';
++// Upside: an iOS-style tab bar (frosted, always visible, four tabs) in place
++// of Actual's drag-up drawer. There is deliberately no "add transaction"
++// tab: transactions come in from the banks.
+ 
+-const COLUMN_COUNT = 3;
+-const ROW_COUNT = 2;
+-const PILL_HEIGHT = 15;
+-const ROW_HEIGHT = 70;
+-const TOTAL_HEIGHT = ROW_HEIGHT * ROW_COUNT;
+-const OPEN_FULL_Y = 1;
+-const OPEN_DEFAULT_Y = TOTAL_HEIGHT - ROW_HEIGHT;
+-const HIDDEN_Y = TOTAL_HEIGHT;
++const BAR_HEIGHT = 50;
+ 
+-export const MOBILE_NAV_HEIGHT = ROW_HEIGHT + PILL_HEIGHT;
++// Bar plus a typical home-indicator inset; pages use this as bottom padding
++// so their last row isn't hidden behind the bar.
++export const MOBILE_NAV_HEIGHT = BAR_HEIGHT + 34;
+ 
+ export function MobileNavTabs() {
+   const { t } = useTranslation();
+   const { isNarrowWidth } = useResponsive();
+-  const isTestEnv = useIsTestEnv();
+-  const [navbarState, setNavbarState] = useState<'default' | 'open' | 'hidden'>(
+-    'default',
+-  );
+-
+-  const navTabStyle = {
+-    flex: `1 1 ${100 / COLUMN_COUNT}%`,
+-    height: ROW_HEIGHT,
+-    padding: 10,
+-    maxWidth: `${100 / COLUMN_COUNT}%`,
+-  };
+-
+-  const [{ y }, api] = useSpring(() => ({ from: { y: OPEN_DEFAULT_Y } }), []);
+-
+-  const openFull = useCallback(
+-    ({ canceled }: { canceled?: boolean }) => {
+-      // when cancel is true, it means that the user passed the upwards threshold
+-      // so we change the spring config to create a nice wobbly effect
+-      setNavbarState('open');
+-      void api.start({
+-        to: { y: OPEN_FULL_Y },
+-        immediate: isTestEnv,
+-        config: canceled ? config.wobbly : config.stiff,
+-      });
+-    },
+-    [api, isTestEnv],
+-  );
+-
+-  const openDefault = useCallback(
+-    (velocity = 0) => {
+-      setNavbarState('default');
+-      void api.start({
+-        to: { y: OPEN_DEFAULT_Y },
+-        immediate: isTestEnv,
+-        config: { ...config.stiff, velocity },
+-      });
+-    },
+-    [api, isTestEnv],
+-  );
+-
+-  const hide = useCallback(
+-    (velocity = 0) => {
+-      setNavbarState('hidden');
+-      void api.start({
+-        to: { y: HIDDEN_Y },
+-        immediate: isTestEnv,
+-        config: { ...config.stiff, velocity },
+-      });
+-    },
+-    [api, isTestEnv],
+-  );
+-
+-  const navTabs = [
+-    {
+-      name: t('Budget'),
+-      path: '/budget',
+-      style: navTabStyle,
+-      Icon: SvgWallet,
+-    },
+-    {
+-      name: t('Transaction'),
+-      path: '/transactions/new',
+-      style: navTabStyle,
+-      Icon: SvgAdd,
+-    },
+-    {
+-      name: t('Accounts'),
+-      path: '/accounts',
+-      style: navTabStyle,
+-      Icon: SvgPiggyBank,
+-    },
+-    {
+-      name: t('Reports'),
+-      path: '/reports',
+-      style: navTabStyle,
+-      Icon: SvgReports,
+-    },
+-    {
+-      name: t('Schedules'),
+-      path: '/schedules',
+-      style: navTabStyle,
+-      Icon: SvgCalendar3,
+-    },
+-    {
+-      name: t('Settings'),
+-      path: '/settings',
+-      style: navTabStyle,
+-      Icon: SvgCog,
+-    },
+-  ].map(tab => (
+-    <NavTab key={tab.path} onClick={() => openDefault()} {...tab} />
+-  ));
+-
+-  useScrollListener(
+-    useCallback(
+-      ({ isScrolling, hasScrolledToEnd }) => {
+-        if (isScrolling('down') && !hasScrolledToEnd('up')) {
+-          hide();
+-        } else if (isScrolling('up') && !hasScrolledToEnd('down')) {
+-          openDefault();
+-        }
+-      },
+-      [hide, openDefault],
+-    ),
+-  );
+ 
+-  const bind = useDrag(
+-    ({
+-      last,
+-      velocity: [, vy],
+-      direction: [, dy],
+-      offset: [, oy],
+-      cancel,
+-      canceled,
+-    }) => {
+-      // if the user drags up passed a threshold, then we cancel
+-      // the drag so that the sheet resets to its open position
+-      if (oy < 0) {
+-        cancel();
+-      }
++  if (!isNarrowWidth) {
++    return null;
++  }
+ 
+-      // when the user releases the sheet, we check whether it passed
+-      // the threshold for it to close, or if we reset it to its open position
+-      if (last) {
+-        if (oy > ROW_HEIGHT * 0.5 || (vy > 0.5 && dy > 0)) {
+-          openDefault(vy);
+-        } else {
+-          openFull({ canceled });
+-        }
+-      } else {
+-        // when the user keeps dragging, we just move the sheet according to
+-        // the cursor position
+-        void api.start({ to: { y: oy }, immediate: true });
+-      }
+-    },
+-    {
+-      from: () => [0, y.get()],
+-      filterTaps: true,
+-      bounds: { top: -TOTAL_HEIGHT, bottom: TOTAL_HEIGHT - ROW_HEIGHT },
+-      axis: 'y',
+-      rubberband: true,
+-    },
+-  );
++  const tabs = [
++    { name: t('Budget'), path: '/budget', icon: <BudgetIcon /> },
++    { name: t('Accounts'), path: '/accounts', icon: <AccountsIcon /> },
++    { name: t('Reports'), path: '/reports', icon: <ReportsIcon /> },
++    { name: t('Settings'), path: '/settings', icon: <SettingsIcon /> },
++  ];
+ 
+   return (
+-    <animated.div
+-      role="navigation"
+-      {...bind()}
++    <nav
++      aria-label={t('Main')}
+       style={{
+-        y,
+-        touchAction: 'pan-x',
+-        backgroundColor: theme.mobileNavBackground,
+-        borderTop: `1px solid ${theme.menuBorder}`,
+-        ...styles.shadow,
+-        height: TOTAL_HEIGHT + PILL_HEIGHT,
+-        width: '100%',
+         position: 'fixed',
+-        zIndex: 100,
++        left: 0,
++        right: 0,
+         bottom: 0,
+-        ...(!isNarrowWidth && { display: 'none' }),
++        zIndex: 100,
++        display: 'grid',
++        gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))`,
++        height: `calc(${BAR_HEIGHT}px + env(safe-area-inset-bottom))`,
++        paddingBottom: 'env(safe-area-inset-bottom)',
++        boxSizing: 'border-box',
++        backgroundColor: theme.mobileNavBackground,
++        backdropFilter: 'saturate(180%) blur(20px)',
++        WebkitBackdropFilter: 'saturate(180%) blur(20px)',
++        borderTop: `0.5px solid ${theme.tableBorder}`,
+       }}
+-      data-navbar-state={navbarState}
+     >
+-      <View>
+-        <div
+-          style={{
+-            backgroundColor: theme.pillBorder,
+-            borderRadius: 10,
+-            width: 30,
+-            marginTop: 5,
+-            marginBottom: 5,
+-            padding: 2,
+-            alignSelf: 'center',
+-          }}
+-        />
+-        <View
+-          style={{
+-            flexDirection: 'row',
+-            flexWrap: 'wrap',
+-            height: TOTAL_HEIGHT,
+-            width: '100%',
+-          }}
+-        >
+-          {navTabs}
+-        </View>
+-      </View>
+-    </animated.div>
++      {tabs.map(tab => (
++        <NavTab key={tab.path} {...tab} />
++      ))}
++    </nav>
+   );
+ }
+ 
+-type NavTabIconProps = {
+-  width: number;
+-  height: number;
+-  style?: CSSProperties;
+-};
+-
+-type NavTabProps = {
++function NavTab({
++  name,
++  path,
++  icon,
++}: {
+   name: string;
+   path: string;
+-  Icon: ComponentType<NavTabIconProps>;
+-  style?: CSSProperties;
+-  onClick: ComponentProps<typeof NavLink>['onClick'];
+-};
+-
+-function NavTab({ Icon: TabIcon, name, path, style, onClick }: NavTabProps) {
++  icon: ReactNode;
++}) {
+   return (
+     <NavLink
+       to={path}
+       style={({ isActive }) => ({
+         ...styles.noTapHighlight,
+-        alignItems: 'center',
+-        color: isActive ? theme.mobileNavItemSelected : theme.mobileNavItem,
+         display: 'flex',
+         flexDirection: 'column',
++        alignItems: 'center',
++        justifyContent: 'center',
++        gap: 2,
++        paddingTop: 4,
++        color: isActive ? theme.mobileNavItemSelected : theme.mobileNavItem,
++        fontSize: 10,
++        fontWeight: 600,
+         textDecoration: 'none',
+-        textAlign: 'center',
+-        textWrap: 'balance',
+         userSelect: 'none',
+-        ...style,
+       })}
+-      onClick={onClick}
+     >
+-      <TabIcon width={22} height={22} style={{ minHeight: '22px' }} />
++      {icon}
+       {name}
+     </NavLink>
+   );
+ }
++
++function TabIcon({ children }: { children: ReactNode }) {
++  return (
++    <svg
++      width={26}
++      height={26}
++      viewBox="0 0 24 24"
++      fill="none"
++      stroke="currentColor"
++      strokeWidth={2}
++      strokeLinecap="round"
++      strokeLinejoin="round"
++      aria-hidden="true"
++    >
++      {children}
++    </svg>
++  );
++}
++
++function BudgetIcon() {
++  return (
++    <TabIcon>
++      <path d="M4 19V10M10 19V5M16 19v-6M22 19H2" />
++    </TabIcon>
++  );
++}
++
++function AccountsIcon() {
++  return (
++    <TabIcon>
++      <rect x="3" y="6" width="18" height="13" rx="2" />
++      <path d="M3 10h18M7 15h3" />
++    </TabIcon>
++  );
++}
++
++function ReportsIcon() {
++  return (
++    <TabIcon>
++      <path d="M3 17l6-6 4 4 8-8" />
++      <path d="M15 7h6v6" />
++    </TabIcon>
++  );
++}
++
++function SettingsIcon() {
++  return (
++    <TabIcon>
++      <circle cx="12" cy="12" r="3" />
++      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
++    </TabIcon>
++  );
++}
+diff --git a/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx b/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
+new file mode 100644
+index 0000000..201ed87
+--- /dev/null
++++ b/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
+@@ -0,0 +1,465 @@
++import { useEffect } from 'react';
++import type { CSSProperties, ReactNode } from 'react';
++import { useTranslation } from 'react-i18next';
++import { Link } from 'react-router';
++
++import { theme } from '@actual-app/components/theme';
++import * as monthUtils from '@actual-app/core/shared/months';
++import type { CategoryEntity } from '@actual-app/core/types/models';
++import { useQuery } from '@tanstack/react-query';
++
++import { budgetBoundsQueries } from '#budget';
++import { prewarmMonth } from '#components/budget/util';
++import { MOBILE_NAV_HEIGHT } from '#components/mobile/MobileNavTabs';
++import { Page } from '#components/Page';
++import { useCategories } from '#hooks/useCategories';
++import { useFormat } from '#hooks/useFormat';
++import { useLocale } from '#hooks/useLocale';
++import { useNavigate } from '#hooks/useNavigate';
++import { SheetNameProvider } from '#hooks/useSheetName';
++import { useSheetValue } from '#hooks/useSheetValue';
++import { useSpreadsheet } from '#hooks/useSpreadsheet';
++import { useSyncedPref } from '#hooks/useSyncedPref';
++import type { SheetFields } from '#spreadsheet';
++
++// Upside's home screen: one big "money left this month" answer, then a card
++// per category with its limit, what's left and the 3-month average.
++// Works on both budget types; Upside is meant to run on "tracking".
++
++type Field = SheetFields<'tracking-budget'>;
++
++const AVERAGE_MONTHS = 3;
++
++// Brand constants that stay the same in light and dark mode, like the
++// mockups' green summary card.
++const HERO_GRADIENT = 'linear-gradient(150deg, #15803d 0%, #0e5a2b 55%, #052e16 100%)';
++const WARNING = '#f59e0b';
++
++function field(name: string) {
++  return name as Field;
++}
++
++/** A value from a specific month's sheet, e.g. ('budget202610', 'total-spent'). */
++function useMonthValue(sheet: string, name: string): number | null {
++  return useSheetValue<'tracking-budget', Field>(field(`${sheet}!${name}`));
++}
++
++function usePreviousMonths(month: string) {
++  const { data: bounds } = useQuery(budgetBoundsQueries.bounds());
++  const months = Array.from({ length: AVERAGE_MONTHS }, (_, i) =>
++    monthUtils.subMonths(month, i + 1),
++  );
++  // Months before the budget's first month have no data; don't let them
++  // drag the average down.
++  const valid = months.map(m => (bounds ? m >= bounds.start : false));
++  return { months, valid };
++}
++
++function average(values: Array<number | null>, valid: boolean[]) {
++  const used = values
++    .map((v, i) => (valid[i] && v != null ? Math.abs(v) : null))
++    .filter((v): v is number => v != null);
++  if (used.length === 0) return null;
++  return Math.round(used.reduce((a, b) => a + b, 0) / used.length);
++}
++
++function daysLeftInMonth() {
++  const now = new Date();
++  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
++  return last - now.getDate();
++}
++
++export function UpsideBudgetPage() {
++  const { t } = useTranslation();
++  const locale = useLocale();
++  const spreadsheet = useSpreadsheet();
++  const [budgetTypePref] = useSyncedPref('budgetType');
++  const budgetType = budgetTypePref === 'tracking' ? 'tracking' : 'envelope';
++  const month = monthUtils.currentMonth();
++  const { months: previous } = usePreviousMonths(month);
++  const { data: { grouped: groups } = { grouped: [] } } = useCategories();
++
++  useEffect(() => {
++    for (const m of [month, ...previous]) {
++      void prewarmMonth(budgetType, spreadsheet, m).catch(() => {});
++    }
++    // previous is derived from month
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [budgetType, spreadsheet, month]);
++
++  const expenseGroups = groups
++    .filter(g => !g.is_income && !g.hidden)
++    .map(g => ({
++      ...g,
++      categories: (g.categories ?? []).filter(c => !c.hidden),
++    }))
++    .filter(g => g.categories.length > 0);
++
++  return (
++    <Page header={null} padding={0}>
++      <SheetNameProvider name={monthUtils.sheetForMonth(month)}>
++        <div
++          style={{
++            display: 'flex',
++            flexDirection: 'column',
++            gap: 28,
++            padding: '0 16px',
++            paddingTop: 'calc(env(safe-area-inset-top) + 18px)',
++            paddingBottom: `calc(env(safe-area-inset-bottom) + ${MOBILE_NAV_HEIGHT + 24}px)`,
++          }}
++        >
++          <header
++            style={{
++              display: 'flex',
++              justifyContent: 'space-between',
++              alignItems: 'flex-end',
++            }}
++          >
++            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
++              <span
++                style={{
++                  fontSize: 13,
++                  fontWeight: 600,
++                  letterSpacing: 0.6,
++                  textTransform: 'uppercase',
++                  color: theme.pageTextSubdued,
++                }}
++              >
++                {monthUtils.format(month, 'MMMM yyyy', locale)}
++              </span>
++              <h1
++                style={{
++                  margin: 0,
++                  fontSize: 34,
++                  fontWeight: 800,
++                  letterSpacing: -0.6,
++                  color: theme.pageText,
++                }}
++              >
++                {t('Budget')}
++              </h1>
++            </div>
++            <Link
++              to="/budget/limits"
++              style={{
++                minHeight: 44,
++                display: 'flex',
++                alignItems: 'center',
++                fontSize: 17,
++                color: theme.pageTextPositive,
++                textDecoration: 'none',
++              }}
++            >
++              {t('Edit limits')}
++            </Link>
++          </header>
++
++          <MonthSummary month={month} />
++
++          {expenseGroups.map(group => (
++            <section
++              key={group.id}
++              style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
++            >
++              <h2
++                style={{
++                  margin: 0,
++                  fontSize: 22,
++                  fontWeight: 700,
++                  letterSpacing: -0.3,
++                  color: theme.pageText,
++                }}
++              >
++                {group.name}
++              </h2>
++              <div
++                style={{
++                  display: 'grid',
++                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
++                  gap: 12,
++                }}
++              >
++                {group.categories.map(category => (
++                  <CategoryCard
++                    key={category.id}
++                    category={category}
++                    month={month}
++                  />
++                ))}
++              </div>
++            </section>
++          ))}
++        </div>
++      </SheetNameProvider>
++    </Page>
++  );
++}
++
++function MonthSummary({ month }: { month: string }) {
++  const { t } = useTranslation();
++  const format = useFormat();
++  const { months, valid } = usePreviousMonths(month);
++
++  const budgeted = Math.abs(useSheetValue<'tracking-budget', Field>('total-budgeted') ?? 0);
++  const spent = Math.abs(useSheetValue<'tracking-budget', Field>('total-spent') ?? 0);
++  const prev0 = useMonthValue(monthUtils.sheetForMonth(months[0]), 'total-spent');
++  const prev1 = useMonthValue(monthUtils.sheetForMonth(months[1]), 'total-spent');
++  const prev2 = useMonthValue(monthUtils.sheetForMonth(months[2]), 'total-spent');
++  const avg = average([prev0, prev1, prev2], valid);
++
++  const left = budgeted - spent;
++  const isOver = left < 0;
++  const usedPct = budgeted > 0 ? Math.min(100, (spent / budgeted) * 100) : 0;
++  const avgPct =
++    avg != null && budgeted > 0 ? Math.min(100, (avg / budgeted) * 100) : null;
++  const money = (v: number) => format(Math.abs(v), 'financial-no-decimals');
++
++  return (
++    <div
++      style={{
++        borderRadius: 22,
++        padding: 22,
++        background: HERO_GRADIENT,
++        color: '#ffffff',
++        display: 'flex',
++        flexDirection: 'column',
++        gap: 14,
++      }}
++    >
++      <span
++        style={{
++          fontSize: 13,
++          fontWeight: 700,
++          letterSpacing: 0.6,
++          color: 'rgba(255,255,255,0.82)',
++        }}
++      >
++        {t('THIS MONTH')}
++      </span>
++      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
++        <span
++          style={{
++            fontSize: 44,
++            fontWeight: 800,
++            letterSpacing: -1,
++            lineHeight: 1,
++          }}
++        >
++          {isOver
++            ? t('{{amount}} over', { amount: money(left) })
++            : t('{{amount}} left', { amount: money(left) })}
++        </span>
++        <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.86)' }}>
++          {budgeted > 0
++            ? t('of {{limit}} · {{days}} days to go', {
++                limit: money(budgeted),
++                days: daysLeftInMonth(),
++              })
++            : t('Set limits to see what’s left')}
++        </span>
++        {avg != null && (
++          <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.86)' }}>
++            {t('Your average month: {{amount}}', { amount: money(avg) })}
++          </span>
++        )}
++      </div>
++      <Bar
++        percent={usedPct}
++        fill={isOver ? '#ff6961' : '#ffffff'}
++        track="rgba(0,0,0,0.3)"
++        height={10}
++        marker={avgPct}
++        markerColor="#ffffff"
++        markerLabel={t('avg')}
++      />
++    </div>
++  );
++}
++
++function CategoryCard({
++  category,
++  month,
++}: {
++  category: CategoryEntity;
++  month: string;
++}) {
++  const { t } = useTranslation();
++  const format = useFormat();
++  const navigate = useNavigate();
++  const { months, valid } = usePreviousMonths(month);
++
++  const budgeted = Math.abs(
++    useSheetValue<'tracking-budget', Field>(field(`budget-${category.id}`)) ?? 0,
++  );
++  const spent = Math.abs(
++    useSheetValue<'tracking-budget', Field>(field(`sum-amount-${category.id}`)) ?? 0,
++  );
++  const balance =
++    useSheetValue<'tracking-budget', Field>(field(`leftover-${category.id}`)) ??
++    budgeted - spent;
++  const prev0 = useMonthValue(monthUtils.sheetForMonth(months[0]), `sum-amount-${category.id}`);
++  const prev1 = useMonthValue(monthUtils.sheetForMonth(months[1]), `sum-amount-${category.id}`);
++  const prev2 = useMonthValue(monthUtils.sheetForMonth(months[2]), `sum-amount-${category.id}`);
++  const avg = average([prev0, prev1, prev2], valid);
++
++  const hasLimit = budgeted > 0;
++  const isOver = balance < 0;
++  const isLow = hasLimit && !isOver && balance < budgeted * 0.15;
++  const amountColor = isOver
++    ? theme.numberNegative
++    : isLow
++      ? WARNING
++      : theme.pageTextPositive;
++  const money = (v: number) => format(Math.abs(v), 'financial-no-decimals');
++
++  let headline: ReactNode;
++  let detail: string;
++  if (!hasLimit) {
++    headline = money(spent);
++    detail = t('spent · no limit');
++  } else if (isOver) {
++    headline = t('{{amount}} over', { amount: money(balance) });
++    detail = t('limit {{limit}}', { limit: money(budgeted) });
++  } else {
++    headline = money(balance);
++    detail = t('left of {{limit}}', { limit: money(budgeted) });
++  }
++
++  const cardStyle: CSSProperties = {
++    all: 'unset',
++    boxSizing: 'border-box',
++    cursor: 'pointer',
++    borderRadius: 18,
++    padding: 16,
++    background: theme.cardBackground,
++    display: 'flex',
++    flexDirection: 'column',
++    gap: 10,
++    minWidth: 0,
++    WebkitTapHighlightColor: 'transparent',
++  };
++
++  return (
++    <button
++      type="button"
++      style={cardStyle}
++      onClick={() => void navigate(`/categories/${category.id}?month=${month}`)}
++    >
++      <span
++        style={{
++          fontSize: 15,
++          fontWeight: 600,
++          color: theme.pageText,
++          overflow: 'hidden',
++          textOverflow: 'ellipsis',
++          whiteSpace: 'nowrap',
++        }}
++      >
++        {category.name}
++      </span>
++      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
++        <span
++          style={{
++            fontSize: 24,
++            fontWeight: 800,
++            letterSpacing: -0.4,
++            color: hasLimit ? amountColor : theme.pageText,
++          }}
++        >
++          {headline}
++        </span>
++        <span style={{ fontSize: 12, color: theme.pageTextSubdued }}>{detail}</span>
++        {avg != null && (
++          <span style={{ fontSize: 12, color: theme.pageTextSubdued }}>
++            {t('avg {{amount}}/mo', { amount: money(avg) })}
++          </span>
++        )}
++      </div>
++      {hasLimit && (
++        <Bar
++          percent={Math.min(100, (spent / budgeted) * 100)}
++          fill={isOver ? theme.numberNegative : amountColor}
++          track={theme.tableBorder}
++          height={6}
++          marker={avg != null ? Math.min(100, (avg / budgeted) * 100) : null}
++          markerColor={theme.pageText}
++        />
++      )}
++    </button>
++  );
++}
++
++function Bar({
++  percent,
++  fill,
++  track,
++  height,
++  marker,
++  markerColor,
++  markerLabel,
++}: {
++  percent: number;
++  fill: string;
++  track: string;
++  height: number;
++  marker: number | null;
++  markerColor: string;
++  markerLabel?: string;
++}) {
++  return (
++    <div
++      style={{
++        position: 'relative',
++        paddingTop: markerLabel && marker != null ? 18 : 0,
++      }}
++    >
++      {markerLabel && marker != null && (
++        <span
++          style={{
++            position: 'absolute',
++            top: 0,
++            left: `${marker}%`,
++            transform: 'translateX(-50%)',
++            fontSize: 11,
++            fontWeight: 600,
++            whiteSpace: 'nowrap',
++          }}
++        >
++          {markerLabel}
++        </span>
++      )}
++      <div
++        style={{
++          height,
++          borderRadius: height / 2,
++          background: track,
++          overflow: 'hidden',
++        }}
++      >
++        <div
++          style={{
++            width: `${percent}%`,
++            height: '100%',
++            borderRadius: height / 2,
++            background: fill,
++          }}
++        />
++      </div>
++      {marker != null && (
++        <span
++          aria-hidden="true"
++          style={{
++            position: 'absolute',
++            left: `${marker}%`,
++            bottom: -3,
++            width: 2,
++            height: height + 6,
++            marginLeft: -1,
++            borderRadius: 1,
++            background: markerColor,
++          }}
++        />
++      )}
++    </div>
++  );
++}
+diff --git a/packages/desktop-client/src/components/responsive/narrow.ts b/packages/desktop-client/src/components/responsive/narrow.ts
+index 6d50e47..cae6af5 100644
+--- a/packages/desktop-client/src/components/responsive/narrow.ts
++++ b/packages/desktop-client/src/components/responsive/narrow.ts
+@@ -1,4 +1,5 @@
+-export { BudgetPage as Budget } from '#components/mobile/budget/BudgetPage';
++export { UpsideBudgetPage as Budget } from '#components/mobile/upside/UpsideBudgetPage';
++export { BudgetPage as BudgetLimits } from '#components/mobile/budget/BudgetPage';
+ 
+ export { AccountsPage as Accounts } from '#components/mobile/accounts/AccountsPage';
+ export { AccountPage as Account } from '#components/mobile/accounts/AccountPage';
+diff --git a/packages/desktop-client/src/components/responsive/wide.ts b/packages/desktop-client/src/components/responsive/wide.ts
+index b1f8b7c..91167c1 100644
+--- a/packages/desktop-client/src/components/responsive/wide.ts
++++ b/packages/desktop-client/src/components/responsive/wide.ts
+@@ -1,4 +1,5 @@
+ export { Budget } from '#components/budget';
++export { Budget as BudgetLimits } from '#components/budget';
+ 
+ export { Schedules } from '#components/schedules';
+ export { Schedules as ScheduleEdit } from '#components/schedules';
