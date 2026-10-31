@@ -34,9 +34,18 @@ Run workflow**, and install from TestFlight.
 
 ## Roadmap
 
-- [x] iPhone app built from Actual, renamed, auto-uploaded to TestFlight
-- [ ] Spending by person report (category × month × who)
-- [ ] Our own app icon (`overrides/packages/mobile-client/ios/App/App/Assets.xcassets/`)
+Mockups: the "Upside Mockups" canvas (Apple Music / Wallet style, dark, money green).
+
+- [x] iPhone app built from Actual, renamed Upside, auto-uploaded to TestFlight
+- [ ] 1. Look and feel: dark, money green, Apple system font, rounded cards
+- [ ] 2. New home + 4-tab bar (Budget, Who spent, Accounts, Trips); no prominent add-transaction button
+- [ ] 3. People and owners: names in Settings, owner (Ron / Wife / Shared) on each account,
+      Wallet-style Accounts, "Connect a bank" flow that asks whose each new account is
+- [ ] 4. Averages and trips: 3-month average per category and overall, pace vs. average,
+      trip tags kept out of Everyday and out of averages, prepaid vs. during-trip
+- [ ] 5. Savings goal planner: trims flexible categories to hit a monthly goal, with preview
+
+Budget mode: Actual's tracking budget (monthly limits, see what's left).
 
 ## Updating Actual
 
