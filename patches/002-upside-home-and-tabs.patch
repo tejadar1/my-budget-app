@@ -403,7 +403,7 @@ index de289dd..ab4ea98 100644
 +}
 diff --git a/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx b/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
 new file mode 100644
-index 0000000..4d68afe
+index 0000000..9dfbadf
 --- /dev/null
 +++ b/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
 @@ -0,0 +1,486 @@
@@ -724,9 +724,9 @@ index 0000000..4d68afe
 +  const spent = Math.abs(
 +    useSheetValue<'tracking-budget', Field>(field(`sum-amount-${category.id}`)) ?? 0,
 +  );
-+  const balance =
-+    useSheetValue<'tracking-budget', Field>(field(`leftover-${category.id}`)) ??
-+    budgeted - spent;
++  // Limits reset every month in Upside, so "left" is this month's limit
++  // minus this month's spending (Actual's leftover can include carryover).
++  const balance = budgeted - spent;
 +  const prev0 = useMonthValue(monthUtils.sheetForMonth(months[0]), `sum-amount-${category.id}`);
 +  const prev1 = useMonthValue(monthUtils.sheetForMonth(months[1]), `sum-amount-${category.id}`);
 +  const prev2 = useMonthValue(monthUtils.sheetForMonth(months[2]), `sum-amount-${category.id}`);
