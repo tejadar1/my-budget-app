@@ -1,0 +1,1087 @@
+diff --git a/packages/desktop-client/src/components/mobile/upside/PeopleSetup.tsx b/packages/desktop-client/src/components/mobile/upside/PeopleSetup.tsx
+new file mode 100644
+index 0000000..be35113
+--- /dev/null
++++ b/packages/desktop-client/src/components/mobile/upside/PeopleSetup.tsx
+@@ -0,0 +1,186 @@
++import { useState } from 'react';
++import { useTranslation } from 'react-i18next';
++
++import { theme } from '@actual-app/components/theme';
++
++import { OWNER_COLORS, OWNER_INK, initialOf } from './people';
++import type { Person } from './people';
++
++// "Who's budgeting?" — each of you types your own name once. Saved on the
++// budget, so it shows up on both phones.
++
++export function PeopleSetup({
++  people,
++  onSave,
++  onCancel,
++}: {
++  people: Person[];
++  onSave: (p1: string, p2: string) => void;
++  onCancel?: () => void;
++}) {
++  const { t } = useTranslation();
++  const [p1, setP1] = useState(people.find(p => p.id === 'p1')?.name ?? '');
++  const [p2, setP2] = useState(people.find(p => p.id === 'p2')?.name ?? '');
++  const canSave = p1.trim().length > 0;
++
++  const input = (
++    id: 'p1' | 'p2',
++    label: string,
++    value: string,
++    onChange: (v: string) => void,
++  ) => (
++    <label
++      htmlFor={`upside-${id}`}
++      style={{ display: 'flex', alignItems: 'center', gap: 12 }}
++    >
++      <span
++        aria-hidden="true"
++        style={{
++          width: 36,
++          height: 36,
++          flexShrink: 0,
++          borderRadius: 18,
++          background: OWNER_COLORS[id],
++          color: OWNER_INK[id],
++          display: 'flex',
++          alignItems: 'center',
++          justifyContent: 'center',
++          fontWeight: 700,
++        }}
++      >
++        {value.trim() ? initialOf(value) : id === 'p1' ? '1' : '2'}
++      </span>
++      <span style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
++        <span style={{ fontSize: 13, color: theme.pageTextSubdued }}>{label}</span>
++        <input
++          id={`upside-${id}`}
++          value={value}
++          onChange={e => onChange(e.target.value)}
++          autoComplete="given-name"
++          autoCapitalize="words"
++          style={{
++            font: 'inherit',
++            fontSize: 17,
++            padding: '10px 12px',
++            borderRadius: 10,
++            border: `1px solid ${theme.formInputBorder}`,
++            background: theme.formInputBackground,
++            color: theme.formInputText,
++            outline: 'none',
++          }}
++        />
++      </span>
++    </label>
++  );
++
++  return (
++    <div
++      style={{
++        borderRadius: 22,
++        padding: 20,
++        background: theme.cardBackground,
++        display: 'flex',
++        flexDirection: 'column',
++        gap: 16,
++      }}
++    >
++      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
++        <span style={{ fontSize: 20, fontWeight: 800, color: theme.pageText }}>
++          {t('Who’s budgeting?')}
++        </span>
++        <span style={{ fontSize: 14, color: theme.pageTextSubdued }}>
++          {t(
++            'Type your names so Upside can show who spent what. Accounts are matched to you by name when the bank includes it.',
++          )}
++        </span>
++      </div>
++      {input('p1', t('Your name'), p1, setP1)}
++      {input('p2', t('Partner’s name'), p2, setP2)}
++      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
++        {onCancel && (
++          <button
++            type="button"
++            onClick={onCancel}
++            style={{
++              all: 'unset',
++              minHeight: 44,
++              padding: '0 16px',
++              color: theme.pageTextSubdued,
++              fontSize: 17,
++              cursor: 'pointer',
++            }}
++          >
++            {t('Cancel')}
++          </button>
++        )}
++        <button
++          type="button"
++          disabled={!canSave}
++          onClick={() => onSave(p1, p2)}
++          style={{
++            all: 'unset',
++            minHeight: 44,
++            padding: '0 22px',
++            borderRadius: 12,
++            background: theme.buttonPrimaryBackground,
++            color: theme.buttonPrimaryText,
++            fontSize: 17,
++            fontWeight: 700,
++            display: 'flex',
++            alignItems: 'center',
++            cursor: canSave ? 'pointer' : 'default',
++            opacity: canSave ? 1 : 0.5,
++          }}
++        >
++          {t('Save')}
++        </button>
++      </div>
++    </div>
++  );
++}
++
++export function Avatars({
++  people,
++  onPress,
++}: {
++  people: Person[];
++  onPress: () => void;
++}) {
++  const { t } = useTranslation();
++  return (
++    <button
++      type="button"
++      aria-label={t('Edit names')}
++      onClick={onPress}
++      style={{
++        all: 'unset',
++        display: 'flex',
++        alignItems: 'center',
++        minHeight: 44,
++        cursor: 'pointer',
++      }}
++    >
++      {people.map((p, i) => (
++        <span
++          key={p.id}
++          style={{
++            width: 34,
++            height: 34,
++            borderRadius: 17,
++            marginLeft: i === 0 ? 0 : -8,
++            background: OWNER_COLORS[p.id],
++            color: OWNER_INK[p.id],
++            border: `2px solid ${theme.mobilePageBackground}`,
++            display: 'flex',
++            alignItems: 'center',
++            justifyContent: 'center',
++            fontSize: 14,
++            fontWeight: 700,
++          }}
++        >
++          {initialOf(p.name)}
++        </span>
++      ))}
++    </button>
++  );
++}
+diff --git a/packages/desktop-client/src/components/mobile/upside/UpsideAccountsPage.tsx b/packages/desktop-client/src/components/mobile/upside/UpsideAccountsPage.tsx
+new file mode 100644
+index 0000000..f557af7
+--- /dev/null
++++ b/packages/desktop-client/src/components/mobile/upside/UpsideAccountsPage.tsx
+@@ -0,0 +1,460 @@
++import { useState } from 'react';
++import { useTranslation } from 'react-i18next';
++import { Link, Navigate, useLocation } from 'react-router';
++
++import { theme } from '@actual-app/components/theme';
++import type { AccountEntity } from '@actual-app/core/types/models';
++
++import { useSyncAndDownloadMutation } from '#accounts';
++import { ALL_ACCOUNTS_ID } from '#components/mobile/accounts/AccountsPage';
++import { MOBILE_NAV_HEIGHT } from '#components/mobile/MobileNavTabs';
++import { PullToRefresh } from '#components/mobile/PullToRefresh';
++import { Page } from '#components/Page';
++import { useAccounts } from '#hooks/useAccounts';
++import { useFormat } from '#hooks/useFormat';
++import { useSheetValue } from '#hooks/useSheetValue';
++import { replaceModal } from '#modals/modalsSlice';
++import { useDispatch } from '#redux';
++import * as bindings from '#spreadsheet/bindings';
++
++import {
++  OWNER_COLORS,
++  OWNER_INK,
++  initialOf,
++  useAccountOwners,
++  usePeople,
++} from './people';
++import type { OwnerId, OwnerKey } from './people';
++
++// Wallet-style accounts: each account is a colored card with its owner
++// (you, your partner or Shared). New accounts nobody has claimed yet are
++// listed first with a quick "whose is this?" picker.
++
++const CARD_GRADIENTS = [
++  'linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)',
++  'linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%)',
++  'linear-gradient(135deg, #7e22ce 0%, #3b0764 100%)',
++  'linear-gradient(135deg, #15803d 0%, #052e16 100%)',
++  'linear-gradient(135deg, #a16207 0%, #422006 100%)',
++  'linear-gradient(135deg, #0f766e 0%, #042f2e 100%)',
++  'linear-gradient(135deg, #be185d 0%, #500724 100%)',
++  'linear-gradient(135deg, #334155 0%, #0f172a 100%)',
++];
++
++function gradientFor(account: AccountEntity) {
++  const key = account.bankName ?? account.name;
++  let hash = 0;
++  for (let i = 0; i < key.length; i++) {
++    hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
++  }
++  return CARD_GRADIENTS[hash % CARD_GRADIENTS.length];
++}
++
++export function UpsideAccountsPage() {
++  const { t } = useTranslation();
++  const format = useFormat();
++  const dispatch = useDispatch();
++  const { data: accounts = [] } = useAccounts();
++  const { ownerOf, setOwner } = useAccountOwners();
++  const { people, isSetUp } = usePeople();
++  const syncAndDownload = useSyncAndDownloadMutation();
++  const [openId, setOpenId] = useState<string | null>(null);
++  const netWorth = useSheetValue(bindings.allAccountBalance()) ?? 0;
++  const location = useLocation();
++
++  const open = accounts.filter(a => a.closed === 0);
++  const unclaimed = open.filter(a => ownerOf(a).owner === 'unassigned');
++
++  // Report drill-downs land on /accounts with filters; show them as
++  // filtered transactions, like Actual does.
++  const filterConditions = location?.state?.filterConditions || [];
++  if (filterConditions.length > 0) {
++    return (
++      <Navigate to={`/accounts/${ALL_ACCOUNTS_ID}`} state={location.state} replace />
++    );
++  }
++
++  return (
++    <Page header={null} padding={0}>
++      <PullToRefresh onRefresh={async () => syncAndDownload.mutate({})}>
++        <div
++          style={{
++            display: 'flex',
++            flexDirection: 'column',
++            gap: 24,
++            padding: '0 16px',
++            paddingTop: 'calc(env(safe-area-inset-top) + 18px)',
++            paddingBottom: `calc(env(safe-area-inset-bottom) + ${MOBILE_NAV_HEIGHT + 24}px)`,
++          }}
++        >
++          <header style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
++            <span
++              style={{
++                fontSize: 13,
++                fontWeight: 600,
++                letterSpacing: 0.6,
++                color: theme.pageTextSubdued,
++              }}
++            >
++              {t('{{count}} ACCOUNTS · PULL DOWN TO SYNC', { count: open.length })}
++            </span>
++            <h1
++              style={{
++                margin: 0,
++                fontSize: 34,
++                fontWeight: 800,
++                letterSpacing: -0.6,
++                color: theme.pageText,
++              }}
++            >
++              {t('Accounts')}
++            </h1>
++          </header>
++
++          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
++            <span style={{ fontSize: 13, color: theme.pageTextSubdued }}>
++              {t('Net worth across everything')}
++            </span>
++            <span
++              style={{
++                fontSize: 40,
++                fontWeight: 800,
++                letterSpacing: -1,
++                color: netWorth < 0 ? theme.numberNegative : theme.pageTextPositive,
++              }}
++            >
++              {format(netWorth, 'financial-no-decimals')}
++            </span>
++          </div>
++
++          {isSetUp && unclaimed.length > 0 && (
++            <section
++              aria-label={t('Whose accounts are these?')}
++              style={{
++                borderRadius: 18,
++                background: theme.cardBackground,
++                padding: 16,
++                display: 'flex',
++                flexDirection: 'column',
++                gap: 14,
++              }}
++            >
++              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
++                <span style={{ fontSize: 17, fontWeight: 700, color: theme.pageText }}>
++                  {t('Whose accounts are these?')}
++                </span>
++                <span style={{ fontSize: 13, color: theme.pageTextSubdued }}>
++                  {t('This decides how spending shows up in who spent what.')}
++                </span>
++              </div>
++              {unclaimed.map(account => (
++                <div
++                  key={account.id}
++                  style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
++                >
++                  <span style={{ fontSize: 15, fontWeight: 600, color: theme.pageText }}>
++                    {account.name}
++                  </span>
++                  <OwnerPicker
++                    value={null}
++                    people={people.map(p => ({ id: p.id, name: p.name }))}
++                    onChange={owner => setOwner(account.id, owner)}
++                  />
++                </div>
++              ))}
++            </section>
++          )}
++
++          {!isSetUp && (
++            <Link
++              to="/budget"
++              style={{
++                borderRadius: 18,
++                background: theme.cardBackground,
++                padding: 16,
++                color: theme.pageText,
++                textDecoration: 'none',
++                fontSize: 15,
++              }}
++            >
++              {t('Add your names on the Budget tab to tag each account as yours, your partner’s or shared.')}
++            </Link>
++          )}
++
++          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
++            {open.map(account => (
++              <AccountCard
++                key={account.id}
++                account={account}
++                owner={ownerOf(account).owner}
++                isOpen={openId === account.id}
++                onToggle={() => setOpenId(openId === account.id ? null : account.id)}
++                people={people.map(p => ({ id: p.id, name: p.name }))}
++                onChangeOwner={owner => setOwner(account.id, owner)}
++              />
++            ))}
++          </div>
++
++          <button
++            type="button"
++            onClick={() =>
++              dispatch(replaceModal({ modal: { name: 'add-account', options: {} } }))
++            }
++            style={{
++              all: 'unset',
++              alignSelf: 'center',
++              minHeight: 44,
++              padding: '0 20px',
++              borderRadius: 22,
++              border: `1px solid ${theme.tableBorder}`,
++              color: theme.pageTextPositive,
++              fontSize: 15,
++              fontWeight: 600,
++              display: 'flex',
++              alignItems: 'center',
++              cursor: 'pointer',
++            }}
++          >
++            {t('Connect a bank')}
++          </button>
++        </div>
++      </PullToRefresh>
++    </Page>
++  );
++}
++
++function AccountCard({
++  account,
++  owner,
++  isOpen,
++  onToggle,
++  people,
++  onChangeOwner,
++}: {
++  account: AccountEntity;
++  owner: OwnerKey;
++  isOpen: boolean;
++  onToggle: () => void;
++  people: Array<{ id: 'p1' | 'p2'; name: string }>;
++  onChangeOwner: (owner: OwnerId) => void;
++}) {
++  const { t } = useTranslation();
++  const format = useFormat();
++  const balance = useSheetValue(bindings.accountBalance(account.id)) ?? 0;
++  const ownerName =
++    owner === 'shared'
++      ? t('Shared')
++      : owner === 'unassigned'
++        ? t('Not set')
++        : (people.find(p => p.id === owner)?.name ?? '');
++  const isCredit = balance < 0;
++  const subtitle = [
++    account.bankName,
++    account.offbudget === 1 ? t('Off budget') : null,
++    account.mask ? `•• ${account.mask}` : null,
++  ]
++    .filter(Boolean)
++    .join(' · ');
++
++  return (
++    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
++      <button
++        type="button"
++        aria-expanded={isOpen}
++        onClick={onToggle}
++        style={{
++          all: 'unset',
++          boxSizing: 'border-box',
++          cursor: 'pointer',
++          minHeight: 150,
++          borderRadius: 18,
++          padding: '16px 18px',
++          background: gradientFor(account),
++          color: '#ffffff',
++          display: 'flex',
++          flexDirection: 'column',
++          justifyContent: 'space-between',
++          gap: 18,
++          boxShadow: '0 6px 18px rgba(0,0,0,0.18)',
++          WebkitTapHighlightColor: 'transparent',
++        }}
++      >
++        <div
++          style={{
++            display: 'flex',
++            justifyContent: 'space-between',
++            alignItems: 'flex-start',
++            gap: 10,
++          }}
++        >
++          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
++            <span
++              style={{
++                fontSize: 17,
++                fontWeight: 700,
++                overflow: 'hidden',
++                textOverflow: 'ellipsis',
++                whiteSpace: 'nowrap',
++              }}
++            >
++              {account.name}
++            </span>
++            {subtitle && (
++              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)' }}>
++                {subtitle}
++              </span>
++            )}
++          </div>
++          <span
++            style={{
++              display: 'flex',
++              alignItems: 'center',
++              gap: 6,
++              flexShrink: 0,
++              padding: '4px 10px 4px 4px',
++              borderRadius: 14,
++              background: 'rgba(0,0,0,0.35)',
++              fontSize: 12,
++              fontWeight: 600,
++            }}
++          >
++            <span
++              style={{
++                width: 20,
++                height: 20,
++                borderRadius: 10,
++                background: OWNER_COLORS[owner],
++                color: OWNER_INK[owner],
++                display: 'flex',
++                alignItems: 'center',
++                justifyContent: 'center',
++                fontSize: 11,
++                fontWeight: 800,
++              }}
++            >
++              {owner === 'shared' ? 'S' : owner === 'unassigned' ? '?' : initialOf(ownerName)}
++            </span>
++            {ownerName}
++          </span>
++        </div>
++        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
++          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)' }}>
++            {isCredit ? t('Owed') : t('Balance')}
++          </span>
++          <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5 }}>
++            {format(Math.abs(balance), 'financial')}
++          </span>
++        </div>
++      </button>
++
++      {isOpen && (
++        <div
++          style={{
++            borderRadius: 18,
++            background: theme.cardBackground,
++            padding: 14,
++            display: 'flex',
++            flexDirection: 'column',
++            gap: 12,
++          }}
++        >
++          <span style={{ fontSize: 13, color: theme.pageTextSubdued }}>
++            {t('Whose account is this?')}
++          </span>
++          <OwnerPicker
++            value={owner === 'unassigned' ? null : owner}
++            people={people}
++            onChange={onChangeOwner}
++          />
++          <Link
++            to={`/accounts/${account.id}`}
++            style={{
++              minHeight: 44,
++              display: 'flex',
++              alignItems: 'center',
++              justifyContent: 'center',
++              color: theme.pageTextPositive,
++              fontSize: 15,
++              fontWeight: 600,
++              textDecoration: 'none',
++            }}
++          >
++            {t('See transactions')}
++          </Link>
++        </div>
++      )}
++    </div>
++  );
++}
++
++function OwnerPicker({
++  value,
++  people,
++  onChange,
++}: {
++  value: OwnerId | null;
++  people: Array<{ id: 'p1' | 'p2'; name: string }>;
++  onChange: (owner: OwnerId) => void;
++}) {
++  const { t } = useTranslation();
++  const options: Array<{ id: OwnerId; label: string }> = [
++    ...people.map(p => ({ id: p.id, label: p.name })),
++    { id: 'shared', label: t('Shared') },
++  ];
++  return (
++    <div
++      role="radiogroup"
++      style={{
++        display: 'grid',
++        gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`,
++        gap: 4,
++        padding: 3,
++        borderRadius: 12,
++        background: theme.tableBorder,
++      }}
++    >
++      {options.map(option => {
++        const selected = value === option.id;
++        return (
++          <button
++            key={option.id}
++            type="button"
++            role="radio"
++            aria-checked={selected}
++            onClick={() => onChange(option.id)}
++            style={{
++              all: 'unset',
++              minHeight: 36,
++              borderRadius: 9,
++              display: 'flex',
++              alignItems: 'center',
++              justifyContent: 'center',
++              gap: 6,
++              fontSize: 14,
++              fontWeight: 600,
++              cursor: 'pointer',
++              background: selected ? theme.cardBackground : 'transparent',
++              color: theme.pageText,
++              boxShadow: selected ? '0 1px 3px rgba(0,0,0,0.15)' : 'none',
++              overflow: 'hidden',
++            }}
++          >
++            <span
++              aria-hidden="true"
++              style={{
++                width: 8,
++                height: 8,
++                borderRadius: 4,
++                flexShrink: 0,
++                background: OWNER_COLORS[option.id],
++              }}
++            />
++            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
++              {option.label}
++            </span>
++          </button>
++        );
++      })}
++    </div>
++  );
++}
+diff --git a/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx b/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
+index 9dfbadf..1f340a9 100644
+--- a/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
++++ b/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
+@@ -12,6 +12,7 @@ import { budgetBoundsQueries } from '#budget';
+ import { prewarmMonth } from '#components/budget/util';
+ import { MOBILE_NAV_HEIGHT } from '#components/mobile/MobileNavTabs';
+ import { Page } from '#components/Page';
++import { useAccounts } from '#hooks/useAccounts';
+ import { useCategories } from '#hooks/useCategories';
+ import { useFormat } from '#hooks/useFormat';
+ import { useLocale } from '#hooks/useLocale';
+@@ -22,6 +23,29 @@ import { useSpreadsheet } from '#hooks/useSpreadsheet';
+ import { useSyncedPref } from '#hooks/useSyncedPref';
+ import type { SheetFields } from '#spreadsheet';
+ 
++import { Avatars, PeopleSetup } from './PeopleSetup';
++import {
++  OWNER_COLORS,
++  OWNER_ORDER,
++  useAccountOwners,
++  usePeople,
++  useSpendingByOwner,
++} from './people';
++import type { OwnerKey } from './people';
++
++type Split = Partial<Record<OwnerKey, number>>;
++
++function segmentsOf(split: Split | undefined) {
++  // Nothing assigned yet: keep the plain status color instead of all-gray.
++  if (!OWNER_ORDER.some(o => o !== 'unassigned' && (split?.[o] ?? 0) > 0)) {
++    return [];
++  }
++  return OWNER_ORDER.filter(o => (split?.[o] ?? 0) > 0).map(o => ({
++    color: OWNER_COLORS[o],
++    value: split?.[o] ?? 0,
++  }));
++}
++
+ // Upside's home screen: one big "money left this month" answer, then a card
+ // per category with its limit, what's left and the 3-month average.
+ // Works on both budget types; Upside is meant to run on "tracking".
+@@ -94,6 +118,11 @@ export function UpsideBudgetPage() {
+   const month = monthUtils.currentMonth();
+   const { months: previous } = usePreviousMonths(month);
+   const { data: { grouped: groups } = { grouped: [] } } = useCategories();
++  const { data: accounts = [] } = useAccounts();
++  const { people, isSetUp, setNames, nameOf } = usePeople();
++  const { ownerOf } = useAccountOwners();
++  const spending = useSpendingByOwner(month, accounts, ownerOf);
++  const [isEditingPeople, setIsEditingPeople] = useState(false);
+ 
+   useEffect(() => {
+     for (const m of [month, ...previous]) {
+@@ -155,6 +184,10 @@ export function UpsideBudgetPage() {
+                 {t('Budget')}
+               </h1>
+             </div>
++            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
++            {isSetUp && (
++              <Avatars people={people} onPress={() => setIsEditingPeople(true)} />
++            )}
+             <Link
+               to="/budget/limits"
+               style={{
+@@ -168,9 +201,29 @@ export function UpsideBudgetPage() {
+             >
+               {t('Edit limits')}
+             </Link>
++            </div>
+           </header>
+ 
+-          <MonthSummary month={month} />
++          {(!isSetUp || isEditingPeople) && (
++            <PeopleSetup
++              people={people}
++              onSave={(p1, p2) => {
++                setNames(p1, p2);
++                setIsEditingPeople(false);
++              }}
++              onCancel={isSetUp ? () => setIsEditingPeople(false) : undefined}
++            />
++          )}
++
++          <MonthSummary
++            month={month}
++            split={spending.total}
++            legend={isSetUp ? OWNER_ORDER.filter(o => (spending.total[o] ?? 0) > 0).map(o => ({
++              key: o,
++              name: nameOf(o),
++              amount: spending.total[o] ?? 0,
++            })) : []}
++          />
+ 
+           {expenseGroups.map(group => (
+             <section
+@@ -200,6 +253,7 @@ export function UpsideBudgetPage() {
+                     key={category.id}
+                     category={category}
+                     month={month}
++                    split={spending.byCategory[category.id]}
+                   />
+                 ))}
+               </div>
+@@ -211,7 +265,15 @@ export function UpsideBudgetPage() {
+   );
+ }
+ 
+-function MonthSummary({ month }: { month: string }) {
++function MonthSummary({
++  month,
++  split,
++  legend,
++}: {
++  month: string;
++  split: Split;
++  legend: Array<{ key: OwnerKey; name: string; amount: number }>;
++}) {
+   const { t } = useTranslation();
+   const format = useFormat();
+   const { months, valid } = usePreviousMonths(month);
+@@ -292,7 +354,38 @@ function MonthSummary({ month }: { month: string }) {
+         marker={avgPct}
+         markerColor="#ffffff"
+         markerLabel={t('avg')}
++        segments={isOver ? undefined : segmentsOf(split)}
+       />
++      {legend.length > 0 && (
++        <div
++          style={{
++            display: 'flex',
++            flexWrap: 'wrap',
++            justifyContent: 'space-between',
++            rowGap: 6,
++            columnGap: 12,
++            fontSize: 13,
++          }}
++        >
++          {legend.map(item => (
++            <span
++              key={item.key}
++              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
++            >
++              <span
++                style={{
++                  width: 8,
++                  height: 8,
++                  borderRadius: 4,
++                  background: OWNER_COLORS[item.key],
++                  boxShadow: '0 0 0 1px rgba(255,255,255,0.6)',
++                }}
++              />
++              {item.name} <b>{money(item.amount)}</b>
++            </span>
++          ))}
++        </div>
++      )}
+     </div>
+   );
+ }
+@@ -300,9 +393,11 @@ function MonthSummary({ month }: { month: string }) {
+ function CategoryCard({
+   category,
+   month,
++  split,
+ }: {
+   category: CategoryEntity;
+   month: string;
++  split: Split | undefined;
+ }) {
+   const { t } = useTranslation();
+   const format = useFormat();
+@@ -404,6 +499,7 @@ function CategoryCard({
+           height={6}
+           marker={avg != null ? Math.min(100, (avg / budgeted) * 100) : null}
+           markerColor={theme.pageText}
++          segments={segmentsOf(split)}
+         />
+       )}
+     </button>
+@@ -418,6 +514,7 @@ function Bar({
+   marker,
+   markerColor,
+   markerLabel,
++  segments,
+ }: {
+   percent: number;
+   fill: string;
+@@ -426,6 +523,8 @@ function Bar({
+   marker: number | null;
+   markerColor: string;
+   markerLabel?: string;
++  // Who spent it: the filled part is split by these, in proportion.
++  segments?: Array<{ color: string; value: number }>;
+ }) {
+   return (
+     <div
+@@ -463,8 +562,24 @@ function Bar({
+             height: '100%',
+             borderRadius: height / 2,
+             background: fill,
++            display: 'flex',
++            overflow: 'hidden',
+           }}
+-        />
++        >
++          {segments &&
++            segments.length > 0 &&
++            segments.map((segment, i) => (
++              <div
++                key={i}
++                style={{
++                  flexGrow: segment.value,
++                  flexBasis: 0,
++                  height: '100%',
++                  background: segment.color,
++                }}
++              />
++            ))}
++        </div>
+       </div>
+       {marker != null && (
+         <span
+diff --git a/packages/desktop-client/src/components/mobile/upside/people.ts b/packages/desktop-client/src/components/mobile/upside/people.ts
+new file mode 100644
+index 0000000..4a89c28
+--- /dev/null
++++ b/packages/desktop-client/src/components/mobile/upside/people.ts
+@@ -0,0 +1,173 @@
++import { useQuery } from '@tanstack/react-query';
++
++import * as monthUtils from '@actual-app/core/shared/months';
++import { q } from '@actual-app/core/shared/query';
++import type { AccountEntity } from '@actual-app/core/types/models';
++
++import { saveSyncedPrefs } from '#prefs/prefsSlice';
++import { aqlQuery } from '#queries/aqlQuery';
++import { useDispatch, useSelector } from '#redux';
++
++// Upside's "people": the two of you plus "Shared". Names and each account's
++// owner are stored as synced budget prefs, so whatever one phone sets shows
++// up on the other.
++
++export type PersonId = 'p1' | 'p2';
++export type OwnerId = PersonId | 'shared';
++export type OwnerKey = OwnerId | 'unassigned';
++
++export type Person = { id: PersonId; name: string };
++
++export const PEOPLE_PREF = 'upside-people';
++export function ownerPref(accountId: string) {
++  return `upside-owner-${accountId}` as const;
++}
++
++// Fixed per-person colors, readable in both light and dark mode.
++export const OWNER_COLORS: Record<OwnerKey, string> = {
++  p1: '#0a84ff',
++  p2: '#ff9f0a',
++  shared: '#8e8e93',
++  unassigned: '#c7c7cc',
++};
++export const OWNER_INK: Record<OwnerKey, string> = {
++  p1: '#ffffff',
++  p2: '#1a1100',
++  shared: '#ffffff',
++  unassigned: '#1c1c1e',
++};
++
++function parsePeople(raw: string | undefined): Person[] {
++  if (!raw) return [];
++  try {
++    const parsed = JSON.parse(raw) as Partial<Record<PersonId, string>>;
++    return (['p1', 'p2'] as const)
++      .map(id => ({ id, name: (parsed[id] ?? '').trim() }))
++      .filter(p => p.name.length > 0);
++  } catch {
++    return [];
++  }
++}
++
++export function initialOf(name: string) {
++  return (name.trim()[0] ?? '?').toUpperCase();
++}
++
++export function usePeople() {
++  const dispatch = useDispatch();
++  const raw = useSelector(state => state.prefs.synced[PEOPLE_PREF]);
++  const people = parsePeople(raw);
++
++  function setNames(p1: string, p2: string) {
++    void dispatch(
++      saveSyncedPrefs({
++        prefs: {
++          [PEOPLE_PREF]: JSON.stringify({ p1: p1.trim(), p2: p2.trim() }),
++        },
++      }),
++    );
++  }
++
++  function nameOf(owner: OwnerKey): string {
++    if (owner === 'shared') return 'Shared';
++    if (owner === 'unassigned') return 'Not set';
++    return people.find(p => p.id === owner)?.name ?? (owner === 'p1' ? 'Person 1' : 'Person 2');
++  }
++
++  return { people, isSetUp: people.length > 0, setNames, nameOf };
++}
++
++/**
++ * Guess an owner from the bank's account name: "Ron's Chase" belongs to
++ * Ron, "Joint Checking" is Shared. Returns null when there's no clue.
++ */
++export function guessOwner(
++  account: Pick<AccountEntity, 'name'> & { official_name?: string | null },
++  people: Person[],
++): OwnerId | null {
++  const text = `${account.name} ${account.official_name ?? ''}`.toLowerCase();
++  if (/\b(joint|shared|household|family|bills)\b/.test(text)) return 'shared';
++  for (const person of people) {
++    const first = person.name.toLowerCase().split(/\s+/)[0];
++    if (first && first.length >= 2 && new RegExp(`\\b${escapeRegExp(first)}`).test(text)) {
++      return person.id;
++    }
++  }
++  return null;
++}
++
++function escapeRegExp(s: string) {
++  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
++}
++
++export function useAccountOwners() {
++  const dispatch = useDispatch();
++  const synced = useSelector(state => state.prefs.synced);
++  const { people } = usePeople();
++
++  /** The saved owner if someone picked one, else a guess from the name. */
++  function ownerOf(account: AccountEntity): { owner: OwnerKey; isGuess: boolean } {
++    const saved = synced[ownerPref(account.id)];
++    if (saved === 'p1' || saved === 'p2' || saved === 'shared') {
++      return { owner: saved, isGuess: false };
++    }
++    const guess = guessOwner(account, people);
++    return guess ? { owner: guess, isGuess: true } : { owner: 'unassigned', isGuess: false };
++  }
++
++  function setOwner(accountId: string, owner: OwnerId) {
++    void dispatch(saveSyncedPrefs({ prefs: { [ownerPref(accountId)]: owner } }));
++  }
++
++  return { ownerOf, setOwner };
++}
++
++export type SpendingByOwner = Record<string, Partial<Record<OwnerKey, number>>>;
++
++/**
++ * This month's spending per category, split by who owns the account it came
++ * from. Amounts are positive cents (refunds reduce them).
++ */
++export function useSpendingByOwner(
++  month: string,
++  accounts: AccountEntity[],
++  ownerOf: (a: AccountEntity) => { owner: OwnerKey },
++) {
++  const { data } = useQuery({
++    queryKey: ['upside', 'spending-by-account', month],
++    queryFn: async () => {
++      const { data: rows } = await aqlQuery(
++        q('transactions')
++          .filter({
++            date: {
++              $gte: monthUtils.firstDayOfMonth(month),
++              $lte: monthUtils.lastDayOfMonth(month),
++            },
++            category: { $ne: null },
++          })
++          .options({ splits: 'inline' })
++          .groupBy(['category', 'account'])
++          .select(['category', 'account', { amount: { $sum: '$amount' } }]),
++      );
++      return rows as Array<{ category: string; account: string; amount: number }>;
++    },
++    refetchOnMount: 'always',
++    refetchOnWindowFocus: true,
++  });
++
++  const byId = new Map(accounts.map(a => [a.id, a]));
++  const result: SpendingByOwner = {};
++  const total: Partial<Record<OwnerKey, number>> = {};
++  for (const row of data ?? []) {
++    const account = byId.get(row.account);
++    if (!account || account.offbudget === 1) continue;
++    const owner = ownerOf(account).owner;
++    const spent = -row.amount;
++    const forCategory = (result[row.category] ??= {});
++    forCategory[owner] = (forCategory[owner] ?? 0) + spent;
++    total[owner] = (total[owner] ?? 0) + spent;
++  }
++  return { byCategory: result, total };
++}
++
++export const OWNER_ORDER: OwnerKey[] = ['p1', 'p2', 'shared', 'unassigned'];
+diff --git a/packages/desktop-client/src/components/responsive/narrow.ts b/packages/desktop-client/src/components/responsive/narrow.ts
+index cae6af5..e1dab6b 100644
+--- a/packages/desktop-client/src/components/responsive/narrow.ts
++++ b/packages/desktop-client/src/components/responsive/narrow.ts
+@@ -1,7 +1,7 @@
+ export { UpsideBudgetPage as Budget } from '#components/mobile/upside/UpsideBudgetPage';
+ export { BudgetPage as BudgetLimits } from '#components/mobile/budget/BudgetPage';
+ 
+-export { AccountsPage as Accounts } from '#components/mobile/accounts/AccountsPage';
++export { UpsideAccountsPage as Accounts } from '#components/mobile/upside/UpsideAccountsPage';
+ export { AccountPage as Account } from '#components/mobile/accounts/AccountPage';
+ 
+ export { MobileRulesPage as Rules } from '#components/mobile/rules/MobileRulesPage';
+diff --git a/packages/loot-core/src/types/prefs.ts b/packages/loot-core/src/types/prefs.ts
+index 040bd68..114d2db 100644
+--- a/packages/loot-core/src/types/prefs.ts
++++ b/packages/loot-core/src/types/prefs.ts
+@@ -20,6 +20,9 @@ export type FeatureFlag =
+ export type SyncedPrefs = Partial<
+   Record<
+     | 'budgetType'
++    // Upside: the two people's names (JSON) and each account's owner.
++    | 'upside-people'
++    | `upside-owner-${string}`
+     | 'upcomingScheduledTransactionLength'
+     | 'firstDayOfWeekIdx'
+     | 'dateFormat'

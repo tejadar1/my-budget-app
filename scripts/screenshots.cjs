@@ -70,30 +70,66 @@ async function run(colorScheme) {
     if (await toTracking.isVisible({ timeout: 5000 }).catch(() => false)) await toTracking.click();
   });
 
+  const scrollDown = async () => {
+    await page.evaluate(() => {
+      for (const el of document.querySelectorAll('*')) {
+        const style = getComputedStyle(el);
+        if (el.scrollHeight > el.clientHeight + 50 && /(auto|scroll)/.test(style.overflowY)) {
+          el.scrollTop = 650;
+        }
+      }
+    });
+  };
+
+  await step('names', async () => {
+    await tab(page, 'Budget');
+    await shoot(page, `${colorScheme}-0-names-setup`);
+    await page.getByLabel('Your name').fill('Ron');
+    await page.getByLabel('Partner’s name').fill('Ana');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+  });
+
+  await step('accounts-unclaimed', async () => {
+    await tab(page, 'Accounts');
+    await shoot(page, `${colorScheme}-1-accounts-whose`);
+  });
+
+  await step('assign-owners', async () => {
+    const picks = ['Ron', 'Ana', 'Shared'];
+    for (let i = 0; i < 12; i++) {
+      const region = page.getByRole('region', { name: 'Whose accounts are these?' });
+      if (!(await region.isVisible().catch(() => false))) break;
+      const group = region.getByRole('radiogroup').first();
+      if (!(await group.isVisible().catch(() => false))) break;
+      await group.getByRole('radio', { name: picks[i % picks.length] }).click();
+      await page.waitForTimeout(400);
+    }
+    await shoot(page, `${colorScheme}-2-accounts`);
+    await scrollDown();
+    await shoot(page, `${colorScheme}-3-accounts-scrolled`);
+  });
+
   await step('budget', async () => {
     await tab(page, 'Budget');
-    await shoot(page, `${colorScheme}-1-budget`);
+    await page.waitForTimeout(1500);
+    await shoot(page, `${colorScheme}-4-budget`);
   });
   await step('budget-scrolled', async () => {
-    await page.mouse.wheel(0, 700);
-    await shoot(page, `${colorScheme}-2-budget-scrolled`);
+    await scrollDown();
+    await shoot(page, `${colorScheme}-5-budget-scrolled`);
   });
   await step('limits', async () => {
     await tab(page, 'Budget');
     await page.getByRole('link', { name: /Edit limits/i }).first().click();
-    await shoot(page, `${colorScheme}-3-limits`);
-  });
-  await step('accounts', async () => {
-    await tab(page, 'Accounts');
-    await shoot(page, `${colorScheme}-4-accounts`);
+    await shoot(page, `${colorScheme}-6-limits`);
   });
   await step('reports', async () => {
     await tab(page, 'Reports');
-    await shoot(page, `${colorScheme}-5-reports`);
+    await shoot(page, `${colorScheme}-7-reports`);
   });
   await step('settings', async () => {
     await tab(page, 'Settings');
-    await shoot(page, `${colorScheme}-6-settings`);
+    await shoot(page, `${colorScheme}-8-settings`);
   });
 
   await browser.close();
