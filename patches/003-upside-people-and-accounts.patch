@@ -657,7 +657,7 @@ index 0000000..9f95c3a
 +  );
 +}
 diff --git a/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx b/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
-index 9dfbadf..1f340a9 100644
+index 9dfbadf..99c5eeb 100644
 --- a/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
 +++ b/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
 @@ -12,6 +12,7 @@ import { budgetBoundsQueries } from '#budget';
@@ -698,19 +698,24 @@ index 9dfbadf..1f340a9 100644
  // Upside's home screen: one big "money left this month" answer, then a card
  // per category with its limit, what's left and the 3-month average.
  // Works on both budget types; Upside is meant to run on "tracking".
-@@ -94,6 +118,11 @@ export function UpsideBudgetPage() {
+@@ -94,6 +118,16 @@ export function UpsideBudgetPage() {
    const month = monthUtils.currentMonth();
    const { months: previous } = usePreviousMonths(month);
    const { data: { grouped: groups } = { grouped: [] } } = useCategories();
 +  const { data: accounts = [] } = useAccounts();
 +  const { people, isSetUp, setNames, nameOf } = usePeople();
 +  const { ownerOf } = useAccountOwners();
-+  const spending = useSpendingByOwner(month, accounts, ownerOf);
++  const expenseCategoryIds = new Set(
++    groups
++      .filter(g => !g.is_income)
++      .flatMap(g => (g.categories ?? []).map(c => c.id)),
++  );
++  const spending = useSpendingByOwner(month, accounts, ownerOf, expenseCategoryIds);
 +  const [isEditingPeople, setIsEditingPeople] = useState(false);
  
    useEffect(() => {
      for (const m of [month, ...previous]) {
-@@ -155,6 +184,10 @@ export function UpsideBudgetPage() {
+@@ -155,6 +189,10 @@ export function UpsideBudgetPage() {
                  {t('Budget')}
                </h1>
              </div>
@@ -721,7 +726,7 @@ index 9dfbadf..1f340a9 100644
              <Link
                to="/budget/limits"
                style={{
-@@ -168,9 +201,29 @@ export function UpsideBudgetPage() {
+@@ -168,9 +206,29 @@ export function UpsideBudgetPage() {
              >
                {t('Edit limits')}
              </Link>
@@ -752,7 +757,7 @@ index 9dfbadf..1f340a9 100644
  
            {expenseGroups.map(group => (
              <section
-@@ -200,6 +253,7 @@ export function UpsideBudgetPage() {
+@@ -200,6 +258,7 @@ export function UpsideBudgetPage() {
                      key={category.id}
                      category={category}
                      month={month}
@@ -760,7 +765,7 @@ index 9dfbadf..1f340a9 100644
                    />
                  ))}
                </div>
-@@ -211,7 +265,15 @@ export function UpsideBudgetPage() {
+@@ -211,7 +270,15 @@ export function UpsideBudgetPage() {
    );
  }
  
@@ -777,7 +782,7 @@ index 9dfbadf..1f340a9 100644
    const { t } = useTranslation();
    const format = useFormat();
    const { months, valid } = usePreviousMonths(month);
-@@ -292,7 +354,38 @@ function MonthSummary({ month }: { month: string }) {
+@@ -292,7 +359,38 @@ function MonthSummary({ month }: { month: string }) {
          marker={avgPct}
          markerColor="#ffffff"
          markerLabel={t('avg')}
@@ -816,7 +821,7 @@ index 9dfbadf..1f340a9 100644
      </div>
    );
  }
-@@ -300,9 +393,11 @@ function MonthSummary({ month }: { month: string }) {
+@@ -300,9 +398,11 @@ function MonthSummary({ month }: { month: string }) {
  function CategoryCard({
    category,
    month,
@@ -828,7 +833,7 @@ index 9dfbadf..1f340a9 100644
  }) {
    const { t } = useTranslation();
    const format = useFormat();
-@@ -404,6 +499,7 @@ function CategoryCard({
+@@ -404,6 +504,7 @@ function CategoryCard({
            height={6}
            marker={avg != null ? Math.min(100, (avg / budgeted) * 100) : null}
            markerColor={theme.pageText}
@@ -836,7 +841,7 @@ index 9dfbadf..1f340a9 100644
          />
        )}
      </button>
-@@ -418,6 +514,7 @@ function Bar({
+@@ -418,6 +519,7 @@ function Bar({
    marker,
    markerColor,
    markerLabel,
@@ -844,7 +849,7 @@ index 9dfbadf..1f340a9 100644
  }: {
    percent: number;
    fill: string;
-@@ -426,6 +523,8 @@ function Bar({
+@@ -426,6 +528,8 @@ function Bar({
    marker: number | null;
    markerColor: string;
    markerLabel?: string;
@@ -853,7 +858,7 @@ index 9dfbadf..1f340a9 100644
  }) {
    return (
      <div
-@@ -463,8 +562,24 @@ function Bar({
+@@ -463,8 +567,24 @@ function Bar({
              height: '100%',
              borderRadius: height / 2,
              background: fill,
@@ -881,10 +886,10 @@ index 9dfbadf..1f340a9 100644
          <span
 diff --git a/packages/desktop-client/src/components/mobile/upside/people.ts b/packages/desktop-client/src/components/mobile/upside/people.ts
 new file mode 100644
-index 0000000..97c7ccc
+index 0000000..f5d6fec
 --- /dev/null
 +++ b/packages/desktop-client/src/components/mobile/upside/people.ts
-@@ -0,0 +1,178 @@
+@@ -0,0 +1,186 @@
 +import { useQuery } from '@tanstack/react-query';
 +
 +import * as monthUtils from '@actual-app/core/shared/months';
@@ -1024,6 +1029,9 @@ index 0000000..97c7ccc
 +  month: string,
 +  accounts: AccountEntity[],
 +  ownerOf: (a: AccountEntity) => { owner: OwnerKey },
++  // Only spending categories count; income (paychecks) would otherwise
++  // make the account owner's spending look negative.
++  expenseCategoryIds: Set<string>,
 +) {
 +  const { data } = useQuery({
 +    queryKey: ['upside', 'spending-by-account', month],
@@ -1053,11 +1061,16 @@ index 0000000..97c7ccc
 +  for (const row of data ?? []) {
 +    const account = byId.get(row.account);
 +    if (!account || account.offbudget === 1) continue;
++    if (!expenseCategoryIds.has(row.category)) continue;
 +    const owner = ownerOf(account).owner;
 +    const spent = -row.amount;
 +    const forCategory = (result[row.category] ??= {});
 +    forCategory[owner] = (forCategory[owner] ?? 0) + spent;
 +    total[owner] = (total[owner] ?? 0) + spent;
++  }
++  // Net refunds can push a person's total below zero; show zero instead.
++  for (const key of Object.keys(total) as OwnerKey[]) {
++    total[key] = Math.max(0, total[key] ?? 0);
 +  }
 +  return { byCategory: result, total };
 +}
