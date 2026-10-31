@@ -1,6 +1,6 @@
-# My Budget
+# Upside Budget
 
-A private iPhone budget app for the two of us, built on
+Smart money, together. A private iPhone budget app for the two of us, built on
 [Actual Budget](https://github.com/actualbudget/actual) (MIT license).
 Both of our bank accounts sync into one shared budget, so we can see where
 the money goes each month and who spent it.
@@ -12,7 +12,7 @@ This repo doesn't copy Actual's code. It pins one Actual commit in
 
 1. downloads that commit (`scripts/prepare.sh`)
 2. applies our changes from `patches/` and our files from `overrides/`
-3. renames the app and gives it our own bundle ID
+3. names the app "Upside" and gives it our own bundle ID
 4. builds the iPhone app on GitHub's Macs and uploads it to TestFlight
    (`.github/workflows/ios.yml`)
 

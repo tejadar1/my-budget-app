@@ -7,10 +7,10 @@ when the app changes) and lands in TestFlight on your iPhone.
 
 1. Go to [developer.apple.com → Identifiers](https://developer.apple.com/account/resources/identifiers/list)
    and add an **App ID** with the bundle ID from `app.config`
-   (`com.tejadar1.mybudget`). No extra capabilities are needed.
+   (`com.tejadar1.upside`). No extra capabilities are needed.
 2. Go to [App Store Connect → Apps](https://appstoreconnect.apple.com/apps),
-   click **+ → New App**, platform iOS, name "My Budget" (any unused name),
-   and pick that bundle ID. The SKU can be anything, like `mybudget`.
+   click **+ → New App**, platform iOS, name **Upside Budget**,
+   and pick that bundle ID. The SKU can be anything, like `upside`.
 
 The app stays private: it's only installable through TestFlight by people
 you invite. Nothing is submitted to the public App Store.
@@ -52,7 +52,7 @@ Optional, only if a build fails at signing:
 
 **Actions → Build iPhone app → Run workflow.** A build takes roughly
 20–40 minutes. When it's green, open **TestFlight** on your iPhone (install
-it from the App Store if needed) and install "My Budget". To give your wife
+it from the App Store if needed) and install **Upside**. To give your wife
 the app too, add her under App Store Connect → your app → TestFlight →
 Internal Testing.
 
