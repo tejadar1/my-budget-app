@@ -293,16 +293,16 @@ index 9b56af8..0bb799e 100644
        variant="bare"
 diff --git a/packages/desktop-client/src/components/mobile/upside/BankConnectionCard.tsx b/packages/desktop-client/src/components/mobile/upside/BankConnectionCard.tsx
 new file mode 100644
-index 0000000..dd55011
+index 0000000..f009dee
 --- /dev/null
 +++ b/packages/desktop-client/src/components/mobile/upside/BankConnectionCard.tsx
-@@ -0,0 +1,265 @@
+@@ -0,0 +1,191 @@
 +import type { ReactNode } from 'react';
 +import { useTranslation } from 'react-i18next';
-+import { Link } from 'react-router';
 +
 +import { theme } from '@actual-app/components/theme';
 +
++import { SetupChecklist } from './SetupChecklist';
 +import type { useBankConnection } from './useBankConnection';
 +
 +type Bank = ReturnType<typeof useBankConnection>;
@@ -318,41 +318,9 @@ index 0000000..dd55011
 +    return null;
 +  }
 +
-+  if (bank.state === 'needs-server') {
-+    return (
-+      <Card
-+        title={t('Turn on bank sync')}
-+        body={t(
-+          'Bank sync runs through your Upside server. Connect the app to your server first, then come back here.',
-+        )}
-+      >
-+        <Link to="/settings" style={linkButtonStyle(true)}>
-+          {t('Open Settings')}
-+        </Link>
-+      </Card>
-+    );
-+  }
-+
-+  if (bank.state === 'needs-token') {
-+    return (
-+      <Card
-+        title={t('Connect your banks')}
-+        body={t(
-+          'Upside uses SimpleFIN to read your banks and cards. Both of you can link your banks there; one connection covers everything.',
-+        )}
-+      >
-+        <Step number={1} text={t('Link your banks at SimpleFIN, then copy a setup token.')}>
-+          <button type="button" onClick={bank.openSimpleFin} style={buttonStyle(false)}>
-+            {t('Open SimpleFIN')}
-+          </button>
-+        </Step>
-+        <Step number={2} text={t('Paste the token. Every account is added for you.')}>
-+          <button type="button" onClick={bank.connect} style={buttonStyle(true)}>
-+            {t('Paste setup token')}
-+          </button>
-+        </Step>
-+      </Card>
-+    );
++  // Not connected yet: the setup checklist walks through server, then banks.
++  if (bank.state === 'needs-server' || bank.state === 'needs-token') {
++    return <SetupChecklist bank={bank} canHide={false} />;
 +  }
 +
 +  // Connected.
@@ -489,44 +457,6 @@ index 0000000..dd55011
 +  );
 +}
 +
-+function Step({
-+  number,
-+  text,
-+  children,
-+}: {
-+  number: number;
-+  text: string;
-+  children: ReactNode;
-+}) {
-+  return (
-+    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-+      <span
-+        aria-hidden="true"
-+        style={{
-+          width: 26,
-+          height: 26,
-+          flexShrink: 0,
-+          borderRadius: 13,
-+          background: theme.pageTextPositive,
-+          color: theme.cardBackground,
-+          display: 'flex',
-+          alignItems: 'center',
-+          justifyContent: 'center',
-+          fontSize: 14,
-+          fontWeight: 800,
-+          marginTop: 2,
-+        }}
-+      >
-+        {number}
-+      </span>
-+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-+        <span style={{ fontSize: 15, color: theme.pageText }}>{text}</span>
-+        {children}
-+      </div>
-+    </div>
-+  );
-+}
-+
 +function buttonStyle(primary: boolean) {
 +  return {
 +    all: 'unset',
@@ -545,10 +475,6 @@ index 0000000..dd55011
 +  } as const;
 +}
 +
-+function linkButtonStyle(primary: boolean) {
-+  return { ...buttonStyle(primary), textDecoration: 'none' };
-+}
-+
 +const pillStyle = {
 +  all: 'unset',
 +  minHeight: 40,
@@ -562,6 +488,329 @@ index 0000000..dd55011
 +  alignItems: 'center',
 +  cursor: 'pointer',
 +} as const;
+diff --git a/packages/desktop-client/src/components/mobile/upside/SetupChecklist.tsx b/packages/desktop-client/src/components/mobile/upside/SetupChecklist.tsx
+new file mode 100644
+index 0000000..a88a2fe
+--- /dev/null
++++ b/packages/desktop-client/src/components/mobile/upside/SetupChecklist.tsx
+@@ -0,0 +1,317 @@
++import { useState } from 'react';
++import type { ReactNode } from 'react';
++import { useTranslation } from 'react-i18next';
++
++import { theme } from '@actual-app/components/theme';
++
++import { closeBudget } from '#budgetfiles/budgetfilesSlice';
++import { useAccounts } from '#hooks/useAccounts';
++import { useNavigate } from '#hooks/useNavigate';
++import { useDispatch } from '#redux';
++
++import { useAccountOwners, usePeople } from './people';
++import type { useBankConnection } from './useBankConnection';
++
++// "Set up Upside": the three things that have to happen, in order, before
++// the app shows real numbers. Each step opens exactly what's needed next
++// and ticks itself off once it's done.
++
++export const PIKAPODS_URL = 'https://www.pikapods.com/pods?run=actual';
++const HIDDEN_KEY = 'upside-setup-hidden';
++
++type Bank = ReturnType<typeof useBankConnection>;
++type StepId = 'server' | 'banks' | 'people';
++
++export function readSetupHidden() {
++  try {
++    return window.localStorage.getItem(HIDDEN_KEY) === '1';
++  } catch {
++    return false;
++  }
++}
++
++export function useSetupProgress(bank: Bank) {
++  const { isSetUp } = usePeople();
++  const { ownerOf } = useAccountOwners();
++  const { data: accounts = [] } = useAccounts();
++  const open = accounts.filter(a => a.closed === 0);
++
++  const done: Record<StepId, boolean> = {
++    server: bank.state !== 'needs-server' && bank.state !== 'loading',
++    banks: bank.state === 'connected' && bank.hasLinkedAccounts,
++    people:
++      isSetUp &&
++      open.length > 0 &&
++      open.every(a => ownerOf(a).owner !== 'unassigned'),
++  };
++  const order: StepId[] = ['server', 'banks', 'people'];
++  const current = order.find(s => !done[s]) ?? null;
++  const count = order.filter(s => done[s]).length;
++  return { done, current, count, isComplete: current === null };
++}
++
++export function SetupChecklist({
++  bank,
++  canHide = true,
++  onHide,
++}: {
++  bank: Bank;
++  // On Accounts the checklist is the way to connect, so it can't be hidden.
++  canHide?: boolean;
++  onHide?: () => void;
++}) {
++  const { t } = useTranslation();
++  const dispatch = useDispatch();
++  const navigate = useNavigate();
++  const { done, current, count, isComplete } = useSetupProgress(bank);
++  const { isSetUp: hasNames } = usePeople();
++  const [isHidden, setIsHidden] = useState(readSetupHidden);
++
++  if (isComplete || (canHide && isHidden) || bank.state === 'loading') {
++    return null;
++  }
++
++  function hide() {
++    try {
++      window.localStorage.setItem(HIDDEN_KEY, '1');
++    } catch {
++      // Private mode: just hide for now.
++    }
++    setIsHidden(true);
++    onHide?.();
++  }
++
++  async function enterServer() {
++    await dispatch(closeBudget());
++    void navigate('/config-server');
++  }
++
++  return (
++    <section
++      aria-label={t('Set up Upside')}
++      style={{
++        borderRadius: 18,
++        background: theme.cardBackground,
++        padding: 18,
++        display: 'flex',
++        flexDirection: 'column',
++        gap: 14,
++      }}
++    >
++      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
++        <span style={{ fontSize: 20, fontWeight: 800, color: theme.pageText }}>
++          {t('Set up Upside')}
++        </span>
++        <span style={{ fontSize: 13, color: theme.pageTextSubdued }}>
++          {t('{{count}} of 3 done', { count })}
++        </span>
++      </div>
++
++      <Step
++        number={1}
++        title={t('Your Upside server')}
++        isDone={done.server}
++        isCurrent={current === 'server'}
++        summary={t('Keeps your budget in sync between both phones.')}
++      >
++        <Detail>
++          {bank.state === 'needs-server'
++            ? t(
++                'Create a server on PikaPods (about $2 a month), then come back and enter its address.',
++              )
++            : t('Can’t reach your server right now.')}
++        </Detail>
++        <Buttons>
++          <ActionButton onPress={() => window.Actual.openURLInBrowser(PIKAPODS_URL)}>
++            {t('Create on PikaPods')}
++          </ActionButton>
++          <ActionButton primary onPress={() => void enterServer()}>
++            {t('Enter server address')}
++          </ActionButton>
++        </Buttons>
++      </Step>
++
++      <Step
++        number={2}
++        title={t('Your banks')}
++        isDone={done.banks}
++        isCurrent={current === 'banks'}
++        summary={t('One SimpleFIN connection covers both of your banks.')}
++      >
++        <Detail>
++          {t(
++            'At SimpleFIN, sign up, link each bank and card (either of you can add yours), then create a setup token and copy it.',
++          )}
++        </Detail>
++        <Buttons>
++          <ActionButton onPress={bank.openSimpleFin}>{t('Open SimpleFIN')}</ActionButton>
++          <ActionButton primary onPress={bank.connect}>
++            {bank.state === 'connected' ? t('Add my accounts') : t('Paste setup token')}
++          </ActionButton>
++        </Buttons>
++      </Step>
++
++      <Step
++        number={3}
++        title={t('Who’s who')}
++        isDone={done.people}
++        isCurrent={current === 'people'}
++        summary={t('Your names, and whose each account is.')}
++      >
++        <Detail>
++          {hasNames
++            ? t('Tap whose each account is on the Accounts tab.')
++            : t('Type both of your names on the Budget tab, then tap whose each account is.')}
++        </Detail>
++        <Buttons>
++          <ActionButton
++            primary
++            onPress={() => void navigate(hasNames ? '/accounts' : '/budget')}
++          >
++            {hasNames ? t('Tag accounts') : t('Add our names')}
++          </ActionButton>
++        </Buttons>
++      </Step>
++
++      {canHide && (
++      <button
++        type="button"
++        onClick={hide}
++        style={{
++          all: 'unset',
++          alignSelf: 'center',
++          minHeight: 36,
++          fontSize: 13,
++          color: theme.pageTextSubdued,
++          cursor: 'pointer',
++        }}
++      >
++        {t('Set up later')}
++      </button>
++      )}
++    </section>
++  );
++}
++
++function Step({
++  number,
++  title,
++  summary,
++  isDone,
++  isCurrent,
++  children,
++}: {
++  number: number;
++  title: string;
++  summary: string;
++  isDone: boolean;
++  isCurrent: boolean;
++  children: ReactNode;
++}) {
++  return (
++    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
++      <span
++        aria-hidden="true"
++        style={{
++          width: 28,
++          height: 28,
++          flexShrink: 0,
++          borderRadius: 14,
++          display: 'flex',
++          alignItems: 'center',
++          justifyContent: 'center',
++          fontSize: 14,
++          fontWeight: 800,
++          background: isDone
++            ? theme.pageTextPositive
++            : isCurrent
++              ? theme.pageTextPositive
++              : theme.tableBorder,
++          color: isDone || isCurrent ? theme.cardBackground : theme.pageTextSubdued,
++        }}
++      >
++        {isDone ? (
++          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round">
++            <path d="M5 12l5 5L20 7" />
++          </svg>
++        ) : (
++          number
++        )}
++      </span>
++      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
++        <span
++          style={{
++            fontSize: 17,
++            fontWeight: 700,
++            color: isDone ? theme.pageTextSubdued : theme.pageText,
++            textDecoration: isDone ? 'line-through' : 'none',
++          }}
++        >
++          {title}
++        </span>
++        {!isCurrent && (
++          <span style={{ fontSize: 13, color: theme.pageTextSubdued }}>{summary}</span>
++        )}
++        {isCurrent && children}
++      </div>
++    </div>
++  );
++}
++
++function Detail({ children }: { children: ReactNode }) {
++  return (
++    <span style={{ fontSize: 15, color: theme.pageTextSubdued, lineHeight: 1.35 }}>
++      {children}
++    </span>
++  );
++}
++
++function Buttons({ children }: { children: ReactNode }) {
++  return (
++    <div
++      style={{
++        display: 'grid',
++        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
++        gap: 8,
++        marginTop: 6,
++      }}
++    >
++      {children}
++    </div>
++  );
++}
++
++function ActionButton({
++  primary = false,
++  onPress,
++  children,
++}: {
++  primary?: boolean;
++  onPress: () => void;
++  children: ReactNode;
++}) {
++  return (
++    <button
++      type="button"
++      onClick={onPress}
++      style={{
++        all: 'unset',
++        boxSizing: 'border-box',
++        minHeight: 44,
++        padding: '0 12px',
++        borderRadius: 12,
++        display: 'flex',
++        alignItems: 'center',
++        justifyContent: 'center',
++        textAlign: 'center',
++        fontSize: 15,
++        fontWeight: 700,
++        cursor: 'pointer',
++        background: primary ? theme.buttonPrimaryBackground : theme.tableBorder,
++        color: primary ? theme.buttonPrimaryText : theme.pageText,
++      }}
++    >
++      {children}
++    </button>
++  );
++}
 diff --git a/packages/desktop-client/src/components/mobile/upside/UpsideAccountsPage.tsx b/packages/desktop-client/src/components/mobile/upside/UpsideAccountsPage.tsx
 index 9f95c3a..0648252 100644
 --- a/packages/desktop-client/src/components/mobile/upside/UpsideAccountsPage.tsx
@@ -678,7 +927,7 @@ index 9f95c3a..0648252 100644
        </PullToRefresh>
      </Page>
 diff --git a/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx b/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
-index 99c5eeb..8b5e8b0 100644
+index 99c5eeb..5ea81e7 100644
 --- a/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
 +++ b/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
 @@ -8,7 +8,7 @@ import * as monthUtils from '@actual-app/core/shared/months';
@@ -690,15 +939,21 @@ index 99c5eeb..8b5e8b0 100644
  import { prewarmMonth } from '#components/budget/util';
  import { MOBILE_NAV_HEIGHT } from '#components/mobile/MobileNavTabs';
  import { Page } from '#components/Page';
-@@ -32,6 +32,7 @@ import {
+@@ -32,6 +32,13 @@ import {
    useSpendingByOwner,
  } from './people';
  import type { OwnerKey } from './people';
 +import { useCategoryActivity } from './activity';
++import {
++  SetupChecklist,
++  readSetupHidden,
++  useSetupProgress,
++} from './SetupChecklist';
++import { useBankConnection } from './useBankConnection';
  
  type Split = Partial<Record<OwnerKey, number>>;
  
-@@ -54,6 +55,10 @@ type Field = SheetFields<'tracking-budget'>;
+@@ -54,6 +61,10 @@ type Field = SheetFields<'tracking-budget'>;
  
  const AVERAGE_MONTHS = 3;
  
@@ -709,16 +964,35 @@ index 99c5eeb..8b5e8b0 100644
  // Brand constants that stay the same in light and dark mode, like the
  // mockups' green summary card.
  const HERO_GRADIENT = 'linear-gradient(150deg, #15803d 0%, #0e5a2b 55%, #052e16 100%)';
-@@ -128,6 +133,8 @@ export function UpsideBudgetPage() {
+@@ -128,6 +139,11 @@ export function UpsideBudgetPage() {
    );
    const spending = useSpendingByOwner(month, accounts, ownerOf, expenseCategoryIds);
    const [isEditingPeople, setIsEditingPeople] = useState(false);
++  const bank = useBankConnection();
++  const setup = useSetupProgress(bank);
++  const [isSetupHidden, setIsSetupHidden] = useState(readSetupHidden);
 +  const [showAll, setShowAll] = useState(false);
 +  const { activity, isLoaded: isActivityLoaded } = useCategoryActivity(month, AVERAGE_MONTHS);
  
    useEffect(() => {
      for (const m of [month, ...previous]) {
-@@ -230,46 +237,111 @@ export function UpsideBudgetPage() {
+@@ -209,7 +225,14 @@ export function UpsideBudgetPage() {
+             </div>
+           </header>
+ 
+-          {(!isSetUp || isEditingPeople) && (
++          <SetupChecklist bank={bank} onHide={() => setIsSetupHidden(true)} />
++
++          {/* Names come up once the server and banks are done (or when
++              editing), so setup shows one thing at a time. */}
++          {((!isSetUp &&
++            (isSetupHidden ||
++              (setup.current !== 'server' && setup.current !== 'banks'))) ||
++            isEditingPeople) && (
+             <PeopleSetup
+               people={people}
+               onSave={(p1, p2) => {
+@@ -230,46 +253,111 @@ export function UpsideBudgetPage() {
              })) : []}
            />
  
@@ -864,7 +1138,7 @@ index 99c5eeb..8b5e8b0 100644
  function MonthSummary({
    month,
    split,
-@@ -290,8 +362,10 @@ function MonthSummary({
+@@ -290,8 +378,10 @@ function MonthSummary({
    const prev2 = useMonthValue(monthUtils.sheetForMonth(months[2]), 'total-spent');
    const avg = average([prev0, prev1, prev2], valid);
  
@@ -876,7 +1150,7 @@ index 99c5eeb..8b5e8b0 100644
    const daysLeft = daysLeftInMonth();
    const usedPct = budgeted > 0 ? Math.min(100, (spent / budgeted) * 100) : 0;
    const avgPct =
-@@ -329,9 +403,11 @@ function MonthSummary({
+@@ -329,9 +419,11 @@ function MonthSummary({
              lineHeight: 1,
            }}
          >
@@ -891,7 +1165,7 @@ index 99c5eeb..8b5e8b0 100644
          </span>
          <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.86)' }}>
            {budgeted > 0
-@@ -343,7 +419,7 @@ function MonthSummary({
+@@ -343,7 +435,7 @@ function MonthSummary({
                      ? t('1 day to go')
                      : t('{{days}} days to go', { days: daysLeft }),
                })
@@ -900,7 +1174,7 @@ index 99c5eeb..8b5e8b0 100644
          </span>
          {avg != null && (
            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.86)' }}>
-@@ -351,16 +427,44 @@ function MonthSummary({
+@@ -351,16 +443,44 @@ function MonthSummary({
            </span>
          )}
        </div>

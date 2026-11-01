@@ -89,6 +89,16 @@ async function run(colorScheme) {
     });
   };
 
+  await step('setup', async () => {
+    await tab(page, 'Budget');
+    await shoot(page, `${colorScheme}-0a-setup-checklist`);
+    await go('/accounts');
+    await shoot(page, `${colorScheme}-0b-accounts-setup`);
+    await go('/budget');
+    // The demo has no server: skip setup to reach the names card.
+    await page.getByRole('button', { name: 'Set up later' }).click();
+  });
+
   await step('names', async () => {
     await tab(page, 'Budget');
     await shoot(page, `${colorScheme}-0-names-setup`);
