@@ -200,6 +200,47 @@ index 31a1e42..de79f27 100644
        </View>
      </View>
    );
+diff --git a/packages/desktop-client/src/components/mobile/MobileNavTabs.tsx b/packages/desktop-client/src/components/mobile/MobileNavTabs.tsx
+index ab4ea98..5c41fd9 100644
+--- a/packages/desktop-client/src/components/mobile/MobileNavTabs.tsx
++++ b/packages/desktop-client/src/components/mobile/MobileNavTabs.tsx
+@@ -6,9 +6,10 @@ import { useResponsive } from '@actual-app/components/hooks/useResponsive';
+ import { styles } from '@actual-app/components/styles';
+ import { theme } from '@actual-app/components/theme';
+ 
+-// Upside: an iOS-style tab bar (frosted, always visible, four tabs) in place
++// Upside: an iOS-style tab bar (frosted, always visible) in place
+ // of Actual's drag-up drawer. There is deliberately no "add transaction"
+-// tab: transactions come in from the banks.
++// tab: transactions come in from the banks. Who spent and Trips join
++// as their own tabs; Actual's reports aren't shown.
+ 
+ const BAR_HEIGHT = 50;
+ 
+@@ -27,7 +28,6 @@ export function MobileNavTabs() {
+   const tabs = [
+     { name: t('Budget'), path: '/budget', icon: <BudgetIcon /> },
+     { name: t('Accounts'), path: '/accounts', icon: <AccountsIcon /> },
+-    { name: t('Reports'), path: '/reports', icon: <ReportsIcon /> },
+     { name: t('Settings'), path: '/settings', icon: <SettingsIcon /> },
+   ];
+ 
+@@ -126,15 +126,6 @@ function AccountsIcon() {
+   );
+ }
+ 
+-function ReportsIcon() {
+-  return (
+-    <TabIcon>
+-      <path d="M3 17l6-6 4 4 8-8" />
+-      <path d="M15 7h6v6" />
+-    </TabIcon>
+-  );
+-}
+-
+ function SettingsIcon() {
+   return (
+     <TabIcon>
 diff --git a/packages/desktop-client/src/components/mobile/banksync/BankSyncAccountsListItem.tsx b/packages/desktop-client/src/components/mobile/banksync/BankSyncAccountsListItem.tsx
 index ce88ba8..943b6cc 100644
 --- a/packages/desktop-client/src/components/mobile/banksync/BankSyncAccountsListItem.tsx
@@ -638,10 +679,10 @@ index 9f95c3a..0648252 100644
      </Page>
 diff --git a/packages/desktop-client/src/components/mobile/upside/UpsideSettingsPage.tsx b/packages/desktop-client/src/components/mobile/upside/UpsideSettingsPage.tsx
 new file mode 100644
-index 0000000..5c2bb7c
+index 0000000..10ad273
 --- /dev/null
 +++ b/packages/desktop-client/src/components/mobile/upside/UpsideSettingsPage.tsx
-@@ -0,0 +1,599 @@
+@@ -0,0 +1,578 @@
 +import { useState } from 'react';
 +import type { ReactNode } from 'react';
 +import { useTranslation } from 'react-i18next';
@@ -834,11 +875,6 @@ index 0000000..5c2bb7c
 +            label={t('Rules')}
 +            to="/rules"
 +          />
-+          <Row
-+            icon={<Tile color="#ff3b30"><CalendarGlyph /></Tile>}
-+            label={t('Schedules')}
-+            to="/schedules"
-+          />
 +        </Group>
 +
 +        <Group title={t('Appearance')}>
@@ -866,11 +902,6 @@ index 0000000..5c2bb7c
 +            icon={<Tile color="#636366"><WrenchGlyph /></Tile>}
 +            label={t('Advanced')}
 +            to="/settings/advanced"
-+          />
-+          <Row
-+            icon={<Tile color="#636366"><FlaskGlyph /></Tile>}
-+            label={t('Experimental')}
-+            to="/settings/experimental"
 +          />
 +        </Group>
 +
@@ -1200,12 +1231,6 @@ index 0000000..5c2bb7c
 +    <path d="M4 7h16M4 12h10M4 17h6" />
 +  </Glyph>
 +);
-+const CalendarGlyph = () => (
-+  <Glyph>
-+    <rect x="3" y="5" width="18" height="16" rx="2" />
-+    <path d="M3 10h18M8 3v4M16 3v4" />
-+  </Glyph>
-+);
 +const GearGlyph = () => (
 +  <Glyph>
 +    <circle cx="12" cy="12" r="3" />
@@ -1215,11 +1240,6 @@ index 0000000..5c2bb7c
 +const WrenchGlyph = () => (
 +  <Glyph>
 +    <path d="M14.7 6.3a4 4 0 0 0 5 5L21 13l-8 8-4-4 8-8-1.3-1.3zM3 21l6-6" />
-+  </Glyph>
-+);
-+const FlaskGlyph = () => (
-+  <Glyph>
-+    <path d="M9 3h6M10 3v6L4 20h16L14 9V3" />
 +  </Glyph>
 +);
 +

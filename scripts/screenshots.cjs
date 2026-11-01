@@ -125,10 +125,6 @@ async function run(colorScheme) {
     await page.getByRole('link', { name: /Edit limits/i }).first().click();
     await shoot(page, `${colorScheme}-6-limits`);
   });
-  await step('reports', async () => {
-    await tab(page, 'Reports');
-    await shoot(page, `${colorScheme}-7-reports`);
-  });
   await step('settings', async () => {
     await tab(page, 'Settings');
     await shoot(page, `${colorScheme}-8-settings`);
