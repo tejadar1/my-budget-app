@@ -812,7 +812,7 @@ index 0000000..a88a2fe
 +  );
 +}
 diff --git a/packages/desktop-client/src/components/mobile/upside/UpsideAccountsPage.tsx b/packages/desktop-client/src/components/mobile/upside/UpsideAccountsPage.tsx
-index 9f95c3a..0648252 100644
+index 9f95c3a..0c11462 100644
 --- a/packages/desktop-client/src/components/mobile/upside/UpsideAccountsPage.tsx
 +++ b/packages/desktop-client/src/components/mobile/upside/UpsideAccountsPage.tsx
 @@ -5,7 +5,6 @@ import { Link, Navigate, useLocation } from 'react-router';
@@ -896,7 +896,17 @@ index 9f95c3a..0648252 100644
  
            {isSetUp && unclaimed.length > 0 && (
              <section
-@@ -195,28 +201,7 @@ export function UpsideAccountsPage() {
+@@ -165,7 +171,8 @@ export function UpsideAccountsPage() {
+             </section>
+           )}
+ 
+-          {!isSetUp && (
++          {/* Before banks are connected, the setup checklist covers names. */}
++          {!isSetUp && bank.state === 'connected' && (
+             <Link
+               to="/budget"
+               style={{
+@@ -195,28 +202,7 @@ export function UpsideAccountsPage() {
              ))}
            </div>
  
