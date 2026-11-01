@@ -45,6 +45,15 @@ async function run(colorScheme) {
     if (m.type() === 'error') note(`[${colorScheme}] console error: ${m.text()}`);
   });
 
+  // In-app navigation without a reload (React Router listens to popstate).
+  const go = async route => {
+    await page.evaluate(r => {
+      window.history.pushState({}, '', r);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, route);
+    await page.waitForTimeout(800);
+  };
+
   const step = async (label, fn) => {
     try {
       await fn();
@@ -64,11 +73,8 @@ async function run(colorScheme) {
 
   // Upside is built around the tracking budget (limits, see what's left).
   await step('tracking', async () => {
-    await tab(page, 'Settings');
-    const settings = page.getByTestId('settings');
-    const general = page.getByRole('navigation', { name: 'Settings' }).getByRole('link', { name: 'General', exact: true });
-    if (await general.isVisible().catch(() => false)) await general.click();
-    const toTracking = settings.getByRole('button', { name: /^Switch to tracking budgeting$/i });
+    await go('/settings/general');
+    const toTracking = page.getByTestId('settings').getByRole('button', { name: /^Switch to tracking budgeting$/i });
     if (await toTracking.isVisible({ timeout: 5000 }).catch(() => false)) await toTracking.click();
   });
 
@@ -130,25 +136,17 @@ async function run(colorScheme) {
     await shoot(page, `${colorScheme}-8-settings`);
   });
 
-  // In-app navigation without a reload (React Router listens to popstate).
-  const go = async route => {
-    await page.evaluate(r => {
-      window.history.pushState({}, '', r);
-      window.dispatchEvent(new PopStateEvent('popstate'));
-    }, route);
-    await page.waitForTimeout(800);
-  };
   const audit = async (name, fn) => step(`audit-${name}`, async () => {
     await fn();
     await shoot(page, `${colorScheme}-a-${name}`);
   });
 
   await audit('category', async () => {
-    await tab(page, 'Budget');
+    await go('/budget');
     await page.getByRole('button', { name: /^Food/ }).first().click();
   });
   await audit('account', async () => {
-    await tab(page, 'Accounts');
+    await go('/accounts');
     await page.getByRole('button', { name: /Bank of America/ }).first().click();
     await page.getByRole('link', { name: 'See transactions' }).first().click();
   });
