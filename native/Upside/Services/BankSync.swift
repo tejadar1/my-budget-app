@@ -75,24 +75,86 @@ enum BankSync {
             }
         }
         data.transactions.sort { $0.date > $1.date }
+        markTransfers(&data)
         store.data = data
     }
+
+    /// Payments between your own accounts aren't spending. Two signals:
+    /// - the same amount leaving one account and arriving in another within
+    ///   a few days (checking → credit card), and
+    /// - bank wording for card payments and transfers.
+    /// Only touches transactions you haven't categorized yourself.
+    static func markTransfers(_ data: inout BudgetData) {
+        let window: TimeInterval = 6 * 24 * 3600
+        let kinds = Dictionary(data.accounts.map { ($0.id, $0.kind) }, uniquingKeysWith: { a, _ in a })
+        let transferRules = Set(data.rules.filter { $0.categoryId == transferCategory }.map(\.payeeKey))
+
+        var matched = Set<String>()
+        let candidates = data.transactions.indices.filter {
+            !data.transactions[$0].isTransfer && data.transactions[$0].categoryId == nil
+        }
+        // 1. Matching pairs.
+        let incoming = candidates.filter { data.transactions[$0].amount > 0 }
+        for i in candidates where data.transactions[i].amount < 0 {
+            let out = data.transactions[i]
+            if let j = incoming.first(where: { j in
+                let inn = data.transactions[j]
+                return !matched.contains(inn.id) && inn.accountId != out.accountId
+                    && inn.amount == -out.amount
+                    && abs(inn.date.timeIntervalSince(out.date)) <= window
+            }) {
+                matched.insert(out.id)
+                matched.insert(data.transactions[j].id)
+            }
+        }
+        // 2. Wording, your "not spending" choices, and payments received on cards.
+        for i in candidates {
+            let t = data.transactions[i]
+            let isCardCredit = kinds[t.accountId] == .credit && t.amount > 0
+                && t.payee.lowercased().contains("pay")
+            if matched.contains(t.id) || looksLikeTransfer(t.payee) || isCardCredit
+                || transferRules.contains(BudgetStore.payeeKey(t.payee)) {
+                data.transactions[i].isTransfer = true
+            }
+        }
+    }
+
+    /// Rule target meaning "not spending".
+    static let transferCategory = "transfer"
 
     static func cents(_ amount: String) -> Cents {
         Int(((Double(amount) ?? 0) * 100).rounded())
     }
 
     /// Card payments and moves between your own accounts aren't spending.
+    /// Bills paid from checking ("VERIZON AUTOPAY", "DUKE ENERGY ONLINE
+    /// PAYMENT") are spending, so plain "autopay"/"payment" isn't enough:
+    /// it has to be a transfer, or a payment that names a card issuer.
     static func looksLikeTransfer(_ payee: String) -> Bool {
         let p = payee.lowercased()
-        return ["transfer", "payment thank you", "autopay", "online pymt", "credit card payment",
-                "zelle to ron", "zelle to ana", "venmo cashout", "ach pmt"].contains { p.contains($0) }
+        let always = [
+            "transfer", "xfer", "payment thank you", "payment - thank", "pymt thank",
+            "payment received", "credit card payment", "card payment", "cc payment",
+            "crcardpmt", "card pymt", "crd pmt", "card pmt", "epayment", "venmo cashout",
+        ]
+        if always.contains(where: { p.contains($0) }) { return true }
+        let paymentWords = ["payment", "pymt", "pmt", "autopay", "auto pay", "epay"]
+        let cardIssuers = [
+            "chase card", "chase credit", "robinhood", "american express", "amex", "citi card",
+            "citicard", "discover", "capital one", "apple card", "applecard", "gs bank",
+            "barclay", "synchrony", "bk of amer visa", "bank of america card", "wells fargo card",
+            "us bank card", "credit one", "card services",
+        ]
+        return paymentWords.contains(where: { p.contains($0) })
+            && cardIssuers.contains(where: { p.contains($0) })
     }
 
     /// Your rules first, then common stores.
     static func categorize(payee: String, amount: Cents, rules: [PayeeRule]) -> String? {
         let key = BudgetStore.payeeKey(payee)
-        if let rule = rules.first(where: { $0.payeeKey == key }) { return rule.categoryId }
+        if let rule = rules.first(where: { $0.payeeKey == key }) {
+            return rule.categoryId == transferCategory ? nil : rule.categoryId
+        }
         if amount > 0 {
             let p = payee.lowercased()
             return p.contains("payroll") || p.contains("salary") || p.contains("direct dep") ? "income" : nil

@@ -122,6 +122,14 @@ struct CategoryGroup: Identifiable {
     var id: String { name }
 }
 
+struct CategorySuggestion: Identifiable, Hashable {
+    var name: String
+    var group: String
+    var transactionIds: [String]
+    var example: String
+    var id: String { name }
+}
+
 /// Learned from you: "this payee always goes in this category".
 struct PayeeRule: Codable, Hashable {
     var payeeKey: String

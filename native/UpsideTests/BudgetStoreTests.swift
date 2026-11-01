@@ -109,3 +109,76 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.uncategorized.count, 3)
     }
 }
+
+final class TransferTests: XCTestCase {
+    private func t(_ id: String, _ account: String, _ day: Int, _ amount: Cents, _ payee: String) -> Transaction {
+        Transaction(id: id, accountId: account,
+                    date: Date(timeIntervalSince1970: 1_790_000_000 + Double(day) * 86_400),
+                    amount: amount, payee: payee, categoryId: nil)
+    }
+
+    func testCardPaymentsAreNotSpending() {
+        var data = BudgetData()
+        data.accounts = [
+            Account(id: "chk", name: "Checking", institution: "Chase", kind: .checking, balance: 0),
+            Account(id: "card", name: "Gold Card", institution: "Robinhood", kind: .credit, balance: 0),
+        ]
+        data.transactions = [
+            // Matching pair with bank-specific wording nobody could guess.
+            t("1", "chk", 0, -123_456, "ONLINE TRANSFER TO XXXX9921"),
+            t("2", "card", 2, 123_456, "PYMT RCVD"),
+            // Pair without any keywords at all: matched by amount and dates.
+            t("3", "chk", 10, -98_765, "WEB ID 0012345"),
+            t("4", "card", 11, 98_765, "THANKS"),
+            // Card payment wording.
+            t("5", "chk", 20, -50_000, "ROBINHOOD DES:CARD PYMT ID:123"),
+            // Bills paid from checking stay spending.
+            t("6", "chk", 21, -8_800, "VERIZON WIRELESS AUTOPAY"),
+            t("7", "chk", 22, -12_000, "DUKE ENERGY ONLINE PAYMENT"),
+            // A refund equal to a purchase weeks apart is not a pair.
+            t("8", "card", 40, -4_200, "TARGET"),
+            t("9", "chk", 80, 4_200, "TARGET REFUND"),
+        ]
+        BankSync.markTransfers(&data)
+        let transfers = Set(data.transactions.filter(\.isTransfer).map(\.id))
+        XCTAssertEqual(transfers, ["1", "2", "3", "4", "5"])
+    }
+
+    func testNotSpendingChoiceIsRemembered() {
+        var data = BudgetData()
+        data.accounts = [Account(id: "chk", name: "Checking", institution: "Chase", kind: .checking, balance: 0)]
+        data.transactions = [t("1", "chk", 0, -1_000, "ZELLE TO MOM"), t("2", "chk", 30, -2_000, "ZELLE TO MOM")]
+        let store = BudgetStore(data: data, isDemo: true)
+        store.categorize("1", as: BankSync.transferCategory)
+        XCTAssertTrue(store.data.transactions.allSatisfy(\.isTransfer))
+        XCTAssertTrue(store.uncategorized.isEmpty)
+    }
+}
+
+final class CategoryTests: XCTestCase {
+    func testSuggestionsAndCreatingCategories() {
+        var data = BudgetData()
+        data.accounts = [Account(id: "c", name: "Card", institution: "X", kind: .credit, balance: 0)]
+        let day: TimeInterval = 86_400
+        data.transactions = [
+            Transaction(id: "1", accountId: "c", date: Date(timeIntervalSince1970: 1_790_000_000), amount: -4_000, payee: "PLANET FITNESS #12", categoryId: nil),
+            Transaction(id: "2", accountId: "c", date: Date(timeIntervalSince1970: 1_790_000_000 + day), amount: -2_500, payee: "CHEWY.COM", categoryId: nil),
+            Transaction(id: "3", accountId: "c", date: Date(timeIntervalSince1970: 1_790_000_000 + 2 * day), amount: -1_000, payee: "LOCAL BAKERY", categoryId: nil),
+            Transaction(id: "4", accountId: "c", date: Date(timeIntervalSince1970: 1_790_000_000 + 3 * day), amount: -1_100, payee: "LOCAL BAKERY", categoryId: nil),
+            Transaction(id: "5", accountId: "c", date: Date(timeIntervalSince1970: 1_790_000_000 + 4 * day), amount: -1_200, payee: "LOCAL BAKERY", categoryId: nil),
+        ]
+        let store = BudgetStore(data: data, isDemo: true)
+        let names = Set(store.suggestedCategories.map(\.name))
+        XCTAssertEqual(names, ["Fitness", "Pets", "Local"])
+
+        let fitness = store.suggestedCategories.first { $0.name == "Fitness" }!
+        store.accept(fitness)
+        XCTAssertNotNil(store.data.categories.first { $0.name == "Fitness" })
+        XCTAssertEqual(store.uncategorized.count, 4)
+
+        let id = store.addCategory("Pets", group: "Everyday")
+        XCTAssertEqual(store.addCategory("pets", group: "Everyday"), id, "no duplicates")
+        store.hideCategory(id)
+        XCTAssertFalse(store.expenseCategories.contains { $0.id == id })
+    }
+}

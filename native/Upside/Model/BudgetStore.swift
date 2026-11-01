@@ -33,7 +33,9 @@ final class BudgetStore {
 
     static func load() -> BudgetStore {
         if let raw = try? Data(contentsOf: fileURL),
-           let data = try? JSONDecoder.upside.decode(BudgetData.self, from: raw) {
+           var data = try? JSONDecoder.upside.decode(BudgetData.self, from: raw) {
+            // Newer transfer detection also cleans up what's already here.
+            BankSync.markTransfers(&data)
             return BudgetStore(data: data)
         }
         return BudgetStore(data: BudgetData())
@@ -58,6 +60,11 @@ final class BudgetStore {
 
     func isInMonth(_ date: Date, _ month: Date) -> Bool {
         calendar.isDate(date, equalTo: month, toGranularity: .month)
+    }
+
+    /// The earliest month with any transactions (can't go back further).
+    var firstMonth: Date {
+        data.transactions.map(\.date).min().map(monthStart) ?? currentMonth
     }
 
     var daysLeftInMonth: Int {
@@ -202,19 +209,26 @@ final class BudgetStore {
     }
 
     /// Set a category and remember it for this payee from now on.
+    /// `as: BankSync.transferCategory` marks it "not spending".
     func categorize(_ transactionId: String, as categoryId: String, remember: Bool = true) {
         guard let i = data.transactions.firstIndex(where: { $0.id == transactionId }) else { return }
-        data.transactions[i].categoryId = categoryId
-        guard remember else { return }
-        let key = Self.payeeKey(data.transactions[i].payee)
-        data.rules.removeAll { $0.payeeKey == key }
-        data.rules.append(PayeeRule(payeeKey: key, categoryId: categoryId))
-        // Apply to every other uncategorized transaction from that payee.
-        for j in data.transactions.indices
-        where data.transactions[j].categoryId == nil
-            && Self.payeeKey(data.transactions[j].payee) == key {
-            data.transactions[j].categoryId = categoryId
+        var updated = data
+        let isTransfer = categoryId == BankSync.transferCategory
+        updated.transactions[i].categoryId = isTransfer ? nil : categoryId
+        updated.transactions[i].isTransfer = isTransfer
+        if remember {
+            let key = Self.payeeKey(updated.transactions[i].payee)
+            updated.rules.removeAll { $0.payeeKey == key }
+            updated.rules.append(PayeeRule(payeeKey: key, categoryId: categoryId))
+            // Apply to every other unsorted transaction from that payee.
+            for j in updated.transactions.indices
+            where updated.transactions[j].categoryId == nil && !updated.transactions[j].isTransfer
+                && Self.payeeKey(updated.transactions[j].payee) == key {
+                updated.transactions[j].categoryId = isTransfer ? nil : categoryId
+                updated.transactions[j].isTransfer = isTransfer
+            }
         }
+        data = updated
     }
 
     /// "KROGER #123 CINCINNATI OH" and "Kroger 456" both become "kroger".
@@ -224,6 +238,97 @@ final class BudgetStore {
             .filter { !$0.isEmpty && !$0.allSatisfy(\.isNumber) && $0.count > 1 }
         return words.prefix(2).joined(separator: " ")
     }
+
+    // MARK: Your own categories
+
+    /// Adds a category and returns its id.
+    @discardableResult
+    func addCategory(_ name: String, group: String) -> String {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        if let existing = data.categories.first(where: { $0.name.caseInsensitiveCompare(trimmed) == .orderedSame }) {
+            if existing.isHidden, let i = data.categories.firstIndex(where: { $0.id == existing.id }) {
+                data.categories[i].isHidden = false
+            }
+            return existing.id
+        }
+        let slug = trimmed.lowercased().components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .filter { !$0.isEmpty }.joined(separator: "-")
+        let id = "\(slug.isEmpty ? "category" : slug)-\(UUID().uuidString.prefix(4).lowercased())"
+        data.categories.append(Category(id: id, name: trimmed, group: group))
+        return id
+    }
+
+    func renameCategory(_ id: String, to name: String) {
+        guard let i = data.categories.firstIndex(where: { $0.id == id }) else { return }
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        if !trimmed.isEmpty { data.categories[i].name = trimmed }
+    }
+
+    /// Hidden categories keep their history but leave the budget.
+    func hideCategory(_ id: String) {
+        guard let i = data.categories.firstIndex(where: { $0.id == id }) else { return }
+        data.categories[i].isHidden = true
+    }
+
+    var groupNames: [String] {
+        var seen: [String] = []
+        for c in data.categories where !c.isIncome && !seen.contains(c.group) { seen.append(c.group) }
+        return seen
+    }
+
+    /// New categories worth creating, based on what's waiting to be sorted:
+    /// known kinds of spending you don't have a category for yet, and
+    /// stores you buy from often.
+    var suggestedCategories: [CategorySuggestion] {
+        let unsorted = uncategorized
+        guard !unsorted.isEmpty else { return [] }
+        let existing = Set(data.categories.filter { !$0.isHidden }.map { $0.name.lowercased() })
+        var result: [CategorySuggestion] = []
+        var used = Set<String>()
+
+        for (name, group, words) in Self.suggestionKinds where !existing.contains(name.lowercased()) {
+            let hits = unsorted.filter { t in
+                let p = t.payee.lowercased()
+                return !used.contains(t.id) && words.contains(where: { p.contains($0) })
+            }
+            if !hits.isEmpty {
+                hits.forEach { used.insert($0.id) }
+                result.append(CategorySuggestion(name: name, group: group,
+                                                 transactionIds: hits.map(\.id),
+                                                 example: hits[0].payee))
+            }
+        }
+
+        // A store you've bought from 3+ times that isn't sorted yet.
+        let byStore = Dictionary(grouping: unsorted.filter { !used.contains($0.id) }) { Self.payeeKey($0.payee) }
+        for (key, hits) in byStore where hits.count >= 3 && !key.isEmpty {
+            let name = key.split(separator: " ").first.map { $0.prefix(1).uppercased() + $0.dropFirst() } ?? key
+            if existing.contains(name.lowercased()) { continue }
+            result.append(CategorySuggestion(name: String(name), group: "Everyday",
+                                             transactionIds: hits.map(\.id), example: hits[0].payee))
+        }
+        return result.sorted { $0.transactionIds.count > $1.transactionIds.count }
+    }
+
+    /// Creates the suggested category and sorts its purchases into it.
+    func accept(_ suggestion: CategorySuggestion) {
+        let id = addCategory(suggestion.name, group: suggestion.group)
+        for transactionId in suggestion.transactionIds {
+            categorize(transactionId, as: id)
+        }
+    }
+
+    static let suggestionKinds: [(String, String, [String])] = [
+        ("Fitness", "Everyday", ["gym", "fitness", "peloton", "yoga", "crossfit", "orangetheory", "equinox", "ymca"]),
+        ("Pets", "Everyday", ["petco", "petsmart", "chewy", "vet ", "veterinary", "animal hosp", "rover"]),
+        ("Childcare", "Bills", ["daycare", "childcare", "kindercare", "preschool", "babysit", "nanny"]),
+        ("Education", "Everyday", ["tuition", "university", "college", "coursera", "udemy", "school"]),
+        ("Car", "Everyday", ["autozone", "jiffy", "car wash", "dmv", "tire", "auto parts", "valvoline", "service center"]),
+        ("Home", "Everyday", ["wayfair", "bed bath", "crate & barrel", "pottery barn", "west elm", "furniture"]),
+        ("Clothing", "Everyday", ["zara", "h&m", "old navy", "gap ", "uniqlo", "nike", "lululemon", "j.crew"]),
+        ("Giving", "Everyday", ["donation", "charity", "church", "red cross", "gofundme", "unicef"]),
+        ("Coffee", "Everyday", ["coffee", "blue bottle", "peet", "dutch bros", "tim hortons"]),
+    ]
 
     // MARK: Trips
 

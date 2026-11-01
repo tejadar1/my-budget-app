@@ -7,17 +7,26 @@ struct BudgetView: View {
     @State private var showLimits = false
     @State private var showPeople = false
     @State private var path = NavigationPath()
+    /// The month being looked at; nil means "this month" (follows the date).
+    @State private var pickedMonth: Date?
 
-    private var month: Date { store.currentMonth }
+    private var month: Date { pickedMonth ?? store.currentMonth }
+    private var isCurrentMonth: Bool { month == store.currentMonth }
 
     var body: some View {
         NavigationStack(path: $path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Text(month.formatted(.dateTime.month(.wide).year()).uppercased())
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .padding(.top, -8)
+                    MonthSwitcher(month: month,
+                                  canGoBack: month > store.firstMonth,
+                                  canGoForward: !isCurrentMonth,
+                                  isCurrent: isCurrentMonth) { offset in
+                        withAnimation(.snappy) {
+                            let next = store.month(offset, from: month)
+                            pickedMonth = next >= store.currentMonth ? nil : next
+                        }
+                    }
+                    .padding(.top, -8)
 
                     SetupCard()
 
@@ -63,7 +72,7 @@ struct BudgetView: View {
             }
             .navigationDestination(for: Route.self) { route in
                 switch route {
-                case .category(let id): CategoryDetailView(categoryId: id)
+                case .category(let id, let month): CategoryDetailView(categoryId: id, month: month)
                 case .review: ReviewView()
                 case .trip(let id): TripView(tripId: id)
                 }
@@ -76,7 +85,7 @@ struct BudgetView: View {
     private func openFromLaunchArgs() {
         guard path.isEmpty, let open = LaunchArgs.open else { return }
         switch open.kind {
-        case "category": path.append(Route.category(open.id))
+        case "category": path.append(Route.category(open.id, store.currentMonth))
         case "review": path.append(Route.review)
         case "trip": path.append(Route.trip(open.id))
         case "limits": showLimits = true
@@ -124,9 +133,50 @@ struct BudgetView: View {
 }
 
 enum Route: Hashable {
-    case category(String)
+    case category(String, Date)
     case review
     case trip(String)
+}
+
+// MARK: - Month switcher
+
+/// ‹ OCTOBER 2026 › — go back through past months.
+struct MonthSwitcher: View {
+    let month: Date
+    let canGoBack: Bool
+    let canGoForward: Bool
+    let isCurrent: Bool
+    let move: (Int) -> Void
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Button { move(-1) } label: {
+                Image(systemName: "chevron.left").frame(width: 32, height: 32)
+            }
+            .disabled(!canGoBack)
+            .accessibilityLabel("Previous month")
+
+            Text(month.formatted(.dateTime.month(.wide).year()).uppercased())
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .contentTransition(.numericText())
+
+            Button { move(1) } label: {
+                Image(systemName: "chevron.right").frame(width: 32, height: 32)
+            }
+            .disabled(!canGoForward)
+            .accessibilityLabel("Next month")
+
+            Spacer()
+
+            if !isCurrent {
+                Button("This month") { move(12 * 100) }
+                    .font(.footnote.weight(.semibold))
+            }
+        }
+        .font(.footnote.weight(.bold))
+        .padding(.leading, -8)
+    }
 }
 
 // MARK: - Summary
@@ -141,21 +191,25 @@ struct SummaryCard: View {
         let left = limit - spent
         let hasLimits = limit > 0
         let isOver = hasLimits && left < 0
+        let isPast = month < store.currentMonth
         let average = store.averageTotal(before: month)
         let byOwner = store.spentByOwner(in: month)
 
         VStack(alignment: .leading, spacing: 14) {
-            Text("THIS MONTH")
+            Text(isPast ? month.formatted(.dateTime.month(.wide)).uppercased() : "THIS MONTH")
                 .font(.footnote.weight(.bold))
                 .foregroundStyle(.white.opacity(0.82))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(!hasLimits ? "\(Money.short(spent)) spent"
-                     : isOver ? "\(Money.short(left)) over" : "\(Money.short(left)) left")
+                     : isOver ? "\(Money.short(left)) over"
+                     : isPast ? "\(Money.short(left)) under" : "\(Money.short(left)) left")
                     .font(.system(size: 42, weight: .heavy, design: .rounded))
                     .minimumScaleFactor(0.6)
                     .lineLimit(1)
-                Text(hasLimits ? "of \(Money.short(limit)) · \(daysLeftText)" : "No monthly limits yet")
+                Text(!hasLimits ? "No monthly limits yet"
+                     : isPast ? "spent \(Money.short(spent)) of \(Money.short(limit))"
+                     : "of \(Money.short(limit)) · \(daysLeftText)")
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.86))
                 if let average {
@@ -238,7 +292,7 @@ struct CategoryGrid: View {
         LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)],
                   spacing: 12) {
             ForEach(categories) { category in
-                NavigationLink(value: Route.category(category.id)) {
+                NavigationLink(value: Route.category(category.id, month)) {
                     CategoryCard(category: category, month: month)
                 }
                 .buttonStyle(.plain)

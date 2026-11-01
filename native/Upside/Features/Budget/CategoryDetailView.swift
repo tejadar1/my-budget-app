@@ -5,9 +5,11 @@ import SwiftUI
 struct CategoryDetailView: View {
     @Environment(BudgetStore.self) private var store
     let categoryId: String
+    var month: Date? = nil
 
     var body: some View {
-        let month = store.currentMonth
+        let month = self.month ?? store.currentMonth
+        let isCurrent = month == store.currentMonth
         let category = store.category(categoryId)
         let spent = store.spent(categoryId, in: month)
         let average = store.averageSpent(categoryId, before: month)
@@ -34,9 +36,11 @@ struct CategoryDetailView: View {
                     }
                     Grid(alignment: .leading, horizontalSpacing: 16) {
                         GridRow {
-                            stat("This month", Money.short(spent))
+                            stat(isCurrent ? "This month" : "Spent", Money.short(spent))
                             stat("Usual", average.map(Money.short) ?? "—")
-                            stat("Pace", pace(spent: spent, limit: limit))
+                            stat(isCurrent ? "Pace" : "Result",
+                                 isCurrent ? pace(spent: spent, limit: limit)
+                                 : limit == 0 ? "—" : left < 0 ? "Over" : "Under")
                         }
                     }
                 }
@@ -56,7 +60,7 @@ struct CategoryDetailView: View {
                 }
             }
 
-            Section("This month") {
+            Section(isCurrent ? "This month" : month.formatted(.dateTime.month(.wide).year())) {
                 if transactions.isEmpty {
                     Text("Nothing yet").foregroundStyle(.secondary)
                 }
@@ -120,14 +124,44 @@ struct TransactionRow: View {
 /// Purchases the bank couldn't place. Pick once; Upside remembers the store.
 struct ReviewView: View {
     @Environment(BudgetStore.self) private var store
+    @State private var newCategoryFor: Transaction?
+    @State private var newCategoryName = ""
 
     var body: some View {
         List {
+            if !store.suggestedCategories.isEmpty {
+                Section {
+                    ForEach(store.suggestedCategories) { suggestion in
+                        HStack(spacing: 12) {
+                            Image(systemName: "sparkles")
+                                .foregroundStyle(.white)
+                                .frame(width: 30, height: 30)
+                                .background(Color.purple, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("New category: \(suggestion.name)").font(.headline)
+                                Text("\(suggestion.transactionIds.count) purchase\(suggestion.transactionIds.count == 1 ? "" : "s"), like \(suggestion.example)")
+                                    .font(.footnote).foregroundStyle(.secondary).lineLimit(1)
+                            }
+                            Spacer()
+                            Button("Create") { withAnimation { store.accept(suggestion) } }
+                                .buttonStyle(.borderedProminent)
+                                .controlSize(.small)
+                        }
+                    }
+                } header: {
+                    Text("Suggested")
+                }
+            }
             Section {
                 ForEach(store.uncategorized) { t in
                     HStack {
                         TransactionRow(transaction: t)
                         Menu {
+                            Button {
+                                withAnimation { store.categorize(t.id, as: BankSync.transferCategory) }
+                            } label: {
+                                Label("Not spending (card payment / transfer)", systemImage: "arrow.left.arrow.right")
+                            }
                             ForEach(store.groupedCategories) { group in
                                 Section(group.name) {
                                     ForEach(group.categories) { c in
@@ -136,6 +170,12 @@ struct ReviewView: View {
                                         }
                                     }
                                 }
+                            }
+                            Button {
+                                newCategoryName = ""
+                                newCategoryFor = t
+                            } label: {
+                                Label("New category…", systemImage: "plus")
                             }
                         } label: {
                             Image(systemName: "tag.circle.fill")
@@ -146,7 +186,7 @@ struct ReviewView: View {
                     }
                 }
             } footer: {
-                Text("Choosing a category also sorts future purchases from the same store.")
+                Text("Choosing a category also sorts future purchases from the same store. Card payments and transfers between your accounts aren’t spending.")
             }
         }
         .overlay {
@@ -156,6 +196,23 @@ struct ReviewView: View {
             }
         }
         .navigationTitle("To sort")
+        .alert("New category", isPresented: Binding(
+            get: { newCategoryFor != nil },
+            set: { if !$0 { newCategoryFor = nil } })) {
+            TextField("Name", text: $newCategoryName)
+            Button("Cancel", role: .cancel) { newCategoryFor = nil }
+            Button("Create") {
+                if let t = newCategoryFor, !newCategoryName.trimmingCharacters(in: .whitespaces).isEmpty {
+                    let id = store.addCategory(newCategoryName, group: "Everyday")
+                    withAnimation { store.categorize(t.id, as: id) }
+                }
+                newCategoryFor = nil
+            }
+        } message: {
+            if let t = newCategoryFor {
+                Text("For \(t.payee) and future purchases there.")
+            }
+        }
     }
 }
 
@@ -182,18 +239,50 @@ struct LimitsView: View {
                         Section(group.name) {
                             ForEach(group.categories) { category in
                                 LimitRow(category: category)
+                                    .swipeActions {
+                                        Button("Hide", role: .destructive) {
+                                            withAnimation { store.hideCategory(category.id) }
+                                        }
+                                    }
                             }
                         }
                     }
                 }
+                AddCategorySection()
             }
-            .navigationTitle("Monthly limits")
+            .navigationTitle("Categories & limits")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                 }
             }
+        }
+    }
+}
+
+/// Add your own category.
+private struct AddCategorySection: View {
+    @Environment(BudgetStore.self) private var store
+    @State private var name = ""
+    @State private var group = "Everyday"
+
+    var body: some View {
+        Section {
+            TextField("Category name", text: $name)
+                .textInputAutocapitalization(.words)
+            Picker("Group", selection: $group) {
+                ForEach(store.groupNames.filter { $0 != "Trips" }, id: \.self) { Text($0).tag($0) }
+            }
+            Button("Add category") {
+                withAnimation { store.addCategory(name, group: group) }
+                name = ""
+            }
+            .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+        } header: {
+            Text("Add a category")
+        } footer: {
+            Text("Swipe left on a category to hide it. Its history stays.")
         }
     }
 }
