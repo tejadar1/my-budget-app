@@ -6,6 +6,7 @@ struct AccountsView: View {
     @State private var selected: Account?
     @State private var showConnect = false
     @State private var isSyncing = false
+    @State private var showReorder = false
 
     var body: some View {
         NavigationStack {
@@ -50,14 +51,19 @@ struct AccountsView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Accounts")
             .toolbar {
-                if store.data.bankConnected {
+                if !store.data.accounts.isEmpty {
                     ToolbarItem(placement: .topBarTrailing) {
                         Menu {
-                            Button { Task { await sync() } } label: {
-                                Label("Sync now", systemImage: "arrow.clockwise")
+                            if store.data.bankConnected {
+                                Button { Task { await sync() } } label: {
+                                    Label("Sync now", systemImage: "arrow.clockwise")
+                                }
+                                Button { showConnect = true } label: {
+                                    Label("Link another bank", systemImage: "plus")
+                                }
                             }
-                            Button { showConnect = true } label: {
-                                Label("Link another bank", systemImage: "plus")
+                            Button { showReorder = true } label: {
+                                Label("Reorder accounts", systemImage: "arrow.up.arrow.down")
                             }
                         } label: {
                             Image(systemName: isSyncing ? "arrow.triangle.2.circlepath" : "ellipsis.circle")
@@ -68,10 +74,12 @@ struct AccountsView: View {
             }
             .sheet(item: $selected) { account in AccountSheet(accountId: account.id) }
             .sheet(isPresented: $showConnect) { ConnectBanksView() }
+            .sheet(isPresented: $showReorder) { ReorderAccountsView() }
             .onAppear {
                 if let open = LaunchArgs.open, open.kind == "account", selected == nil {
                     selected = store.account(open.id)
                 }
+                if LaunchArgs.open?.kind == "reorder" { showReorder = true }
             }
         }
     }
@@ -203,6 +211,36 @@ struct AccountSheet: View {
                 .toolbar {
                     ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
                 }
+            }
+        }
+    }
+}
+
+/// Drag accounts into the order you want; it's kept across syncs (new
+/// accounts are added at the end).
+struct ReorderAccountsView: View {
+    @Environment(BudgetStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                ForEach(store.data.accounts) { account in
+                    HStack(spacing: 12) {
+                        OwnerBadge(owner: account.owner, people: store.people, size: 28)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(account.name)
+                            Text(account.institution).font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .onMove { store.data.accounts.move(fromOffsets: $0, toOffset: $1) }
+            }
+            .environment(\.editMode, .constant(.active))
+            .navigationTitle("Reorder accounts")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
         }
     }

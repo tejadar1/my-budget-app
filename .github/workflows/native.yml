@@ -92,6 +92,7 @@ jobs:
             shot $mode 7-limits -demo -tab budget -open limits
             shot $mode 7b-save -demo -tab budget -open save
             shot $mode 8-account -demo -tab accounts -open account:ron-card
+            shot $mode 8b-reorder -demo -tab accounts -open reorder
             shot $mode 9-first-run -tab budget
           done
           echo "Built from ${GITHUB_SHA}" > "$OUT/COMMIT.txt"
