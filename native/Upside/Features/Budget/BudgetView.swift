@@ -6,6 +6,7 @@ struct BudgetView: View {
     @State private var showAll = false
     @State private var showLimits = false
     @State private var showPeople = false
+    @State private var showSave = false
     @State private var path = NavigationPath()
     /// The month being looked at; nil means "this month" (follows the date).
     @State private var pickedMonth: Date?
@@ -38,7 +39,10 @@ struct BudgetView: View {
 
                     if isCurrentMonth {
                         CardWarningRow()
+                        SavingsRow { showSave = true }
                     }
+
+                    FeesRow(month: month)
 
                     if !store.uncategorized.isEmpty {
                         NavigationLink(value: Route.review) {
@@ -82,6 +86,7 @@ struct BudgetView: View {
                 }
             }
             .sheet(isPresented: $showLimits) { LimitsView() }
+            .sheet(isPresented: $showSave) { SavingsPlanView() }
             .onAppear(perform: openFromLaunchArgs)
         }
     }
@@ -93,6 +98,7 @@ struct BudgetView: View {
         case "review": path.append(Route.review)
         case "trip": path.append(Route.trip(open.id))
         case "limits": showLimits = true
+        case "save": showSave = true
         default: break
         }
     }
@@ -190,7 +196,7 @@ struct SummaryCard: View {
     let month: Date
 
     var body: some View {
-        let limit = store.totalLimit
+        let limit = store.totalLimit(in: month)
         let spent = store.totalSpent(in: month)
         let left = limit - spent
         let hasLimits = limit > 0
@@ -313,29 +319,41 @@ struct CategoryCard: View {
     var body: some View {
         let spent = store.spent(category.id, in: month)
         let average = store.averageSpent(category.id, before: month)
-        let limit = category.limit ?? 0
+        let limit = store.limit(category, in: month) ?? 0
         let left = limit - spent
         let status = Status(limit: limit, left: left)
+        let isPlanned = store.plan?.limits[category.id] != nil && month == store.currentMonth
 
         VStack(alignment: .leading, spacing: 10) {
             Text(category.name)
                 .font(.subheadline.weight(.semibold))
                 .lineLimit(1)
             VStack(alignment: .leading, spacing: 2) {
-                Text(limit == 0 ? Money.short(spent)
-                     : left < 0 ? "\(Money.short(left)) over" : Money.short(left))
-                    .font(.system(.title2, design: .rounded).weight(.heavy))
-                    .foregroundStyle(limit == 0 ? Color.primary : status.color)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                Text(limit == 0 ? "spent · no limit"
-                     : left < 0 ? "limit \(Money.short(limit))" : "left of \(Money.short(limit))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                if let average {
-                    Text("usual \(Money.short(average))/mo")
+                if category.aimsForZero {
+                    Text(Money.short(spent))
+                        .font(.system(.title2, design: .rounded).weight(.heavy))
+                        .foregroundStyle(spent > 0 ? Theme.over : Theme.accent)
+                    Text(spent > 0 ? "aim for $0" : "none this month")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else {
+                    Text(limit == 0 && !isPlanned ? Money.short(spent)
+                         : left < 0 ? "\(Money.short(left)) over" : Money.short(left))
+                        .font(.system(.title2, design: .rounded).weight(.heavy))
+                        .foregroundStyle(limit == 0 && !isPlanned ? Color.primary : status.color)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    Text(isPlanned && limit == 0 ? "skipping this month"
+                         : limit == 0 ? "spent · no limit"
+                         : left < 0 ? "limit \(Money.short(limit))"
+                         : isPlanned ? "left of \(Money.short(limit)) · saving"
+                         : "left of \(Money.short(limit))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    if let average {
+                        Text("usual \(Money.short(average))/mo")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             if limit > 0 {

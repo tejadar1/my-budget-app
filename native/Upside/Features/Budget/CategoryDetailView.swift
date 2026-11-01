@@ -13,7 +13,7 @@ struct CategoryDetailView: View {
         let category = store.category(categoryId)
         let spent = store.spent(categoryId, in: month)
         let average = store.averageSpent(categoryId, before: month)
-        let limit = category?.limit ?? 0
+        let limit = category.flatMap { store.limit($0, in: month) } ?? 0
         let left = limit - spent
         let byOwner = store.spentByOwner(categoryId: categoryId, in: month)
         let transactions = store.data.transactions

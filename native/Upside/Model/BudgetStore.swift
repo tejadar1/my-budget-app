@@ -36,6 +36,15 @@ final class BudgetStore {
            var data = try? JSONDecoder.upside.decode(BudgetData.self, from: raw) {
             // Newer transfer detection also cleans up what's already here.
             BankSync.markTransfers(&data)
+            // Categories added in later versions (e.g. card fees).
+            for category in Category.defaults where !data.categories.contains(where: { $0.id == category.id }) {
+                data.categories.append(category)
+            }
+            for i in data.transactions.indices
+            where data.transactions[i].categoryId == nil && !data.transactions[i].isTransfer {
+                data.transactions[i].categoryId = BankSync.categorize(
+                    payee: data.transactions[i].payee, amount: data.transactions[i].amount, rules: data.rules)
+            }
             return BudgetStore(data: data)
         }
         return BudgetStore(data: BudgetData())
@@ -151,9 +160,20 @@ final class BudgetStore {
 
     // MARK: Limits
 
-    var totalLimit: Cents {
-        expenseCategories.filter { $0.group != "Trips" }.compactMap(\.limit).reduce(0, +)
+    /// The limit for a month: a savings plan's lowered limit if one is set
+    /// for that month, otherwise the normal limit.
+    func limit(_ category: Category, in month: Date) -> Cents? {
+        if let plan = data.plan, isInMonth(plan.month, month), let lowered = plan.limits[category.id] {
+            return lowered
+        }
+        return category.limit
     }
+
+    func totalLimit(in month: Date) -> Cents {
+        expenseCategories.filter { $0.group != "Trips" }.compactMap { limit($0, in: month) }.reduce(0, +)
+    }
+
+    var totalLimit: Cents { totalLimit(in: currentMonth) }
 
     var hasLimits: Bool { totalLimit > 0 }
 
@@ -180,7 +200,7 @@ final class BudgetStore {
     /// expenses rise to the top.
     func topCategories(in month: Date) -> [Category] {
         expenseCategories
-            .filter { $0.group != "Trips" }
+            .filter { $0.group != "Trips" && !$0.aimsForZero }
             .map { ($0, max(spent($0.id, in: month), averageSpent($0.id, before: month) ?? 0)) }
             .filter { $0.1 > 0 }
             .sorted { $0.1 > $1.1 }
@@ -237,6 +257,64 @@ final class BudgetStore {
             .components(separatedBy: CharacterSet.alphanumerics.inverted)
             .filter { !$0.isEmpty && !$0.allSatisfy(\.isNumber) && $0.count > 1 }
         return words.prefix(2).joined(separator: " ")
+    }
+
+    // MARK: Saving money
+
+    /// How much of a category's usual spending is fair game when saving
+    /// (1 = very flexible). Bills, health and "aim for $0" aren't cut.
+    static let flexibility: [String: Double] = [
+        "shopping": 1, "dining": 1, "entertainment": 1, "gifts": 0.8,
+        "personal": 0.5, "kids": 0.3, "gas": 0.3, "groceries": 0.3,
+    ]
+
+    /// The most a plan will cut from a category without you choosing to skip it.
+    static let maxCutShare = 0.6
+
+    var plan: SavingsPlan? {
+        guard let plan = data.plan, isInMonth(plan.month, currentMonth) else { return nil }
+        return plan
+    }
+
+    /// What a category normally gets: your usual spending, else its limit.
+    func baseline(_ category: Category, before month: Date) -> Cents {
+        averageSpent(category.id, before: month) ?? category.limit ?? 0
+    }
+
+    func flexibility(of category: Category) -> Double {
+        if let known = Self.flexibility[category.id] { return known }
+        // Your own everyday categories are treated as fairly flexible.
+        return category.group == "Everyday" && !category.isIncome ? 0.6 : 0
+    }
+
+    /// Suggested lowered limits to save `goal` this month: cuts are shared
+    /// across flexible categories in proportion to how much each can give,
+    /// never more than 60% of usual. Returns limits in whole dollars ×100.
+    func suggestedLimits(toSave goal: Cents, in month: Date) -> [String: Cents] {
+        let candidates = expenseCategories.compactMap { c -> (Category, Cents, Double)? in
+            let base = baseline(c, before: month)
+            let room = Double(base) * flexibility(of: c) * Self.maxCutShare
+            return room >= 500 ? (c, base, room) : nil
+        }
+        let totalRoom = candidates.reduce(0) { $0 + $1.2 }
+        guard totalRoom > 0, goal > 0 else { return [:] }
+        let share = min(1, Double(goal) / totalRoom)
+        var limits: [String: Cents] = [:]
+        for (category, base, room) in candidates {
+            let cut = room * share
+            // Round the new limit down to $10 so the goal is met, not missed by cents.
+            let newLimit = max(0, Int((Double(base) - cut) / 1000) * 1000)
+            limits[category.id] = newLimit
+        }
+        return limits
+    }
+
+    /// What a plan's limits free up compared with usual.
+    func savings(of limits: [String: Cents], in month: Date) -> Cents {
+        limits.reduce(0) { total, entry in
+            guard let category = category(entry.key) else { return total }
+            return total + max(0, baseline(category, before: month) - entry.value)
+        }
     }
 
     // MARK: Credit cards

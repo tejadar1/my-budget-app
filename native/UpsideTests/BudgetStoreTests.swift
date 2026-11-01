@@ -213,3 +213,59 @@ final class CardTests: XCTestCase {
         XCTAssertEqual(store.spent("shopping", in: store.month(-1, from: store.currentMonth)), 50_000)
     }
 }
+
+final class SavingsTests: XCTestCase {
+    private func store() -> BudgetStore {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "America/New_York")!
+        func d(_ m: Int, _ day: Int) -> Date { cal.date(from: DateComponents(year: 2026, month: m, day: day, hour: 12))! }
+        var data = BudgetData()
+        data.accounts = [Account(id: "c", name: "Card", institution: "X", kind: .credit, balance: 0)]
+        var txns: [Transaction] = []
+        // Usual: shopping $400, dining $300, rent $2000 (bills are never cut).
+        for m in 7...9 {
+            txns.append(Transaction(id: "s\(m)", accountId: "c", date: d(m, 5), amount: -40_000, payee: "Target", categoryId: "shopping"))
+            txns.append(Transaction(id: "d\(m)", accountId: "c", date: d(m, 6), amount: -30_000, payee: "Chipotle", categoryId: "dining"))
+            txns.append(Transaction(id: "r\(m)", accountId: "c", date: d(m, 1), amount: -200_000, payee: "Rent", categoryId: "housing"))
+        }
+        data.transactions = txns
+        let s = BudgetStore(data: data, isDemo: true)
+        s.calendar = cal
+        s.now = { d(10, 2) }
+        return s
+    }
+
+    func testSuggestionsCutOnlyFlexibleSpendingAndMeetTheGoal() {
+        let s = store()
+        let limits = s.suggestedLimits(toSave: 21_000, in: s.currentMonth)
+        XCTAssertNil(limits["housing"], "bills aren't cut")
+        // Shopping and dining are equally flexible: $210 split in proportion.
+        XCTAssertEqual(limits["shopping"], 28_000)
+        XCTAssertEqual(limits["dining"], 21_000)
+        XCTAssertGreaterThanOrEqual(s.savings(of: limits, in: s.currentMonth), 21_000)
+    }
+
+    func testCutsNeverExceedSixtyPercentUnlessSkipped() {
+        let s = store()
+        let limits = s.suggestedLimits(toSave: 1_000_000, in: s.currentMonth)
+        XCTAssertEqual(limits["shopping"], 16_000) // 40% of $400 kept
+    }
+
+    func testPlanOnlyChangesItsMonth() {
+        let s = store()
+        s.setLimit("shopping", 40_000)
+        s.data.plan = SavingsPlan(month: s.currentMonth, goal: 40_000, limits: ["shopping": 0])
+        let shopping = s.category("shopping")!
+        XCTAssertEqual(s.limit(shopping, in: s.currentMonth), 0)
+        XCTAssertEqual(s.limit(shopping, in: s.month(1, from: s.currentMonth)), 40_000)
+        XCTAssertEqual(s.savings(of: s.plan!.limits, in: s.currentMonth), 40_000)
+    }
+
+    func testCardFeesAreSortedAndAimForZero() {
+        XCTAssertEqual(BankSync.categorize(payee: "INTEREST CHARGE ON PURCHASES", amount: -1_234, rules: []), "fees")
+        XCTAssertEqual(BankSync.categorize(payee: "LATE FEE", amount: -3_900, rules: []), "fees")
+        let s = store()
+        XCTAssertTrue(s.category("fees")!.aimsForZero)
+        XCTAssertFalse(s.topCategories(in: s.currentMonth).contains { $0.id == "fees" })
+    }
+}

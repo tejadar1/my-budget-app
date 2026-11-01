@@ -114,6 +114,19 @@ struct Category: Identifiable, Codable, Hashable {
     var limit: Cents?
     var isIncome: Bool = false
     var isHidden: Bool = false
+
+    /// Spending you want at $0 (card fees, interest).
+    var aimsForZero: Bool { group == Category.avoidGroup }
+    static let avoidGroup = "Aim for $0"
+}
+
+/// A month where you cut flexible spending to save. Only that month's
+/// limits change; the next month goes back to normal.
+struct SavingsPlan: Codable, Equatable {
+    var month: Date
+    var goal: Cents
+    /// Lowered limits for this month, by category id (0 = skip).
+    var limits: [String: Cents]
 }
 
 struct CategoryGroup: Identifiable {
@@ -169,6 +182,7 @@ struct BudgetData: Codable {
     var trips: [Trip] = []
     var bankConnected = false
     var lastBankSync: Date?
+    var plan: SavingsPlan?
 }
 
 // MARK: - Default categories
@@ -189,6 +203,7 @@ extension Category {
         Category(id: "phone", name: "Phone & Internet", group: "Bills"),
         Category(id: "insurance", name: "Insurance", group: "Bills"),
         Category(id: "subscriptions", name: "Subscriptions", group: "Bills"),
+        Category(id: "fees", name: "Card fees & interest", group: Category.avoidGroup),
         Category(id: "travel", name: "Travel", group: "Trips"),
         Category(id: "income", name: "Income", group: "Income", isIncome: true),
     ]
