@@ -109,6 +109,13 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.uncategorized.count, 3)
     }
 
+
+    func testAccountFullNameSkipsRepeatedBank() {
+        let card = Account(id: "c", name: "Robinhood Gold Card", institution: "Robinhood", kind: .credit, balance: 0, owner: .p1)
+        let checking = Account(id: "k", name: "Total Checking", institution: "Chase", kind: .checking, balance: 0, owner: .p1)
+        XCTAssertEqual(card.fullName, "Robinhood Gold Card")
+        XCTAssertEqual(checking.fullName, "Chase Total Checking")
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {

@@ -159,7 +159,7 @@ struct WhoseCard: View {
             }
             ForEach(store.unclaimedAccounts) { account in
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("\(account.institution) · \(account.name)").font(.subheadline.weight(.semibold))
+                    Text(account.fullName).font(.subheadline.weight(.semibold))
                     OwnerPicker(owner: Binding(
                         get: { account.owner },
                         set: { store.setOwner(account.id, $0) }), people: store.people)

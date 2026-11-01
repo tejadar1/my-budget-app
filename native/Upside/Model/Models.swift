@@ -211,3 +211,12 @@ extension Category {
         Category(id: "income", name: "Income", group: "Income", isIncome: true),
     ]
 }
+
+extension Account {
+    /// "Chase Total Checking", but "Robinhood Gold Card" rather than
+    /// "Robinhood Robinhood Gold Card".
+    var fullName: String {
+        let brand = institution.split(separator: " ").first.map(String.init) ?? institution
+        return name.localizedCaseInsensitiveContains(brand) ? name : "\(institution) \(name)"
+    }
+}

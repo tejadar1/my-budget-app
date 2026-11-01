@@ -19,7 +19,7 @@ struct TransactionSheet: View {
                                 .font(.system(size: 36, weight: .heavy, design: .rounded))
                                 .foregroundStyle(t.amount > 0 ? Theme.accent : Color.primary)
                             Text(t.payee).font(.headline)
-                            Text("\(t.date.formatted(date: .abbreviated, time: .omitted)) · \(store.account(t.accountId).map { "\($0.institution) \($0.name)" } ?? "")")
+                            Text("\(t.date.formatted(date: .abbreviated, time: .omitted)) · \(store.account(t.accountId)?.fullName ?? "")")
                                 .font(.footnote).foregroundStyle(.secondary)
                             if t.isPending {
                                 Text("Pending").font(.caption.bold()).foregroundStyle(Theme.warning)
