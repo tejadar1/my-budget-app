@@ -98,24 +98,45 @@ struct CategoryDetailView: View {
 struct TransactionRow: View {
     @Environment(BudgetStore.self) private var store
     let transaction: Transaction
+    @State private var isEditing = false
 
     var body: some View {
         let account = store.account(transaction.accountId)
-        HStack(spacing: 12) {
-            if let account {
-                OwnerBadge(owner: account.owner, people: store.people, size: 30)
+        Button { isEditing = true } label: {
+            HStack(spacing: 12) {
+                if let account {
+                    OwnerBadge(owner: account.owner, people: store.people, size: 30)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(transaction.payee).lineLimit(1)
+                    Text(detail(account))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                Spacer()
+                Text(Money.exact(transaction.amount))
+                    .font(.body.monospacedDigit())
+                    .foregroundStyle(transaction.isTransfer ? Color.secondary
+                                     : transaction.amount > 0 ? Theme.accent : Color.primary)
             }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(transaction.payee).lineLimit(1)
-                Text("\(transaction.date.formatted(.dateTime.month(.abbreviated).day())) · \(account?.institution ?? "")")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            Text(Money.exact(transaction.amount))
-                .font(.body.monospacedDigit())
-                .foregroundStyle(transaction.amount > 0 ? Theme.accent : Color.primary)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $isEditing) { TransactionSheet(transactionId: transaction.id) }
+    }
+
+    private func detail(_ account: Account?) -> String {
+        var parts = [transaction.date.formatted(.dateTime.month(.abbreviated).day())]
+        if let account { parts.append(account.institution) }
+        if transaction.isTransfer {
+            parts.append("not spending")
+        } else if let trip = transaction.tripId.flatMap({ id in store.data.trips.first { $0.id == id } }) {
+            parts.append(trip.name)
+        } else if let category = store.category(transaction.categoryId) {
+            parts.append(category.name)
+        }
+        return parts.joined(separator: " · ")
     }
 }
 

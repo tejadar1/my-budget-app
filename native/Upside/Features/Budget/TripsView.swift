@@ -4,17 +4,24 @@ import SwiftUI
 /// like overspending and doesn't skew your averages.
 struct TripsSection: View {
     @Environment(BudgetStore.self) private var store
+    @State private var showNew = false
 
     var body: some View {
-        if !store.data.trips.isEmpty {
-            SectionTitle(text: "Trips", trailing: "kept out of everyday")
-            ForEach(store.data.trips) { trip in
-                NavigationLink(value: Route.trip(trip.id)) {
-                    TripCard(trip: trip)
-                }
-                .buttonStyle(.plain)
+        SectionTitle(text: "Trips", trailing: "kept out of everyday")
+        ForEach(store.data.trips) { trip in
+            NavigationLink(value: Route.trip(trip.id)) {
+                TripCard(trip: trip)
             }
+            .buttonStyle(.plain)
         }
+        Button { showNew = true } label: {
+            Label("New trip", systemImage: "airplane.departure")
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .card()
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(Theme.accent)
+        .sheet(isPresented: $showNew) { TripEditor(trip: nil) }
     }
 }
 
@@ -29,7 +36,8 @@ extension BudgetStore {
 
     /// Paid before the trip started (flights, hotels).
     func tripPrepaid(_ trip: Trip) -> Cents {
-        max(0, -tripTransactions(trip.id).filter { $0.date < trip.start }.reduce(0) { $0 + $1.amount })
+        let start = calendar.startOfDay(for: trip.start)
+        return max(0, -tripTransactions(trip.id).filter { $0.date < start }.reduce(0) { $0 + $1.amount })
     }
 }
 
@@ -51,7 +59,8 @@ struct TripCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(trip.name).font(.headline)
                 Text(dateRange(trip)).font(.footnote).foregroundStyle(.secondary)
-                Text("\(Money.short(store.tripSpent(trip.id))) of \(Money.short(trip.budget ?? 0))")
+                Text(trip.budget.map { "\(Money.short(store.tripSpent(trip.id))) of \(Money.short($0))" }
+                     ?? "\(Money.short(store.tripSpent(trip.id))) spent")
                     .font(.footnote.weight(.semibold))
                     .padding(.top, 2)
             }
@@ -74,39 +83,144 @@ func dateRange(_ trip: Trip) -> String {
 
 struct TripView: View {
     @Environment(BudgetStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
     let tripId: String
+    @State private var isEditing = false
 
     var body: some View {
         if let trip = store.data.trips.first(where: { $0.id == tripId }) {
             let spent = store.tripSpent(trip.id)
             let prepaid = store.tripPrepaid(trip)
-            let budget = trip.budget ?? 0
+            let during = store.purchasesDuring(trip)
             List {
                 Section {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(dateRange(trip)).foregroundStyle(.secondary)
-                        Text("\(Money.short(spent)) of \(Money.short(budget))")
+                        Text(trip.budget.map { "\(Money.short(spent)) of \(Money.short($0))" } ?? "\(Money.short(spent)) spent")
                             .font(.system(size: 34, weight: .heavy, design: .rounded))
-                        if budget > 0 {
-                            SplitBar(fraction: Double(spent) / Double(budget), fill: .orange, height: 10)
+                        if let budget = trip.budget, budget > 0 {
+                            SplitBar(fraction: Double(spent) / Double(budget),
+                                     fill: spent > budget ? Theme.over : .orange, height: 10)
                         }
                         HStack {
                             Text("Prepaid \(Money.short(prepaid))")
                             Spacer()
-                            Text("During trip \(Money.short(spent - prepaid))")
+                            Text("During and after \(Money.short(spent - prepaid))")
                         }
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 6)
                 }
+
+                if !during.isEmpty {
+                    Section {
+                        Button {
+                            withAnimation { store.tagPurchases(during.map(\.id), to: trip.id) }
+                        } label: {
+                            Label("Add \(during.count) purchase\(during.count == 1 ? "" : "s") from \(dateRange(trip))",
+                                  systemImage: "plus.circle.fill")
+                        }
+                    } footer: {
+                        Text("Purchases made during the trip, \(Money.short(-during.reduce(0) { $0 + $1.amount })) in total. Bills are left out.")
+                    }
+                }
+
                 Section("Purchases") {
-                    ForEach(store.tripTransactions(trip.id)) { t in
+                    let purchases = store.tripTransactions(trip.id)
+                    if purchases.isEmpty {
+                        Text("Tag flights, hotels and anything bought on the trip. Tap a purchase anywhere in Upside and pick this trip.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
+                    ForEach(purchases) { t in
                         TransactionRow(transaction: t)
+                            .swipeActions {
+                                Button("Remove") { store.setTrip(t.id, nil) }
+                            }
                     }
                 }
             }
             .navigationTitle(trip.name)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) { Button("Edit") { isEditing = true } }
+            }
+            .sheet(isPresented: $isEditing) { TripEditor(trip: trip) }
+        } else {
+            ContentUnavailableView("Trip deleted", systemImage: "airplane")
         }
+    }
+}
+
+/// New or edit: name, dates and an optional budget.
+struct TripEditor: View {
+    @Environment(BudgetStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    let trip: Trip?
+    var onCreate: ((Trip) -> Void)? = nil
+
+    @State private var name = ""
+    @State private var start = Date()
+    @State private var end = Date().addingTimeInterval(4 * 86_400)
+    @State private var budget = 0
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Name, like Miami", text: $name)
+                        .textInputAutocapitalization(.words)
+                    DatePicker("Starts", selection: $start, displayedComponents: .date)
+                    DatePicker("Ends", selection: $end, in: start..., displayedComponents: .date)
+                }
+                Section {
+                    HStack {
+                        Text("Budget")
+                        Spacer()
+                        TextField("Optional", value: $budget, format: .currency(code: "USD").precision(.fractionLength(0)))
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                    }
+                } footer: {
+                    Text("Flights and hotels you prepay months ahead still count toward this trip.")
+                }
+                if let trip {
+                    Section {
+                        Button("Delete trip", role: .destructive) {
+                            store.deleteTrip(trip.id)
+                            dismiss()
+                        }
+                    } footer: {
+                        Text("Its purchases go back to their everyday categories.")
+                    }
+                }
+            }
+            .navigationTitle(trip == nil ? "New trip" : "Edit trip")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { save() }
+                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+            .onAppear {
+                if let trip {
+                    name = trip.name
+                    start = trip.start
+                    end = trip.end
+                    budget = (trip.budget ?? 0) / 100
+                }
+            }
+        }
+    }
+
+    private func save() {
+        let saved = Trip(id: trip?.id ?? UUID().uuidString,
+                         name: name.trimmingCharacters(in: .whitespaces),
+                         start: start, end: max(start, end),
+                         budget: budget > 0 ? budget * 100 : nil)
+        store.saveTrip(saved)
+        if trip == nil { onCreate?(saved) }
+        dismiss()
     }
 }

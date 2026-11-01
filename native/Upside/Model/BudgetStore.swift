@@ -112,11 +112,32 @@ final class BudgetStore {
 
     // MARK: Spending
 
-    /// Positive cents spent in a category during a month (refunds reduce it).
+    /// Positive cents spent in a category during a month (refunds reduce
+    /// it). Purchases tagged to a trip count toward the trip, not the
+    /// everyday category, so a vacation doesn't blow up Dining.
     func spent(_ categoryId: String, in month: Date) -> Cents {
         max(0, -spendingTransactions
-            .filter { $0.categoryId == categoryId && isInMonth($0.date, month) }
+            .filter { $0.categoryId == categoryId && isInMonth($0.date, month)
+                && ($0.tripId == nil || categoryId == "travel") }
             .reduce(0) { $0 + $1.amount })
+    }
+
+    /// Paychecks and other income (positive amounts in Income).
+    func income(in month: Date) -> Cents {
+        let onBudget = Set(data.accounts.filter(\.isOnBudget).map(\.id))
+        let incomeIds = Set(data.categories.filter(\.isIncome).map(\.id))
+        return data.transactions
+            .filter { t in
+                guard let c = t.categoryId else { return false }
+                return incomeIds.contains(c) && !t.isTransfer && onBudget.contains(t.accountId)
+                    && isInMonth(t.date, month)
+            }
+            .reduce(0) { $0 + $1.amount }
+    }
+
+    /// Income minus everything spent (bills and trips included).
+    func leftOver(in month: Date) -> Cents {
+        income(in: month) - totalSpent(in: month, includeTrips: true)
     }
 
     func totalSpent(in month: Date, includeTrips: Bool = false) -> Cents {
@@ -152,6 +173,7 @@ final class BudgetStore {
         for t in spendingTransactions where isInMonth(t.date, month) {
             if let categoryId, t.categoryId != categoryId { continue }
             if categoryId == nil && isTripSpending(t) { continue }
+            if categoryId != nil && categoryId != "travel" && t.tripId != nil { continue }
             let owner = account(t.accountId)?.owner ?? .unassigned
             result[owner, default: 0] -= t.amount
         }
@@ -367,6 +389,111 @@ final class BudgetStore {
 
     var growingCards: [Account] {
         creditCards.filter { cardHealth($0).growthSinceThreeMonths > Self.cardGrowthAlert }
+    }
+
+    // MARK: Editing a purchase
+
+    /// Change a purchase's category; optionally remember it for the store.
+    func setCategory(_ transactionId: String, _ categoryId: String, remember: Bool) {
+        categorize(transactionId, as: categoryId, remember: remember)
+    }
+
+    /// Mark a purchase as moving money ("not spending") or undo that.
+    func setTransfer(_ transactionId: String, _ isTransfer: Bool) {
+        guard let i = data.transactions.firstIndex(where: { $0.id == transactionId }) else { return }
+        var t = data.transactions[i]
+        t.isTransfer = isTransfer
+        if isTransfer { t.categoryId = nil }
+        if !isTransfer && t.categoryId == nil {
+            t.categoryId = BankSync.categorize(payee: t.payee, amount: t.amount,
+                                               rules: data.rules.filter { $0.categoryId != BankSync.transferCategory })
+        }
+        data.transactions[i] = t
+    }
+
+    func setTrip(_ transactionId: String, _ tripId: String?) {
+        guard let i = data.transactions.firstIndex(where: { $0.id == transactionId }) else { return }
+        data.transactions[i].tripId = tripId
+    }
+
+    // MARK: Trips
+
+    func saveTrip(_ trip: Trip) {
+        if let i = data.trips.firstIndex(where: { $0.id == trip.id }) {
+            data.trips[i] = trip
+        } else {
+            data.trips.append(trip)
+        }
+        data.trips.sort { $0.start > $1.start }
+    }
+
+    /// Removes the trip; its purchases go back to their everyday categories.
+    func deleteTrip(_ id: String) {
+        var updated = data
+        updated.trips.removeAll { $0.id == id }
+        for i in updated.transactions.indices where updated.transactions[i].tripId == id {
+            updated.transactions[i].tripId = nil
+        }
+        data = updated
+    }
+
+    /// Spending made during the trip's dates that isn't tagged yet.
+    func purchasesDuring(_ trip: Trip) -> [Transaction] {
+        let end = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: trip.end)) ?? trip.end
+        let start = calendar.startOfDay(for: trip.start)
+        let onBudget = Set(data.accounts.filter(\.isOnBudget).map(\.id))
+        return data.transactions.filter {
+            $0.tripId == nil && !$0.isTransfer && $0.amount < 0 && onBudget.contains($0.accountId)
+                && $0.date >= start && $0.date < end
+                && category($0.categoryId)?.group != "Bills"
+        }
+    }
+
+    func tagPurchases(_ ids: [String], to tripId: String) {
+        var updated = data
+        for i in updated.transactions.indices where ids.contains(updated.transactions[i].id) {
+            updated.transactions[i].tripId = tripId
+        }
+        data = updated
+    }
+
+    // MARK: Alerts
+
+    struct LimitAlert: Equatable {
+        var key: String
+        var categoryName: String
+        var percent: Int
+        var left: Cents
+    }
+
+    /// Categories that crossed 80% or 100% of this month's limit and
+    /// haven't been alerted yet.
+    func pendingLimitAlerts() -> [LimitAlert] {
+        let month = currentMonth
+        let parts = calendar.dateComponents([.year, .month], from: month)
+        let monthKey = "\(parts.year ?? 0)-\(parts.month ?? 0)"
+        let sent = Set(data.alertsSent ?? [])
+        var result: [LimitAlert] = []
+        for category in expenseCategories where !category.aimsForZero {
+            guard let limit = limit(category, in: month), limit > 0 else { continue }
+            let spent = spent(category.id, in: month)
+            for level in [100, 80] where spent * 100 >= limit * level {
+                let key = "\(monthKey):\(category.id):\(level)"
+                if !sent.contains(key) {
+                    result.append(LimitAlert(key: key, categoryName: category.name, percent: level, left: limit - spent))
+                }
+                break // only the highest level reached
+            }
+        }
+        return result
+    }
+
+    func markAlertsSent(_ keys: [String]) {
+        guard !keys.isEmpty else { return }
+        // Remember the lower level too so a 100% alert doesn't later
+        // trigger a stale 80% one.
+        let all = keys.flatMap { [$0, $0.replacingOccurrences(of: ":100", with: ":80")] }
+        data.alertsSent = Array(Set((data.alertsSent ?? []) + all))
     }
 
     // MARK: Your own categories

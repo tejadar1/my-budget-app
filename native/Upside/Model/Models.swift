@@ -183,6 +183,9 @@ struct BudgetData: Codable {
     var bankConnected = false
     var lastBankSync: Date?
     var plan: SavingsPlan?
+    /// Alerts already sent ("2026-11:dining:80"), so each goes out once.
+    /// Optional so budgets saved by older versions still load.
+    var alertsSent: [String]?
 }
 
 // MARK: - Default categories

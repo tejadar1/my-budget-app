@@ -190,6 +190,7 @@ struct ConnectBanksView: View {
         defer { isWorking = false }
         do {
             try await BankSync.connect(setupToken: token, store: store)
+            _ = await Alerts.requestPermission()
             dismiss()
         } catch {
             self.error = error.localizedDescription

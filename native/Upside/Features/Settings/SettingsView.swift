@@ -7,6 +7,9 @@ struct SettingsView: View {
     @State private var showConnect = false
     @State private var showLimits = false
     @State private var editingNames = false
+    @AppStorage("faceIDLock") private var faceIDLock = false
+    @AppStorage("alertsLimits") private var limitAlerts = true
+    @AppStorage("alertsWeekly") private var weeklySummary = true
 
     var body: some View {
         NavigationStack {
@@ -68,6 +71,31 @@ struct SettingsView: View {
                             value: store.uncategorized.isEmpty ? nil : "\(store.uncategorized.count)",
                             chevron: false)
                     }
+                }
+
+                Section {
+                    Toggle(isOn: $limitAlerts) {
+                        Label("Nearing a limit", systemImage: "bell.badge.fill")
+                    }
+                    Toggle(isOn: $weeklySummary) {
+                        Label("Weekly summary", systemImage: "calendar")
+                    }
+                } header: {
+                    Text("Alerts")
+                } footer: {
+                    Text("A heads-up at 80% and 100% of a limit, and a Sunday-evening summary.")
+                }
+                .onChange(of: limitAlerts) { _, on in if on { Task { _ = await Alerts.requestPermission() } } }
+                .onChange(of: weeklySummary) { _, on in if on { Task { _ = await Alerts.requestPermission() } } }
+
+                Section {
+                    Toggle(isOn: $faceIDLock) {
+                        Label("Require Face ID", systemImage: "faceid")
+                    }
+                } header: {
+                    Text("Privacy")
+                } footer: {
+                    Text("Asks for Face ID (or your passcode) when you open Upside.")
                 }
 
                 Section("Appearance") {

@@ -35,7 +35,12 @@ struct SavingsPlanView: View {
                     Button("Suggest where it comes from") { suggest() }
                         .disabled(goal <= 0)
                 } footer: {
-                    Text("Only flexible spending is cut, never bills. Next month goes back to your normal limits.")
+                    let lastLeft = store.leftOver(in: store.month(-1, from: month))
+                    Text((store.income(in: store.month(-1, from: month)) > 0
+                          ? (lastLeft >= 0 ? "Last month you had \(Money.short(lastLeft)) left over. "
+                             : "Last month you spent \(Money.short(lastLeft)) more than came in. ")
+                          : "")
+                         + "Only flexible spending is cut, never bills. Next month goes back to your normal limits.")
                 }
 
                 if !limits.isEmpty {

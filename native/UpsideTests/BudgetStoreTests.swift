@@ -108,6 +108,59 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertFalse(store.topCategories(in: store.currentMonth).isEmpty)
         XCTAssertEqual(store.uncategorized.count, 3)
     }
+
+    // MARK: Income, trips, alerts
+
+    func testIncomeAndLeftOver() {
+        let store = makeStore()
+        let month = store.currentMonth
+        XCTAssertEqual(store.income(in: month), 300_000)
+        XCTAssertEqual(store.leftOver(in: month), 300_000 - store.totalSpent(in: month, includeTrips: true))
+    }
+
+    func testTripPurchasesLeaveTheirCategoryButStillCountAsSpent() {
+        let store = makeStore()
+        let month = store.currentMonth
+        let before = store.totalSpent(in: month, includeTrips: true)
+        store.saveTrip(Trip(id: "t", name: "Miami", start: date(2026, 10, 2), end: date(2026, 10, 4)))
+        store.setTrip("4", "t")
+        XCTAssertEqual(store.spent("groceries", in: month), 3_000)
+        XCTAssertEqual(store.totalSpent(in: month, includeTrips: true), before)
+    }
+
+    func testPurchasesDuringTripSkipRefundsTransfersAndOffBudget() {
+        let store = makeStore()
+        let trip = Trip(id: "t", name: "Miami", start: date(2026, 10, 2), end: date(2026, 10, 4))
+        XCTAssertEqual(Set(store.purchasesDuring(trip).map(\.id)), ["4", "5"])
+        store.saveTrip(trip)
+        store.tagPurchases(["4", "5"], to: "t")
+        XCTAssertTrue(store.purchasesDuring(trip).isEmpty)
+    }
+
+    func testLimitAlertsFireOncePerLevel() {
+        let store = makeStore()
+        store.setLimit("groceries", 15_000) // $130 of $150 = 86%
+        let first = store.pendingLimitAlerts()
+        XCTAssertEqual(first.map(\.percent), [80])
+        store.markAlertsSent(first.map(\.key))
+        XCTAssertTrue(store.pendingLimitAlerts().isEmpty)
+
+        store.setLimit("groceries", 12_000) // now over
+        let over = store.pendingLimitAlerts()
+        XCTAssertEqual(over.map(\.percent), [100])
+        XCTAssertEqual(over.first?.left, -1_000)
+        store.markAlertsSent(over.map(\.key))
+        XCTAssertTrue(store.pendingLimitAlerts().isEmpty)
+    }
+
+    func testWeeklySummaryIsSundayEveningOnce() {
+        let sunday6pm = calendar.date(from: DateComponents(year: 2026, month: 10, day: 18, hour: 18))!
+        let sundayNoon = calendar.date(from: DateComponents(year: 2026, month: 10, day: 18, hour: 12))!
+        XCTAssertTrue(Alerts.isSummaryDue(now: sunday6pm, calendar: calendar, last: nil))
+        XCTAssertFalse(Alerts.isSummaryDue(now: sundayNoon, calendar: calendar, last: nil))
+        XCTAssertFalse(Alerts.isSummaryDue(now: sunday6pm, calendar: calendar, last: sunday6pm.addingTimeInterval(-3600)))
+        XCTAssertTrue(Alerts.isSummaryDue(now: sunday6pm, calendar: calendar, last: sunday6pm.addingTimeInterval(-7 * 86_400)))
+    }
 }
 
 final class TransferTests: XCTestCase {

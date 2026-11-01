@@ -7,6 +7,8 @@ struct BudgetView: View {
     @State private var showLimits = false
     @State private var showPeople = false
     @State private var showSave = false
+    @State private var recapMonth: MonthRef?
+    @State private var openPurchase: PurchaseRef?
     @State private var path = NavigationPath()
     /// The month being looked at; nil means "this month" (follows the date).
     @State private var pickedMonth: Date?
@@ -37,9 +39,20 @@ struct BudgetView: View {
 
                     SummaryCard(month: month)
 
+                    CashFlowRow(month: month)
+
                     if isCurrentMonth {
                         CardWarningRow()
                         SavingsRow { showSave = true }
+                        // Early in a month, last month's recap.
+                        if store.calendar.component(.day, from: store.now()) <= 7 {
+                            let last = store.month(-1, from: month)
+                            if last >= store.firstMonth {
+                                RecapRow(month: last) { recapMonth = MonthRef(date: last) }
+                            }
+                        }
+                    } else {
+                        RecapRow(month: month) { recapMonth = MonthRef(date: month) }
                     }
 
                     FeesRow(month: month)
@@ -87,6 +100,8 @@ struct BudgetView: View {
             }
             .sheet(isPresented: $showLimits) { LimitsView() }
             .sheet(isPresented: $showSave) { SavingsPlanView() }
+            .sheet(item: $recapMonth) { RecapView(month: $0.date) }
+            .sheet(item: $openPurchase) { TransactionSheet(transactionId: $0.id) }
             .onAppear(perform: openFromLaunchArgs)
         }
     }
@@ -99,6 +114,13 @@ struct BudgetView: View {
         case "trip": path.append(Route.trip(open.id))
         case "limits": showLimits = true
         case "save": showSave = true
+        case "recap": recapMonth = MonthRef(date: store.month(-1, from: store.currentMonth))
+        case "purchase":
+            // Most recent purchase in the category named by the id.
+            let hit = store.data.transactions
+                .filter { $0.categoryId == open.id && $0.amount < 0 }
+                .max { $0.date < $1.date }
+            openPurchase = hit.map { PurchaseRef(id: $0.id) }
         default: break
         }
     }
@@ -407,3 +429,12 @@ struct ReviewRow: View {
         .card()
     }
 }
+
+/// A month to show in a sheet.
+struct MonthRef: Identifiable {
+    let date: Date
+    var id: Date { date }
+}
+
+/// Sheet identity for opening a purchase from a launch argument.
+struct PurchaseRef: Identifiable { let id: String }

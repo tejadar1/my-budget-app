@@ -91,6 +91,8 @@ jobs:
             shot $mode 6-trip -demo -tab budget -open trip:miami
             shot $mode 7-limits -demo -tab budget -open limits
             shot $mode 7b-save -demo -tab budget -open save
+            shot $mode 7c-recap -demo -tab budget -open recap
+            shot $mode 7d-purchase -demo -tab budget -open purchase:dining
             shot $mode 8-account -demo -tab accounts -open account:ron-card
             shot $mode 8b-reorder -demo -tab accounts -open reorder
             shot $mode 9-first-run -tab budget
