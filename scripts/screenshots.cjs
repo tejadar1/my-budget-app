@@ -122,6 +122,14 @@ async function run(colorScheme) {
     await page.waitForTimeout(1500);
     await shoot(page, `${colorScheme}-4-budget`);
   });
+  await step('use-averages', async () => {
+    const button = page.getByRole('button', { name: 'Use my averages as limits' });
+    if (await button.isVisible().catch(() => false)) {
+      await button.click();
+      await page.waitForTimeout(2500);
+      await shoot(page, `${colorScheme}-4b-budget-with-limits`);
+    }
+  });
   await step('budget-scrolled', async () => {
     await scrollDown();
     await shoot(page, `${colorScheme}-5-budget-scrolled`);

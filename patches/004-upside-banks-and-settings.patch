@@ -678,9 +678,18 @@ index 9f95c3a..0648252 100644
        </PullToRefresh>
      </Page>
 diff --git a/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx b/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
-index 99c5eeb..6b56ef6 100644
+index 99c5eeb..8b5e8b0 100644
 --- a/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
 +++ b/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
+@@ -8,7 +8,7 @@ import * as monthUtils from '@actual-app/core/shared/months';
+ import type { CategoryEntity } from '@actual-app/core/types/models';
+ import { useQuery } from '@tanstack/react-query';
+ 
+-import { budgetBoundsQueries } from '#budget';
++import { budgetBoundsQueries, useBudgetActions } from '#budget';
+ import { prewarmMonth } from '#components/budget/util';
+ import { MOBILE_NAV_HEIGHT } from '#components/mobile/MobileNavTabs';
+ import { Page } from '#components/Page';
 @@ -32,6 +32,7 @@ import {
    useSpendingByOwner,
  } from './people';
@@ -855,6 +864,97 @@ index 99c5eeb..6b56ef6 100644
  function MonthSummary({
    month,
    split,
+@@ -290,8 +362,10 @@ function MonthSummary({
+   const prev2 = useMonthValue(monthUtils.sheetForMonth(months[2]), 'total-spent');
+   const avg = average([prev0, prev1, prev2], valid);
+ 
++  const applyBudgetAction = useBudgetActions();
++  const hasLimits = budgeted > 0;
+   const left = budgeted - spent;
+-  const isOver = left < 0;
++  const isOver = hasLimits && left < 0;
+   const daysLeft = daysLeftInMonth();
+   const usedPct = budgeted > 0 ? Math.min(100, (spent / budgeted) * 100) : 0;
+   const avgPct =
+@@ -329,9 +403,11 @@ function MonthSummary({
+             lineHeight: 1,
+           }}
+         >
+-          {isOver
+-            ? t('{{amount}} over', { amount: money(left) })
+-            : t('{{amount}} left', { amount: money(left) })}
++          {!hasLimits
++            ? t('{{amount}} spent', { amount: money(spent) })
++            : isOver
++              ? t('{{amount}} over', { amount: money(left) })
++              : t('{{amount}} left', { amount: money(left) })}
+         </span>
+         <span style={{ fontSize: 15, color: 'rgba(255,255,255,0.86)' }}>
+           {budgeted > 0
+@@ -343,7 +419,7 @@ function MonthSummary({
+                     ? t('1 day to go')
+                     : t('{{days}} days to go', { days: daysLeft }),
+               })
+-            : t('Set limits to see what’s left')}
++            : t('No monthly limits yet')}
+         </span>
+         {avg != null && (
+           <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.86)' }}>
+@@ -351,16 +427,44 @@ function MonthSummary({
+           </span>
+         )}
+       </div>
+-      <Bar
+-        percent={usedPct}
+-        fill={isOver ? '#ff6961' : '#ffffff'}
+-        track="rgba(0,0,0,0.3)"
+-        height={10}
+-        marker={avgPct}
+-        markerColor="#ffffff"
+-        markerLabel={t('avg')}
+-        segments={isOver ? undefined : segmentsOf(split)}
+-      />
++      {hasLimits && (
++        <Bar
++          percent={usedPct}
++          fill={isOver ? '#ff6961' : '#ffffff'}
++          track="rgba(0,0,0,0.3)"
++          height={10}
++          marker={avgPct}
++          markerColor="#ffffff"
++          markerLabel={t('avg')}
++          segments={isOver ? undefined : segmentsOf(split)}
++        />
++      )}
++      {!hasLimits && (
++        <button
++          type="button"
++          disabled={applyBudgetAction.isPending}
++          onClick={() => applyBudgetAction.mutate({ month, type: 'set-3-avg' })}
++          style={{
++            all: 'unset',
++            boxSizing: 'border-box',
++            minHeight: 44,
++            borderRadius: 12,
++            background: '#ffffff',
++            color: '#14532d',
++            fontSize: 16,
++            fontWeight: 700,
++            display: 'flex',
++            alignItems: 'center',
++            justifyContent: 'center',
++            cursor: 'pointer',
++            opacity: applyBudgetAction.isPending ? 0.6 : 1,
++          }}
++        >
++          {applyBudgetAction.isPending
++            ? t('Setting limits…')
++            : t('Use my averages as limits')}
++        </button>
++      )}
+       {legend.length > 0 && (
+         <div
+           style={{
 diff --git a/packages/desktop-client/src/components/mobile/upside/UpsideSettingsPage.tsx b/packages/desktop-client/src/components/mobile/upside/UpsideSettingsPage.tsx
 new file mode 100644
 index 0000000..10ad273
