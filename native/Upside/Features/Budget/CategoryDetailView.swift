@@ -83,7 +83,9 @@ struct CategoryDetailView: View {
         let today = store.now()
         let days = Double(cal.range(of: .day, in: .month, for: today)!.count)
         let expected = Double(limit) * Double(cal.component(.day, from: today)) / days
-        if Double(spent) <= expected * 1.05 { return "On track" }
+        // Early in the month one normal purchase shouldn't read as "ahead".
+        let allowance = max(expected * 1.1, Double(limit) * 0.25)
+        if Double(spent) <= allowance { return "On track" }
         if spent > limit { return "Over" }
         return "Ahead"
     }

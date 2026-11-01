@@ -89,6 +89,7 @@ struct SettingsView: View {
                         .frame(maxWidth: .infinity)
                 }
             }
+            .tint(.primary)
             .navigationTitle("Settings")
             .sheet(isPresented: $showConnect) { ConnectBanksView() }
             .sheet(isPresented: $showLimits) { LimitsView() }
