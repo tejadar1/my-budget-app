@@ -40,6 +40,14 @@ final class BudgetStore {
             for category in Category.defaults where !data.categories.contains(where: { $0.id == category.id }) {
                 data.categories.append(category)
             }
+            if let i = data.categories.firstIndex(where: { $0.id == "gas" && $0.name == "Gas & Transport" }) {
+                data.categories[i].name = "Gas & Auto"
+            }
+            // Once: undo categories an older version named after stores.
+            if !UserDefaults.standard.bool(forKey: "removedStoreCategories") {
+                removeStoreNamedCategories(&data)
+                UserDefaults.standard.set(true, forKey: "removedStoreCategories")
+            }
             for i in data.transactions.indices
             where data.transactions[i].categoryId == nil && !data.transactions[i].isTransfer {
                 data.transactions[i].categoryId = BankSync.categorize(
@@ -561,6 +569,31 @@ final class BudgetStore {
         return result.sorted { $0.transactionIds.count > $1.transactionIds.count }
     }
 
+    /// Version 0.28 suggested categories named after a store ("Tesla",
+    /// "Booking"). Removes those, forgets their rules, and re-sorts their
+    /// purchases with the built-in matching; anything it can't place goes
+    /// back to Purchases to sort.
+    static func removeStoreNamedCategories(_ data: inout BudgetData) {
+        let defaultIds = Set(Category.defaults.map(\.id))
+        let kindNames = Set(suggestionKinds.map { $0.0.lowercased() })
+        let storeNamed = data.categories.filter { category in
+            guard !defaultIds.contains(category.id), !kindNames.contains(category.name.lowercased()) else { return false }
+            return data.transactions.contains { t in
+                t.categoryId == category.id
+                    && payeeKey(t.payee).split(separator: " ").first.map(String.init) == category.name.lowercased()
+            }
+        }
+        let ids = Set(storeNamed.map(\.id))
+        guard !ids.isEmpty else { return }
+        data.rules.removeAll { ids.contains($0.categoryId) }
+        data.categories.removeAll { ids.contains($0.id) }
+        for i in data.transactions.indices where data.transactions[i].categoryId.map(ids.contains) == true {
+            let t = data.transactions[i]
+            data.transactions[i].categoryId = BankSync.categorize(payee: t.payee, amount: t.amount, rules: data.rules)
+        }
+        BankSync.markTransfers(&data)
+    }
+
     /// Creates the suggested category and sorts its purchases into it.
     func accept(_ suggestion: CategorySuggestion) {
         let id = addCategory(suggestion.name, group: suggestion.group)
@@ -574,7 +607,8 @@ final class BudgetStore {
         ("Pets", "Everyday", ["petco", "petsmart", "chewy", "vet ", "veterinary", "animal hosp", "rover"]),
         ("Childcare", "Bills", ["daycare", "childcare", "kindercare", "preschool", "babysit", "nanny"]),
         ("Education", "Everyday", ["tuition", "university", "college", "coursera", "udemy", "school"]),
-        ("Car", "Everyday", ["autozone", "jiffy", "car wash", "dmv", "tire", "auto parts", "valvoline", "service center"]),
+        ("Transit", "Everyday", ["mta*", "mta ", "nyct", "omny", "metrocard", "metropolitan trans", "nj transit",
+                                 "lirr", "amtrak", "metro-north"]),
         ("Home", "Everyday", ["wayfair", "bed bath", "crate & barrel", "pottery barn", "west elm", "furniture"]),
         ("Clothing", "Everyday", ["zara", "h&m", "old navy", "gap ", "uniqlo", "nike", "lululemon", "j.crew"]),
         ("Giving", "Everyday", ["donation", "charity", "church", "red cross", "gofundme", "unicef"]),

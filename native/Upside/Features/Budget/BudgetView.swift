@@ -121,7 +121,7 @@ struct BudgetView: View {
         case "trip": path.append(Route.trip(open.id))
         case "bills": path.append(Route.bills)
         case "search": path.append(Route.search(open.id))
-        case "limits": showLimits = true
+        case "limits", "recommended": showLimits = true
         case "save": showSave = true
         case "recap": recapMonth = MonthRef(date: store.month(-1, from: store.currentMonth))
         case "purchase":

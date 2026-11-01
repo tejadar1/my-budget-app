@@ -143,3 +143,41 @@ extension BudgetStore {
         return NSDecimalNumber(decimal: value * 100).intValue
     }
 }
+
+// MARK: - Recommended categories
+
+extension BudgetStore {
+    /// Kinds of spending you have (gym, pets, transit…) that don't have a
+    /// category yet, from the last six months. Purchases already in one of
+    /// your own categories stay put; ones in a built-in category or unsorted
+    /// would move.
+    func recommendedCategories() -> [CategorySuggestion] {
+        let since = month(-6, from: currentMonth)
+        let defaultIds = Set(Category.defaults.map(\.id))
+        let onBudget = Set(data.accounts.filter(\.isOnBudget).map(\.id))
+        let existing = Set(data.categories.filter { !$0.isHidden }.map { $0.name.lowercased() })
+        let candidates = data.transactions.filter { t in
+            t.amount < 0 && !t.isTransfer && t.tripId == nil && t.date >= since && onBudget.contains(t.accountId)
+                && (t.categoryId == nil || defaultIds.contains(t.categoryId!))
+                && t.categoryId != "fees" && category(t.categoryId)?.group != "Bills"
+        }
+        return Self.suggestionKinds.compactMap { name, group, words in
+            guard !existing.contains(name.lowercased()) else { return nil }
+            let hits = candidates.filter { t in
+                let p = t.payee.lowercased()
+                return words.contains { p.contains($0) }
+            }
+            guard let first = hits.first else { return nil }
+            return CategorySuggestion(name: name, group: group, transactionIds: hits.map(\.id), example: first.payee)
+        }
+        .sorted { $0.transactionIds.count > $1.transactionIds.count }
+    }
+
+    /// Spending per month across a suggestion's purchases.
+    func monthlyAverage(of suggestion: CategorySuggestion) -> Cents {
+        let ids = Set(suggestion.transactionIds)
+        let list = data.transactions.filter { ids.contains($0.id) }
+        let months = Set(list.map { monthStart($0.date) }).count
+        return months == 0 ? 0 : -list.reduce(0) { $0 + $1.amount } / months
+    }
+}

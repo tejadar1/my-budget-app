@@ -194,7 +194,7 @@ extension Category {
     static let defaults: [Category] = [
         Category(id: "groceries", name: "Groceries", group: "Everyday"),
         Category(id: "dining", name: "Dining", group: "Everyday"),
-        Category(id: "gas", name: "Gas & Transport", group: "Everyday"),
+        Category(id: "gas", name: "Gas & Auto", group: "Everyday"),
         Category(id: "shopping", name: "Shopping", group: "Everyday"),
         Category(id: "entertainment", name: "Entertainment", group: "Everyday"),
         Category(id: "health", name: "Health", group: "Everyday"),

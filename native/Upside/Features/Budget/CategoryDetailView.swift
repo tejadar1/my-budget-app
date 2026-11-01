@@ -246,6 +246,7 @@ struct ReviewView: View {
 struct LimitsView: View {
     @Environment(BudgetStore.self) private var store
     @Environment(\.dismiss) private var dismiss
+    @State private var showRecommended = LaunchArgs.open?.kind == "recommended"
 
     var body: some View {
         NavigationStack {
@@ -255,6 +256,9 @@ struct LimitsView: View {
                         withAnimation { store.setLimitsFromAverages() }
                     } label: {
                         Label("Use my 3-month averages", systemImage: "wand.and.stars")
+                    }
+                    Button { showRecommended = true } label: {
+                        Label("Recommended categories", systemImage: "sparkles")
                     }
                 } footer: {
                     Text("Sets each limit to what you usually spend, rounded up. Limits reset every month.")
@@ -277,6 +281,7 @@ struct LimitsView: View {
             }
             .navigationTitle("Categories & limits")
             .navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented: $showRecommended) { RecommendedCategoriesView() }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
@@ -396,6 +401,48 @@ private struct TrendSection: View {
                 Text("Last \(points.count) months")
             } footer: {
                 if let note = BudgetStore.trendNote(finished) { Text(note) }
+            }
+        }
+    }
+}
+
+/// Categories Upside thinks would help, based on what you buy.
+struct RecommendedCategoriesView: View {
+    @Environment(BudgetStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        let recommended = store.recommendedCategories()
+        NavigationStack {
+            List {
+                if recommended.isEmpty {
+                    ContentUnavailableView("Nothing to recommend", systemImage: "checkmark.circle",
+                                           description: Text("Your spending fits the categories you have."))
+                } else {
+                    Section {
+                        ForEach(recommended) { suggestion in
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(suggestion.name).font(.headline)
+                                    Text("About \(Money.short(store.monthlyAverage(of: suggestion))) a month · \(suggestion.transactionIds.count) purchase\(suggestion.transactionIds.count == 1 ? "" : "s"), like \(suggestion.example)")
+                                        .font(.footnote).foregroundStyle(.secondary)
+                                        .lineLimit(2)
+                                }
+                                Spacer()
+                                Button("Add") { withAnimation { store.accept(suggestion) } }
+                                    .buttonStyle(.bordered)
+                                    .accessibilityLabel("Add \(suggestion.name)")
+                            }
+                        }
+                    } footer: {
+                        Text("Adding one moves those purchases into it, and new ones from the same stores follow.")
+                    }
+                }
+            }
+            .navigationTitle("Recommended categories")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
         }
     }

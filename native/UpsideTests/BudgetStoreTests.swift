@@ -182,6 +182,27 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertNil(BudgetStore.parseAmount("84.123"))
         XCTAssertTrue(store.search("  ").isEmpty)
     }
+
+    func testRecommendedCategoriesFromWhatYouBuy() {
+        let store = makeStore()
+        store.data.transactions += [
+            Transaction(id: "t1", accountId: "r", date: date(2026, 9, 3), amount: -290, payee: "MTA*NYCT PAYGO", categoryId: nil),
+            Transaction(id: "t2", accountId: "r", date: date(2026, 10, 3), amount: -290, payee: "MTA*NYCT PAYGO", categoryId: nil),
+            Transaction(id: "f1", accountId: "a", date: date(2026, 10, 1), amount: -4_000, payee: "PLANET FITNESS", categoryId: "personal"),
+            Transaction(id: "c1", accountId: "a", date: date(2026, 10, 2), amount: -5_000, payee: "TESLA SUPERCHARGER", categoryId: "gas"),
+        ]
+        let recommended = store.recommendedCategories()
+        XCTAssertEqual(Set(recommended.map(\.name)), ["Transit", "Coffee", "Fitness"]) // Blue Bottle → Coffee
+        let transitSuggestion = recommended.first { $0.name == "Transit" }!
+        XCTAssertEqual(store.monthlyAverage(of: transitSuggestion), 290)
+
+        store.accept(transitSuggestion)
+        let transit = store.data.categories.first { $0.name == "Transit" }
+        XCTAssertNotNil(transit)
+        XCTAssertEqual(store.data.transactions.first { $0.id == "t1" }?.categoryId, transit?.id)
+        XCTAssertFalse(store.recommendedCategories().contains { $0.name == "Transit" })
+        XCTAssertEqual(BankSync.categorize(payee: "TESLA SUPERCHARGER US", amount: -1_000, rules: []), "gas")
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {
@@ -296,6 +317,24 @@ final class CategoryTests: XCTestCase {
         let store = BudgetStore(data: data, isDemo: true)
         let names = Set(store.suggestedCategories.map(\.name))
         XCTAssertEqual(names, ["Fitness", "Pets"], "a repeated store is not a category")
+
+        // Cleaning up a store-named category from 0.28.
+        var old = data
+        old.categories.append(Category(id: "tesla-ab12", name: "Tesla", group: "Everyday"))
+        old.categories.append(Category(id: "pets-cd34", name: "Pets", group: "Everyday"))
+        old.rules = [PayeeRule(payeeKey: "tesla supercharger", categoryId: "tesla-ab12")]
+        old.transactions += [
+            Transaction(id: "6", accountId: "c", date: Date(timeIntervalSince1970: 1_790_000_000), amount: -1_000,
+                        payee: "TESLA SUPERCHARGER", categoryId: "tesla-ab12"),
+            Transaction(id: "7", accountId: "c", date: Date(timeIntervalSince1970: 1_790_000_000), amount: -2_000,
+                        payee: "PETSMART", categoryId: "pets-cd34"),
+        ]
+        BudgetStore.removeStoreNamedCategories(&old)
+        XCTAssertNil(old.categories.first { $0.name == "Tesla" })
+        XCTAssertNotNil(old.categories.first { $0.name == "Pets" }, "kinds of spending stay")
+        XCTAssertTrue(old.rules.isEmpty)
+        XCTAssertEqual(old.transactions.first { $0.id == "6" }?.categoryId, "gas", "Tesla charging is gas & auto")
+        XCTAssertEqual(old.transactions.first { $0.id == "7" }?.categoryId, "pets-cd34")
 
         let fitness = store.suggestedCategories.first { $0.name == "Fitness" }!
         store.accept(fitness)
