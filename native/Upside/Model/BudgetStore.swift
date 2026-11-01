@@ -406,6 +406,24 @@ final class BudgetStore {
         categorize(transactionId, as: categoryId, remember: remember)
     }
 
+    /// Starts sorting over: forgets every category choice and payee rule,
+    /// then sorts with the built-in store lists and transfer detection.
+    /// Trip tags stay. Returns how many purchases still need sorting.
+    @discardableResult
+    func resortAllPurchases() -> Int {
+        var updated = data
+        updated.rules = []
+        for i in updated.transactions.indices {
+            let t = updated.transactions[i]
+            updated.transactions[i].isTransfer = BankSync.looksLikeTransfer(t.payee)
+            updated.transactions[i].categoryId = updated.transactions[i].isTransfer ? nil
+                : BankSync.categorize(payee: t.payee, amount: t.amount, rules: [])
+        }
+        BankSync.markTransfers(&updated)
+        data = updated
+        return uncategorized.count
+    }
+
     /// "Credit card payment" when a card is involved, otherwise "Transfer".
     func transferLabel(_ t: Transaction) -> String {
         let p = t.payee.lowercased()

@@ -222,6 +222,22 @@ final class BudgetStoreTests: XCTestCase {
             XCTAssertEqual(BankSync.categorize(payee: bill, amount: -9_000, rules: []), "utilities", bill)
         }
     }
+
+    func testResortForgetsChoicesButKeepsTrips() {
+        let store = makeStore()
+        store.saveTrip(Trip(id: "t", name: "Miami", start: date(2026, 10, 2), end: date(2026, 10, 4)))
+        store.setTrip("4", "t")
+        store.categorize("10", as: "shopping") // Blue Bottle, wrongly
+        XCTAssertFalse(store.data.rules.isEmpty)
+
+        store.resortAllPurchases()
+        XCTAssertTrue(store.data.rules.isEmpty)
+        XCTAssertEqual(store.data.transactions.first { $0.id == "10" }?.categoryId, "dining")
+        XCTAssertEqual(store.data.transactions.first { $0.id == "4" }?.categoryId, "groceries")
+        XCTAssertEqual(store.data.transactions.first { $0.id == "4" }?.tripId, "t")
+        XCTAssertEqual(store.data.transactions.first { $0.id == "8" }?.isTransfer, true)
+        XCTAssertEqual(store.data.transactions.first { $0.id == "9" }?.categoryId, "income")
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {
