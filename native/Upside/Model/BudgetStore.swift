@@ -100,7 +100,7 @@ final class BudgetStore {
 
     /// Transactions that count as spending: on-budget accounts, not
     /// transfers, in a spending category.
-    private var spendingTransactions: [Transaction] {
+    var spendingTransactions: [Transaction] {
         let onBudget = Set(data.accounts.filter(\.isOnBudget).map(\.id))
         let expenseIds = Set(expenseCategories.map(\.id))
         return data.transactions.filter { t in

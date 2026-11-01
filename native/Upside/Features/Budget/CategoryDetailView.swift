@@ -1,3 +1,4 @@
+import Charts
 import SwiftUI
 
 /// One category: what's left, how it compares to usual, who spent it, and
@@ -46,6 +47,9 @@ struct CategoryDetailView: View {
                 }
                 .padding(.vertical, 6)
             }
+
+            TrendSection(categoryId: categoryId, month: month,
+                         limit: limit > 0 ? limit : nil, isCurrent: isCurrent)
 
             if !byOwner.isEmpty {
                 Section("Who spent") {
@@ -335,6 +339,64 @@ private struct LimitRow: View {
         .onAppear { dollars = (category.limit ?? 0) / 100 }
         .onChange(of: category.limit) { _, newValue in
             dollars = (newValue ?? 0) / 100
+        }
+    }
+}
+
+/// Six months of spending as bars, with the limit as a line and one
+/// sentence on whether it's a trend or a one-off.
+private struct TrendSection: View {
+    @Environment(BudgetStore.self) private var store
+    let categoryId: String
+    let month: Date
+    let limit: Cents?
+    let isCurrent: Bool
+
+    var body: some View {
+        let points = store.monthlySpent(categoryId, endingAt: month)
+        // The current month is still filling up, so it doesn't count toward the trend.
+        let finished = isCurrent ? Array(points.dropLast()) : points
+        if points.count >= 2 {
+            Section {
+                Chart {
+                    ForEach(points) { point in
+                        BarMark(x: .value("Month", point.month, unit: .month),
+                                y: .value("Spent", Double(point.spent) / 100))
+                            .foregroundStyle(point.month == month ? Theme.accent : Color.secondary.opacity(0.35))
+                            .cornerRadius(4)
+                    }
+                    if let limit {
+                        RuleMark(y: .value("Limit", Double(limit) / 100))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                            .foregroundStyle(.secondary)
+                            .annotation(position: .top, alignment: .leading) {
+                                Text("limit").font(.caption2).foregroundStyle(.secondary)
+                            }
+                    }
+                }
+                .chartXAxis {
+                    AxisMarks(values: .stride(by: .month)) { _ in
+                        AxisValueLabel(format: .dateTime.month(.narrow), centered: true)
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(position: .leading) { value in
+                        AxisGridLine()
+                        AxisValueLabel {
+                            if let dollars = value.as(Double.self) { Text(Money.short(Cents(dollars * 100))) }
+                        }
+                    }
+                }
+                .frame(height: 150)
+                .padding(.vertical, 6)
+                .accessibilityLabel("Spending for the last \(points.count) months")
+                .accessibilityValue(points.map { "\($0.month.formatted(.dateTime.month(.wide))) \(Money.short($0.spent))" }
+                    .joined(separator: ", "))
+            } header: {
+                Text("Last \(points.count) months")
+            } footer: {
+                if let note = BudgetStore.trendNote(finished) { Text(note) }
+            }
         }
     }
 }

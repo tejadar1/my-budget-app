@@ -127,6 +127,61 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertTrue(pieces.allSatisfy { $0.duration <= 90 * 86_400 })
         for (a, b) in zip(pieces, pieces.dropFirst()) { XCTAssertEqual(a.start, b.end) } // no gaps
     }
+
+    // MARK: Bills, trends, search
+
+    func testFindsBillsPriceIncreasesAndNewSubscriptions() {
+        let store = makeStore()
+        func add(_ payee: String, _ category: String, _ m: Int, _ d: Int, _ cents: Cents) {
+            store.data.transactions.append(Transaction(id: "\(payee)\(m)", accountId: "r", date: date(2026, m, d),
+                                                       amount: -cents, payee: payee, categoryId: category))
+        }
+        for m in 7...9 { add("Netflix", "subscriptions", m, 8, 1_549) }
+        add("Netflix", "subscriptions", 10, 8, 1_799)
+        for m in 7...9 { add("Verizon Wireless", "phone", m, 18, 14_000) }
+        for m in 8...9 { add("Peacock", "subscriptions", m, 22, 799) }
+
+        let bills = Dictionary(uniqueKeysWithValues: store.recurringCharges().map { ($0.name, $0) })
+        XCTAssertNil(bills["Kroger"], "groceries vary too much to be a bill")
+
+        XCTAssertEqual(bills["Netflix"]?.paidThisMonth, true)
+        XCTAssertEqual(bills["Netflix"]?.priceIncrease, 250)
+        XCTAssertEqual(bills["Netflix"]?.isNew, false)
+
+        XCTAssertEqual(bills["Verizon Wireless"]?.paidThisMonth, false)
+        XCTAssertEqual(bills["Verizon Wireless"]?.dueDate.map { calendar.component(.day, from: $0) }, 18)
+        XCTAssertNil(bills["Verizon Wireless"]?.priceIncrease)
+
+        XCTAssertEqual(bills["Peacock"]?.isNew, true)
+        XCTAssertEqual(bills["Peacock"]?.isSubscription, true)
+    }
+
+    func testMonthlySpentStopsAtTheStartOfHistory() {
+        let store = makeStore()
+        let points = store.monthlySpent("groceries", endingAt: store.currentMonth)
+        XCTAssertEqual(points.map(\.spent), [30_000, 60_000, 90_000, 13_000])
+    }
+
+    func testTrendNoteTellsATrendFromAOneOff() {
+        func points(_ values: [Cents]) -> [MonthSpend] {
+            values.enumerated().map { MonthSpend(month: date(2026, $0.offset + 1, 1), spent: $0.element) }
+        }
+        XCTAssertEqual(BudgetStore.trendNote(points([10_000, 20_000, 30_000])), "Up three months in a row.")
+        XCTAssertEqual(BudgetStore.trendNote(points([30_000, 20_000, 10_000])), "Down three months in a row.")
+        XCTAssertTrue(BudgetStore.trendNote(points([10_000, 10_000, 50_000, 10_000, 11_000]))?
+            .hasPrefix("March was unusually high") ?? false)
+        XCTAssertNil(BudgetStore.trendNote(points([10_000, 10_500, 10_000, 10_200])))
+    }
+
+    func testSearchByStoreOrAmount() {
+        let store = makeStore()
+        XCTAssertEqual(Set(store.search("kroger").map(\.id)), ["1", "2", "3", "4"])
+        XCTAssertEqual(store.search("$50.00").map(\.id), ["5"])
+        XCTAssertEqual(BudgetStore.parseAmount("1,200"), 120_000)
+        XCTAssertEqual(BudgetStore.parseAmount("84.12"), 8_412)
+        XCTAssertNil(BudgetStore.parseAmount("84.123"))
+        XCTAssertTrue(store.search("  ").isEmpty)
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {

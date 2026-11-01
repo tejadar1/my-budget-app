@@ -26,7 +26,7 @@ enum DemoData {
         let limits: [String: Cents] = [
             "groceries": 60_000, "dining": 30_000, "gas": 25_000, "shopping": 40_000,
             "entertainment": 15_000, "health": 10_000, "housing": 220_000,
-            "utilities": 18_000, "phone": 19_000, "subscriptions": 6_000,
+            "utilities": 18_000, "phone": 22_000, "subscriptions": 6_000,
         ]
         for i in data.categories.indices {
             data.categories[i].limit = limits[data.categories[i].id]
@@ -42,9 +42,6 @@ enum DemoData {
             ("shopping", ["Amazon", "Target", "Nordstrom"], ["ana-checking", "ron-card"], 5, 58),
             ("entertainment", ["AMC Theatres", "Ticketmaster"], ["ron-card", "ana-checking"], 2, 38),
             ("health", ["CVS Pharmacy", "Walgreens"], ["ana-checking"], 2, 28),
-            ("subscriptions", ["Netflix", "Spotify", "iCloud"], ["joint"], 3, 14),
-            ("utilities", ["Duke Energy", "City Water"], ["joint"], 2, 82),
-            ("phone", ["Verizon", "Spectrum Internet"], ["joint"], 2, 88),
             ("housing", ["Rent - Parkview Apts"], ["joint"], 1, 2200),
         ]
 
@@ -53,7 +50,22 @@ enum DemoData {
         var transactions: [Transaction] = []
         var counter = 0
 
-        for monthOffset in -3...0 {
+        // Bills on the same day each month: (payee, category, account, day,
+        // amount $, first month offset). Netflix went up last month; Peacock
+        // is new.
+        let bills: [(String, String, String, Int, (Int) -> Double, Int)] = [
+            ("Netflix", "subscriptions", "joint", 8, { $0 >= -1 ? 17.99 : 15.49 }, -5),
+            ("Spotify", "subscriptions", "ron-card", 12, { _ in 11.99 }, -5),
+            ("iCloud+", "subscriptions", "joint", 20, { _ in 2.99 }, -5),
+            ("Peacock", "subscriptions", "ana-checking", 22, { _ in 7.99 }, -2),
+            ("Verizon Wireless", "phone", "joint", 18, { _ in 140.00 }, -5),
+            ("Spectrum Internet", "phone", "joint", 5, { _ in 70.00 }, -5),
+            ("State Farm Insurance", "insurance", "joint", 10, { _ in 182.40 }, -5),
+            ("Duke Energy", "utilities", "joint", 24, { [96.20, 88.75, 121.40, 134.10, 102.30, 91.85][($0 + 5) % 6] }, -5),
+            ("City Water", "utilities", "joint", 27, { [44.10, 41.80, 52.35, 55.90, 47.60, 43.25][($0 + 5) % 6] }, -5),
+        ]
+
+        for monthOffset in -5...0 {
             let month = calendar.date(byAdding: .month, value: monthOffset, to: thisMonth)!
             let days = calendar.range(of: .day, in: .month, for: month)!.count
             let lastDay = monthOffset == 0 ? max(1, today) : days
@@ -89,6 +101,18 @@ enum DemoData {
             }
         }
 
+        for (payee, category, account, day, amount, start) in bills {
+            for monthOffset in start...0 {
+                guard monthOffset < 0 || day <= today else { continue }
+                let month = calendar.date(byAdding: .month, value: monthOffset, to: thisMonth)!
+                counter += 1
+                transactions.append(Transaction(
+                    id: "demo-\(counter)", accountId: account,
+                    date: calendar.date(byAdding: .day, value: day - 1, to: month)!,
+                    amount: -Int((amount(monthOffset) * 100).rounded()), payee: payee, categoryId: category))
+            }
+        }
+
         // A few new ones the bank couldn't categorize yet.
         for (payee, amount, account) in [("SQ *BLUE BOTTLE", 7.25, "ron-card"),
                                          ("PAYPAL *ETSY", 34.10, "ana-checking"),
@@ -116,7 +140,7 @@ enum DemoData {
         data.transactions = transactions.sorted { $0.date > $1.date }
         data.rules = patterns.flatMap { pattern in
             pattern.1.map { PayeeRule(payeeKey: BudgetStore.payeeKey($0), categoryId: pattern.0) }
-        }
+        } + bills.map { PayeeRule(payeeKey: BudgetStore.payeeKey($0.0), categoryId: $0.1) }
         return data
     }
 }

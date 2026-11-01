@@ -43,6 +43,7 @@ struct BudgetView: View {
 
                     if isCurrentMonth {
                         CardWarningRow()
+                        BillsRow()
                         SavingsRow { showSave = true }
                         // Early in a month, last month's recap.
                         if store.calendar.component(.day, from: store.now()) <= 7 {
@@ -87,6 +88,10 @@ struct BudgetView: View {
                             }
                             .accessibilityLabel("Edit names")
                         }
+                        Button { path.append(Route.search("")) } label: {
+                            Image(systemName: "magnifyingglass")
+                        }
+                        .accessibilityLabel("Search purchases")
                         Button("Limits") { showLimits = true }
                     }
                 }
@@ -96,6 +101,8 @@ struct BudgetView: View {
                 case .category(let id, let month): CategoryDetailView(categoryId: id, month: month)
                 case .review: ReviewView()
                 case .trip(let id): TripView(tripId: id)
+                case .bills: BillsView()
+                case .search(let query): SearchView(query: query)
                 }
             }
             .sheet(isPresented: $showLimits) { LimitsView() }
@@ -112,6 +119,8 @@ struct BudgetView: View {
         case "category": path.append(Route.category(open.id, store.currentMonth))
         case "review": path.append(Route.review)
         case "trip": path.append(Route.trip(open.id))
+        case "bills": path.append(Route.bills)
+        case "search": path.append(Route.search(open.id))
         case "limits": showLimits = true
         case "save": showSave = true
         case "recap": recapMonth = MonthRef(date: store.month(-1, from: store.currentMonth))
@@ -168,6 +177,8 @@ enum Route: Hashable {
     case category(String, Date)
     case review
     case trip(String)
+    case bills
+    case search(String)
 }
 
 // MARK: - Month switcher
