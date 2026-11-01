@@ -116,6 +116,17 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(card.fullName, "Robinhood Gold Card")
         XCTAssertEqual(checking.fullName, "Chase Total Checking")
     }
+
+    func testSixMonthsOfHistoryIsFetchedInPiecesUnder90Days() {
+        let end = date(2026, 11, 1)
+        let start = end.addingTimeInterval(-Double(BankSync.historyDays) * 86_400)
+        let pieces = BankSync.windows(from: start, to: end)
+        XCTAssertEqual(pieces.count, 4)
+        XCTAssertEqual(pieces.first?.end, end)
+        XCTAssertEqual(pieces.last?.start, start)
+        XCTAssertTrue(pieces.allSatisfy { $0.duration <= 90 * 86_400 })
+        for (a, b) in zip(pieces, pieces.dropFirst()) { XCTAssertEqual(a.start, b.end) } // no gaps
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {

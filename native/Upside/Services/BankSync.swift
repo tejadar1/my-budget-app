@@ -17,19 +17,47 @@ enum BankSync {
         try await sync(store: store, initial: true)
     }
 
-    /// Download what's new. The first sync reaches back 90 days so your
-    /// averages have something to work with.
+    /// How far back the first sync reaches, so averages and recaps have
+    /// six full months to work with.
+    static let historyDays = 186
+    private static let historyKey = "historyDaysLoaded"
+
+    /// Download what's new. Until six months of history have been loaded
+    /// once (new connection, or data from an older version that only went
+    /// back 90 days), it fetches the full six months in 60-day pieces.
     @MainActor
     static func sync(store: BudgetStore, initial: Bool = false) async throws {
         guard !store.isDemo else { return }
         guard let raw = Keychain.get(accessKey), let access = URL(string: raw) else {
             throw SimpleFIN.Failure.notConnected
         }
-        let lookback: TimeInterval = initial || store.data.lastBankSync == nil ? 90 : 14
-        let since = Date().addingTimeInterval(-lookback * 24 * 3600)
-        let set = try await SimpleFIN.fetch(accessURL: access, since: since)
-        apply(set, to: store)
-        store.data.lastBankSync = Date()
+        let now = Date()
+        let needsHistory = initial || store.data.lastBankSync == nil
+            || UserDefaults.standard.integer(forKey: historyKey) < historyDays
+        if needsHistory {
+            for window in windows(from: now.addingTimeInterval(-Double(historyDays) * 86_400), to: now) {
+                let set = try await SimpleFIN.fetch(accessURL: access, since: window.start, until: window.end)
+                apply(set, to: store)
+            }
+            UserDefaults.standard.set(historyDays, forKey: historyKey)
+        } else {
+            let set = try await SimpleFIN.fetch(accessURL: access, since: now.addingTimeInterval(-14 * 86_400))
+            apply(set, to: store)
+        }
+        store.data.lastBankSync = now
+    }
+
+    /// Splits a date range into pieces of at most `days` days (the Bridge
+    /// caps a request at 90), newest first so recent data shows up soonest.
+    static func windows(from start: Date, to end: Date, days: Int = 60) -> [DateInterval] {
+        var result: [DateInterval] = []
+        var upper = end
+        while upper > start {
+            let lower = max(start, upper.addingTimeInterval(-Double(days) * 86_400))
+            result.append(DateInterval(start: lower, end: upper))
+            upper = lower
+        }
+        return result
     }
 
     @MainActor

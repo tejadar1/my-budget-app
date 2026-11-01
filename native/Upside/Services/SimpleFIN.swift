@@ -74,8 +74,9 @@ enum SimpleFIN {
         var transacted_at: Int?
     }
 
-    /// Accounts and transactions since `since`.
-    static func fetch(accessURL: URL, since: Date) async throws -> AccountSet {
+    /// Accounts and transactions from `since` up to `until` (now if nil).
+    /// The Bridge allows at most 90 days per request.
+    static func fetch(accessURL: URL, since: Date, until: Date? = nil) async throws -> AccountSet {
         // URLSession doesn't send credentials embedded in the URL; move them
         // into a Basic auth header.
         guard var parts = URLComponents(url: accessURL, resolvingAgainstBaseURL: false) else {
@@ -90,6 +91,9 @@ enum SimpleFIN {
             URLQueryItem(name: "start-date", value: String(Int(since.timeIntervalSince1970))),
             URLQueryItem(name: "pending", value: "1"),
         ]
+        if let until {
+            parts.queryItems?.append(URLQueryItem(name: "end-date", value: String(Int(until.timeIntervalSince1970))))
+        }
         guard let url = parts.url else { throw Failure.notConnected }
         var request = URLRequest(url: url)
         let auth = Data("\(user):\(password)".utf8).base64EncodedString()
