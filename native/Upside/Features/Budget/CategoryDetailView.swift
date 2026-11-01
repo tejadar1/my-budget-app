@@ -134,7 +134,7 @@ struct TransactionRow: View {
         var parts = [transaction.date.formatted(.dateTime.month(.abbreviated).day())]
         if let account { parts.append(account.institution) }
         if transaction.isTransfer {
-            parts.append("not spending")
+            parts.append(store.transferLabel(transaction))
         } else if let trip = transaction.tripId.flatMap({ id in store.data.trips.first { $0.id == id } }) {
             parts.append(trip.name)
         } else if let category = store.category(transaction.categoryId) {
@@ -185,7 +185,7 @@ struct ReviewView: View {
                             Button {
                                 withAnimation { store.categorize(t.id, as: BankSync.transferCategory) }
                             } label: {
-                                Label("Not spending (card payment / transfer)", systemImage: "arrow.left.arrow.right")
+                                Label("Card payment or transfer", systemImage: "arrow.left.arrow.right")
                             }
                             ForEach(store.groupedCategories) { group in
                                 Section(group.name) {

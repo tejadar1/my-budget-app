@@ -202,6 +202,22 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.data.transactions.first { $0.id == "t1" }?.categoryId, transit?.id)
         XCTAssertFalse(store.recommendedCategories().contains { $0.name == "Transit" })
         XCTAssertEqual(BankSync.categorize(payee: "TESLA SUPERCHARGER US", amount: -1_000, rules: []), "gas")
+        let expected: [(String, String)] = [
+            ("VEOLIA WATER NEW YORK", "utilities"), ("AMAZON PRIME*2K4", "subscriptions"), ("AMZN Mktp US", "shopping"),
+            ("UBER *EATS", "dining"), ("UBER *TRIP", "gas"), ("UBER EATS PENDING", "dining"),
+            ("COMEDY CELLAR", "entertainment"), ("STOP & SHOP 0412", "groceries"), ("SHAKE SHACK 1102", "dining"),
+            ("METLIFE AUTO", "insurance"), ("DUANE READE #14", "health"), ("GREAT CLIPS", "personal"),
+            ("PETSMART 1234", "kids"), ("HERTZ RENT-A-CAR", "travel"), ("T-MOBILE AUTOPAY", "phone"),
+            ("MR. COOPER MORTGAGE", "housing"), ("BOOKING.COM HOTEL", "travel"), ("TICKETMASTER", "entertainment"),
+        ]
+        for (payee, category) in expected {
+            XCTAssertEqual(BankSync.categorize(payee: payee, amount: -2_000, rules: []), category, payee)
+        }
+        XCTAssertNotEqual(BankSync.categorize(payee: "ACME CONSULTANTS", amount: -2_000, rules: []), "personal")
+        XCTAssertEqual(store.transferLabel(Transaction(id: "x", accountId: "r", date: date(2026, 10, 1), amount: -5_000,
+                                                       payee: "CHASE CREDIT CRD AUTOPAY", isTransfer: true)), "Credit card payment")
+        XCTAssertEqual(store.transferLabel(Transaction(id: "y", accountId: "r", date: date(2026, 10, 1), amount: -5_000,
+                                                       payee: "ONLINE TRANSFER TO SAV 1234", isTransfer: true)), "Transfer")
         for bill in ["CON ED OF NY", "CONSOLIDATED EDISON CO", "CONEDISON BILL PAYMENT", "NATIONAL GRID NY", "PSEG LI"] {
             XCTAssertEqual(BankSync.categorize(payee: bill, amount: -9_000, rules: []), "utilities", bill)
         }

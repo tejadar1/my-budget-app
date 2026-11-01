@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Tap any purchase: change its category, tag it to a trip, or mark it as
-/// not spending (card payment / transfer).
+/// a credit card payment or transfer between your accounts.
 struct TransactionSheet: View {
     @Environment(BudgetStore.self) private var store
     @Environment(\.dismiss) private var dismiss
@@ -31,10 +31,11 @@ struct TransactionSheet: View {
                     Section {
                         Toggle(isOn: Binding(get: { t.isTransfer },
                                              set: { store.setTransfer(t.id, $0) })) {
-                            Label("Not spending", systemImage: "arrow.left.arrow.right")
+                            Label(t.isTransfer ? store.transferLabel(t) : "Card payment or transfer",
+                                  systemImage: "arrow.left.arrow.right")
                         }
                     } footer: {
-                        Text("Card payments and moving money between your own accounts.")
+                        Text("Paying a credit card or moving money between your own accounts. The purchases on the card already count, so this doesn’t.")
                     }
 
                     if !t.isTransfer {

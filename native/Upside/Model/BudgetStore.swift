@@ -406,7 +406,15 @@ final class BudgetStore {
         categorize(transactionId, as: categoryId, remember: remember)
     }
 
-    /// Mark a purchase as moving money ("not spending") or undo that.
+    /// "Credit card payment" when a card is involved, otherwise "Transfer".
+    func transferLabel(_ t: Transaction) -> String {
+        let p = t.payee.lowercased()
+        let cardWords = ["card", "crcardpmt", "payment", "pymt", "pmt", "autopay", "robinhood", "amex"]
+        let isCard = account(t.accountId)?.kind == .credit || cardWords.contains { p.contains($0) }
+        return isCard ? "Credit card payment" : "Transfer"
+    }
+
+    /// Mark a purchase as moving money (card payment or transfer) or undo that.
     func setTransfer(_ transactionId: String, _ isTransfer: Bool) {
         guard let i = data.transactions.firstIndex(where: { $0.id == transactionId }) else { return }
         var t = data.transactions[i]
