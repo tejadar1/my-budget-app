@@ -556,14 +556,8 @@ final class BudgetStore {
             }
         }
 
-        // A store you've bought from 3+ times that isn't sorted yet.
-        let byStore = Dictionary(grouping: unsorted.filter { !used.contains($0.id) }) { Self.payeeKey($0.payee) }
-        for (key, hits) in byStore where hits.count >= 3 && !key.isEmpty {
-            let name = key.split(separator: " ").first.map { $0.prefix(1).uppercased() + $0.dropFirst() } ?? key
-            if existing.contains(name.lowercased()) { continue }
-            result.append(CategorySuggestion(name: String(name), group: "Everyday",
-                                             transactionIds: hits.map(\.id), example: hits[0].payee))
-        }
+        // Only kinds of spending become suggestions, never a store's name:
+        // a store you buy from often belongs in a category like Dining.
         return result.sorted { $0.transactionIds.count > $1.transactionIds.count }
     }
 

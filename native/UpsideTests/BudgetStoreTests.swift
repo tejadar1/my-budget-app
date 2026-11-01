@@ -295,7 +295,7 @@ final class CategoryTests: XCTestCase {
         ]
         let store = BudgetStore(data: data, isDemo: true)
         let names = Set(store.suggestedCategories.map(\.name))
-        XCTAssertEqual(names, ["Fitness", "Pets", "Local"])
+        XCTAssertEqual(names, ["Fitness", "Pets"], "a repeated store is not a category")
 
         let fitness = store.suggestedCategories.first { $0.name == "Fitness" }!
         store.accept(fitness)
