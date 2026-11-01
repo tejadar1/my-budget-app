@@ -122,6 +122,21 @@ struct CategoryGroup: Identifiable {
     var id: String { name }
 }
 
+struct CardMonth: Equatable {
+    var charged: Cents
+    var paid: Cents
+}
+
+struct CardHealth {
+    var owedNow: Cents
+    /// Positive = you owe more than three months ago.
+    var growthSinceThreeMonths: Cents
+    var since: Date
+    var thisMonth: CardMonth
+    var lastMonth: CardMonth
+    var paysInFull: Bool
+}
+
 struct CategorySuggestion: Identifiable, Hashable {
     var name: String
     var group: String

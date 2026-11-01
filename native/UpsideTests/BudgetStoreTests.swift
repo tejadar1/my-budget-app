@@ -182,3 +182,34 @@ final class CategoryTests: XCTestCase {
         XCTAssertFalse(store.expenseCategories.contains { $0.id == id })
     }
 }
+
+final class CardTests: XCTestCase {
+    func testCardChargedPaidAndGrowth() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "America/New_York")!
+        func d(_ m: Int, _ day: Int) -> Date { cal.date(from: DateComponents(year: 2026, month: m, day: day, hour: 12))! }
+        var data = BudgetData()
+        // Owes $900 today.
+        data.accounts = [Account(id: "card", name: "Gold Card", institution: "Robinhood", kind: .credit, balance: -90_000)]
+        data.transactions = [
+            Transaction(id: "a", accountId: "card", date: d(7, 10), amount: -30_000, payee: "Target", categoryId: "shopping"),
+            Transaction(id: "b", accountId: "card", date: d(8, 10), amount: -40_000, payee: "Target", categoryId: "shopping"),
+            Transaction(id: "c", accountId: "card", date: d(9, 10), amount: -50_000, payee: "Target", categoryId: "shopping"),
+            Transaction(id: "d", accountId: "card", date: d(9, 20), amount: 30_000, payee: "PAYMENT THANK YOU", categoryId: nil, isTransfer: true),
+            Transaction(id: "e", accountId: "card", date: d(10, 5), amount: -20_000, payee: "Kroger", categoryId: "groceries"),
+            Transaction(id: "f", accountId: "card", date: d(10, 8), amount: 10_000, payee: "PAYMENT THANK YOU", categoryId: nil, isTransfer: true),
+        ]
+        let store = BudgetStore(data: data, isDemo: true)
+        store.calendar = cal
+        store.now = { d(10, 15) }
+        let card = store.creditCards[0]
+        XCTAssertEqual(store.cardMonth(card, store.currentMonth), CardMonth(charged: 20_000, paid: 10_000))
+        let health = store.cardHealth(card)
+        XCTAssertEqual(health.owedNow, 90_000)
+        XCTAssertFalse(health.paysInFull, "paid $100 against $500 charged in September")
+        XCTAssertGreaterThan(health.growthSinceThreeMonths, 10_000)
+        XCTAssertEqual(store.growingCards.count, 1)
+        // Payments are not spending; card purchases count once, in their categories.
+        XCTAssertEqual(store.spent("shopping", in: store.month(-1, from: store.currentMonth)), 50_000)
+    }
+}

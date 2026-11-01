@@ -36,6 +36,10 @@ struct BudgetView: View {
 
                     SummaryCard(month: month)
 
+                    if isCurrentMonth {
+                        CardWarningRow()
+                    }
+
                     if !store.uncategorized.isEmpty {
                         NavigationLink(value: Route.review) {
                             ReviewRow(count: store.uncategorized.count)

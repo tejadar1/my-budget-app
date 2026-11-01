@@ -239,6 +239,58 @@ final class BudgetStore {
         return words.prefix(2).joined(separator: " ")
     }
 
+    // MARK: Credit cards
+    //
+    // A separate check from the budget: purchases already count in their
+    // categories and payments are "not spending", so nothing here is added
+    // to spending. It answers "am I paying off what I charge?"
+
+    var creditCards: [Account] { data.accounts.filter { $0.kind == .credit } }
+
+    /// What you owed on a card at the start of `date` (positive = owed),
+    /// worked back from today's balance.
+    func owed(_ card: Account, at date: Date) -> Cents {
+        let later = data.transactions
+            .filter { $0.accountId == card.id && $0.date >= date }
+            .reduce(0) { $0 + $1.amount }
+        return -(card.balance - later)
+    }
+
+    func cardMonth(_ card: Account, _ month: Date) -> CardMonth {
+        let txns = data.transactions.filter { $0.accountId == card.id && isInMonth($0.date, month) }
+        let charged = max(0, -txns.filter { !$0.isTransfer }.reduce(0) { $0 + $1.amount })
+        let paid = max(0, txns.filter { $0.isTransfer && $0.amount > 0 }.reduce(0) { $0 + $1.amount })
+        return CardMonth(charged: charged, paid: paid)
+    }
+
+    func cardHealth(_ card: Account) -> CardHealth {
+        let thisMonth = currentMonth
+        let lastMonth = month(-1, from: thisMonth)
+        let threeAgo = month(-3, from: thisMonth)
+        let owedNow = -card.balance
+        let owedThen = owed(card, at: threeAgo)
+        let last = cardMonth(card, lastMonth)
+        let now = cardMonth(card, thisMonth)
+        let twoAgo = cardMonth(card, month(-2, from: thisMonth))
+        // A month's charges are usually paid the next month. Early in the
+        // month this month's payment may not have happened yet, so either
+        // "this month paid last month's" or "last month paid the month
+        // before's" counts.
+        let paysInFull = (last.charged == 0 || now.paid >= last.charged)
+            || (twoAgo.charged > 0 && last.paid >= twoAgo.charged)
+        let growth = owedNow - owedThen
+        let hasHistory = data.transactions.contains { $0.accountId == card.id && $0.date < thisMonth }
+        return CardHealth(owedNow: owedNow, growthSinceThreeMonths: hasHistory ? growth : 0,
+                          since: threeAgo, thisMonth: now, lastMonth: last, paysInFull: paysInFull)
+    }
+
+    /// Growth over three months that counts as "payments aren't keeping up".
+    static let cardGrowthAlert: Cents = 10_000
+
+    var growingCards: [Account] {
+        creditCards.filter { cardHealth($0).growthSinceThreeMonths > Self.cardGrowthAlert }
+    }
+
     // MARK: Your own categories
 
     /// Adds a category and returns its id.
