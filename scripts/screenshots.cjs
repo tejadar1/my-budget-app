@@ -153,11 +153,15 @@ async function run(colorScheme) {
   });
   await audit('account', async () => {
     await tab(page, 'Accounts');
-    await page.locator('button[aria-expanded]').first().click();
+    await page.getByRole('button', { name: /Bank of America/ }).first().click();
     await page.getByRole('link', { name: 'See transactions' }).first().click();
   });
   await audit('transaction', async () => {
     await page.getByLabel('Transaction list').getByRole('button').first().click();
+  });
+  await audit('settings-scrolled', async () => {
+    await go('/settings');
+    await scrollDown();
   });
   const routes = [
     ['settings', '/settings'],
@@ -165,7 +169,6 @@ async function run(colorScheme) {
     ['settings-bank-sync', '/settings/bank-sync'],
     ['settings-payees', '/settings/payees'],
     ['settings-rules', '/settings/rules'],
-    ['settings-tags', '/settings/tags'],
     ['settings-advanced', '/settings/advanced'],
     ['settings-experimental', '/settings/experimental'],
     ['schedules', '/schedules'],

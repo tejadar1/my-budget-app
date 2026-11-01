@@ -1,0 +1,1495 @@
+diff --git a/packages/component-library/src/themes/dark.css b/packages/component-library/src/themes/dark.css
+index 806bd25..c742ef2 100644
+--- a/packages/component-library/src/themes/dark.css
++++ b/packages/component-library/src/themes/dark.css
+@@ -369,6 +369,8 @@
+   --color-pillBackgroundLight: #1c1c1e;
+   --color-pillBorder: #3a3a3c;
+   --color-pillBackgroundSelected: #166534;
++  --color-noticeBackground: rgba(74, 222, 128, 0.16);
++  --color-noticeTextDark: #4ade80;
+ 
+   --color-budgetOtherMonth: #000000;
+   --color-budgetHeaderOtherMonth: #1c1c1e;
+diff --git a/packages/component-library/src/themes/light.css b/packages/component-library/src/themes/light.css
+index 4954f9c..22dac04 100644
+--- a/packages/component-library/src/themes/light.css
++++ b/packages/component-library/src/themes/light.css
+@@ -330,6 +330,8 @@
+   --color-checkboxBackgroundSelected: #15803d;
+   --color-checkboxToggleBackgroundSelected: #34c759;
+   --color-pillBackgroundSelected: #dcfce7;
++  --color-noticeBackground: #e3f6ea;
++  --color-noticeTextDark: #15803d;
+ 
+   --color-floatingActionBarBackground: #1c1c1e;
+   --color-floatingActionBarText: #ffffff;
+diff --git a/packages/desktop-client/src/components/common/Search.tsx b/packages/desktop-client/src/components/common/Search.tsx
+index eb5ef53..d74c3d2 100644
+--- a/packages/desktop-client/src/components/common/Search.tsx
++++ b/packages/desktop-client/src/components/common/Search.tsx
+@@ -2,6 +2,7 @@ import { useState } from 'react';
+ import type { Ref } from 'react';
+ import { useTranslation } from 'react-i18next';
+ 
++import { useResponsive } from '@actual-app/components/hooks/useResponsive';
+ import { Button } from '@actual-app/components/button';
+ import { SvgRemove, SvgSearchAlternate } from '@actual-app/components/icons/v2';
+ import { baseInputStyle, Input } from '@actual-app/components/input';
+@@ -34,6 +35,7 @@ export function Search({
+   const { t } = useTranslation();
+ 
+   const [focused, setFocused] = useState(false);
++  const { isNarrowWidth } = useResponsive();
+ 
+   const clearButtonPadding = ((height ?? 24) - 8) / 2;
+ 
+@@ -51,6 +53,14 @@ export function Search({
+         borderColor: isInModal ? undefined : 'transparent',
+         backgroundColor: isInModal ? undefined : theme.formInputBackground,
+         ...style,
++        // Upside: iOS-style rounded, filled search field on phones.
++        ...(isNarrowWidth &&
++          !isInModal && {
++            backgroundColor: 'rgba(118, 118, 128, 0.14)',
++            border: 'none',
++            borderRadius: 10,
++            height: 38,
++          }),
+         ...(focused && {
+           boxShadow: '0 0 0 1px ' + theme.formInputShadowSelected,
+           ...(isInModal
+diff --git a/packages/desktop-client/src/components/manager/WelcomeScreen.tsx b/packages/desktop-client/src/components/manager/WelcomeScreen.tsx
+index 31a1e42..de79f27 100644
+--- a/packages/desktop-client/src/components/manager/WelcomeScreen.tsx
++++ b/packages/desktop-client/src/components/manager/WelcomeScreen.tsx
+@@ -3,7 +3,6 @@ import { Trans } from 'react-i18next';
+ 
+ import { Button } from '@actual-app/components/button';
+ import { useResponsive } from '@actual-app/components/hooks/useResponsive';
+-import { SvgLogo } from '@actual-app/components/icons/logo';
+ import { Paragraph } from '@actual-app/components/paragraph';
+ import { styles } from '@actual-app/components/styles';
+ import { Text } from '@actual-app/components/text';
+@@ -12,7 +11,7 @@ import { View } from '@actual-app/components/view';
+ import { css, keyframes } from '@emotion/css';
+ 
+ import { createBudget } from '#budgetfiles/budgetfilesSlice';
+-import { Link } from '#components/common/Link';
++import { AppIcon } from '#components/mobile/upside/UpsideSettingsPage';
+ import { useServerURL } from '#components/ServerContext';
+ import { useNavigate } from '#hooks/useNavigate';
+ import { useReducedMotion } from '#hooks/useReducedMotion';
+@@ -71,22 +70,20 @@ export function WelcomeScreen() {
+         className={entranceClass(0)}
+         style={{ alignItems: 'center', gap: 10, flexShrink: 0 }}
+       >
+-        <SvgLogo
+-          width={45}
+-          height={45}
+-          style={{ color: theme.pageTextPositive }}
+-        />
+-        <Text style={{ ...styles.veryLargeText, textAlign: 'center' }}>
+-          <Trans>Welcome to Actual</Trans>
+-        </Text>
++        <AppIcon size={88} />
+         <Text
+           style={{
+-            color: theme.pageTextLight,
++            fontSize: 34,
++            fontWeight: 800,
++            letterSpacing: -0.6,
+             textAlign: 'center',
+-            fontStyle: 'italic',
++            marginTop: 8,
+           }}
+         >
+-          <Trans>Your finances - made simple</Trans>
++          Upside
++        </Text>
++        <Text style={{ color: theme.pageTextSubdued, textAlign: 'center', fontSize: 17 }}>
++          <Trans>Smart money, together.</Trans>
+         </Text>
+       </View>
+ 
+@@ -98,9 +95,9 @@ export function WelcomeScreen() {
+           style={{ textAlign: 'center', maxWidth: 400, marginBottom: 0 }}
+         >
+           <Trans>
+-            Actual is a super fast, privacy-focused app for managing your
+-            finances. It is 100% free and open source: everything stays on your
+-            device, no data is collected, and there is nothing to sign up for.
++            See what’s left each month, who spent it, and keep trips out of
++            your everyday budget. Your budget lives on your own server and syncs
++            between both of your phones.
+           </Trans>
+         </Paragraph>
+       </View>
+@@ -115,28 +112,34 @@ export function WelcomeScreen() {
+           marginTop: 10,
+         }}
+       >
++        {!serverURL && (
++          <Button
++            variant="primary"
++            style={buttonStyle}
++            onPress={() => navigate('/config-server')}
++          >
++            <Trans>Connect to your server</Trans>
++          </Button>
++        )}
+         <Button
+-          variant="primary"
++          variant={serverURL ? 'primary' : 'normal'}
+           autoFocus={!isNarrowWidth}
+           style={buttonStyle}
+           onPress={() => dispatch(createBudget({}))}
+         >
+-          <Trans>Start budgeting</Trans>
++          {serverURL ? (
++            <Trans>Start budgeting</Trans>
++          ) : (
++            <Trans>Start on this phone only</Trans>
++          )}
+         </Button>
+         <Button
+-          style={buttonStyle}
++          variant="bare"
++          style={{ ...buttonStyle, color: theme.pageTextLink }}
+           onPress={() => dispatch(createBudget({ testMode: true }))}
+         >
+           <Trans>Try the demo</Trans>
+         </Button>
+-        {!serverURL && (
+-          <Button
+-            style={buttonStyle}
+-            onPress={() => navigate('/config-server')}
+-          >
+-            <Trans>Connect to a sync server</Trans>
+-          </Button>
+-        )}
+       </View>
+ 
+       <View
+@@ -158,28 +161,6 @@ export function WelcomeScreen() {
+         >
+           <Trans>Import my budget</Trans>
+         </Button>
+-        <Paragraph
+-          style={{
+-            color: theme.pageTextLight,
+-            fontSize: 13,
+-            textAlign: 'center',
+-            maxWidth: 400,
+-            marginTop: 10,
+-            marginBottom: 0,
+-          }}
+-        >
+-          <Trans>
+-            New to budgeting? Take the{' '}
+-            <Link
+-              variant="external"
+-              to="https://actualbudget.org/docs/tour/"
+-              linkColor="purple"
+-            >
+-              guided tour
+-            </Link>{' '}
+-            to learn how Actual works.
+-          </Trans>
+-        </Paragraph>
+       </View>
+     </View>
+   );
+diff --git a/packages/desktop-client/src/components/mobile/banksync/BankSyncAccountsListItem.tsx b/packages/desktop-client/src/components/mobile/banksync/BankSyncAccountsListItem.tsx
+index ce88ba8..943b6cc 100644
+--- a/packages/desktop-client/src/components/mobile/banksync/BankSyncAccountsListItem.tsx
++++ b/packages/desktop-client/src/components/mobile/banksync/BankSyncAccountsListItem.tsx
+@@ -84,10 +84,10 @@ export function BankSyncAccountsListItem({
+ 
+         <span
+           style={{
+-            borderRadius: 4,
++            borderRadius: 999,
+             padding: '5px 10px',
+             backgroundColor: theme.noticeBackground,
+-            border: '1px solid ' + theme.noticeBackground,
++            border: 'none',
+             color: theme.noticeTextDark,
+             fontSize: 13,
+             fontWeight: 500,
+diff --git a/packages/desktop-client/src/components/mobile/payees/PayeesListItem.tsx b/packages/desktop-client/src/components/mobile/payees/PayeesListItem.tsx
+index dbc6ae3..63f39ad 100644
+--- a/packages/desktop-client/src/components/mobile/payees/PayeesListItem.tsx
++++ b/packages/desktop-client/src/components/mobile/payees/PayeesListItem.tsx
+@@ -115,10 +115,10 @@ export function PayeesListItem({
+ 
+           <span
+             style={{
+-              borderRadius: 4,
++              borderRadius: 999,
+               padding: '3px 6px',
+               backgroundColor: theme.noticeBackground,
+-              border: '1px solid ' + theme.noticeBackground,
++              border: 'none',
+               color: theme.noticeTextDark,
+               fontSize: 12,
+               flexShrink: 0,
+diff --git a/packages/desktop-client/src/components/mobile/transactions/AddTransactionButton.tsx b/packages/desktop-client/src/components/mobile/transactions/AddTransactionButton.tsx
+index 9b56af8..0bb799e 100644
+--- a/packages/desktop-client/src/components/mobile/transactions/AddTransactionButton.tsx
++++ b/packages/desktop-client/src/components/mobile/transactions/AddTransactionButton.tsx
+@@ -19,6 +19,11 @@ export function AddTransactionButton({
+ }: AddTransactionButtonProps) {
+   const { t } = useTranslation();
+   const navigate = useNavigate();
++  // Upside: transactions come from the banks, so no "+" in page headers.
++  const isHidden = true;
++  if (isHidden) {
++    return null;
++  }
+   return (
+     <Button
+       variant="bare"
+diff --git a/packages/desktop-client/src/components/mobile/upside/BankConnectionCard.tsx b/packages/desktop-client/src/components/mobile/upside/BankConnectionCard.tsx
+new file mode 100644
+index 0000000..dd55011
+--- /dev/null
++++ b/packages/desktop-client/src/components/mobile/upside/BankConnectionCard.tsx
+@@ -0,0 +1,265 @@
++import type { ReactNode } from 'react';
++import { useTranslation } from 'react-i18next';
++import { Link } from 'react-router';
++
++import { theme } from '@actual-app/components/theme';
++
++import type { useBankConnection } from './useBankConnection';
++
++type Bank = ReturnType<typeof useBankConnection>;
++
++// The Accounts tab's bank connection card. Connecting is: open SimpleFIN,
++// link your banks there, paste one token here. Everything after that
++// (adding accounts, syncing) happens on its own.
++
++export function BankConnectionCard({ bank }: { bank: Bank }) {
++  const { t } = useTranslation();
++
++  if (bank.state === 'loading') {
++    return null;
++  }
++
++  if (bank.state === 'needs-server') {
++    return (
++      <Card
++        title={t('Turn on bank sync')}
++        body={t(
++          'Bank sync runs through your Upside server. Connect the app to your server first, then come back here.',
++        )}
++      >
++        <Link to="/settings" style={linkButtonStyle(true)}>
++          {t('Open Settings')}
++        </Link>
++      </Card>
++    );
++  }
++
++  if (bank.state === 'needs-token') {
++    return (
++      <Card
++        title={t('Connect your banks')}
++        body={t(
++          'Upside uses SimpleFIN to read your banks and cards. Both of you can link your banks there; one connection covers everything.',
++        )}
++      >
++        <Step number={1} text={t('Link your banks at SimpleFIN, then copy a setup token.')}>
++          <button type="button" onClick={bank.openSimpleFin} style={buttonStyle(false)}>
++            {t('Open SimpleFIN')}
++          </button>
++        </Step>
++        <Step number={2} text={t('Paste the token. Every account is added for you.')}>
++          <button type="button" onClick={bank.connect} style={buttonStyle(true)}>
++            {t('Paste setup token')}
++          </button>
++        </Step>
++      </Card>
++    );
++  }
++
++  // Connected.
++  if (bank.isAdding) {
++    return <Card title={t('Adding your accounts…')} body={t('This takes a few seconds per bank.')} />;
++  }
++  if (bank.error) {
++    return (
++      <Card title={t('Couldn’t reach your banks')} body={bank.error}>
++        <button type="button" onClick={bank.addAllNew} style={buttonStyle(true)}>
++          {t('Try again')}
++        </button>
++      </Card>
++    );
++  }
++  if (bank.newAccounts.length > 0) {
++    return (
++      <Card
++        title={
++          bank.newAccounts.length === 1
++            ? t('1 new account at your banks')
++            : t('{{count}} new accounts at your banks', {
++                count: bank.newAccounts.length,
++              })
++        }
++        body={bank.newAccounts
++          .map(a => `${a.institution} · ${a.name}`)
++          .join('\n')}
++      >
++        <button type="button" onClick={bank.addAllNew} style={buttonStyle(true)}>
++          {t('Add to Upside')}
++        </button>
++      </Card>
++    );
++  }
++  if (bank.lastAdded != null && bank.lastAdded > 0) {
++    return (
++      <Card
++        title={
++          bank.lastAdded === 1
++            ? t('Added 1 account')
++            : t('Added {{count}} accounts', { count: bank.lastAdded })
++        }
++        body={t('Transactions are downloading now. Tell Upside whose each account is below.')}
++      />
++    );
++  }
++  return null;
++}
++
++/** The quiet row under the account list: sync, link more, add manually. */
++export function BankFooter({ bank }: { bank: Bank }) {
++  const { t } = useTranslation();
++  return (
++    <div
++      style={{
++        display: 'flex',
++        flexDirection: 'column',
++        alignItems: 'center',
++        gap: 4,
++      }}
++    >
++      {bank.state === 'connected' && (
++        <div style={{ display: 'flex', gap: 10 }}>
++          <button
++            type="button"
++            onClick={() => void bank.syncNow()}
++            disabled={bank.isSyncing}
++            style={pillStyle}
++          >
++            {bank.isSyncing ? t('Syncing…') : t('Sync now')}
++          </button>
++          <button type="button" onClick={bank.openSimpleFin} style={pillStyle}>
++            {t('Link another bank')}
++          </button>
++        </div>
++      )}
++      <button
++        type="button"
++        onClick={bank.addManually}
++        style={{
++          all: 'unset',
++          minHeight: 44,
++          display: 'flex',
++          alignItems: 'center',
++          fontSize: 13,
++          color: theme.pageTextSubdued,
++          cursor: 'pointer',
++        }}
++      >
++        {t('Add an account without a bank connection')}
++      </button>
++    </div>
++  );
++}
++
++function Card({
++  title,
++  body,
++  children,
++}: {
++  title: string;
++  body: string;
++  children?: ReactNode;
++}) {
++  return (
++    <section
++      aria-label={title}
++      style={{
++        borderRadius: 18,
++        background: theme.cardBackground,
++        padding: 18,
++        display: 'flex',
++        flexDirection: 'column',
++        gap: 14,
++      }}
++    >
++      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
++        <span style={{ fontSize: 20, fontWeight: 800, color: theme.pageText }}>
++          {title}
++        </span>
++        <span
++          style={{
++            fontSize: 14,
++            color: theme.pageTextSubdued,
++            whiteSpace: 'pre-line',
++          }}
++        >
++          {body}
++        </span>
++      </div>
++      {children}
++    </section>
++  );
++}
++
++function Step({
++  number,
++  text,
++  children,
++}: {
++  number: number;
++  text: string;
++  children: ReactNode;
++}) {
++  return (
++    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
++      <span
++        aria-hidden="true"
++        style={{
++          width: 26,
++          height: 26,
++          flexShrink: 0,
++          borderRadius: 13,
++          background: theme.pageTextPositive,
++          color: theme.cardBackground,
++          display: 'flex',
++          alignItems: 'center',
++          justifyContent: 'center',
++          fontSize: 14,
++          fontWeight: 800,
++          marginTop: 2,
++        }}
++      >
++        {number}
++      </span>
++      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
++        <span style={{ fontSize: 15, color: theme.pageText }}>{text}</span>
++        {children}
++      </div>
++    </div>
++  );
++}
++
++function buttonStyle(primary: boolean) {
++  return {
++    all: 'unset',
++    boxSizing: 'border-box',
++    minHeight: 44,
++    padding: '0 18px',
++    borderRadius: 12,
++    display: 'flex',
++    alignItems: 'center',
++    justifyContent: 'center',
++    fontSize: 16,
++    fontWeight: 700,
++    cursor: 'pointer',
++    background: primary ? theme.buttonPrimaryBackground : theme.tableBorder,
++    color: primary ? theme.buttonPrimaryText : theme.pageText,
++  } as const;
++}
++
++function linkButtonStyle(primary: boolean) {
++  return { ...buttonStyle(primary), textDecoration: 'none' };
++}
++
++const pillStyle = {
++  all: 'unset',
++  minHeight: 40,
++  padding: '0 16px',
++  borderRadius: 20,
++  border: `1px solid ${theme.tableBorder}`,
++  color: theme.pageTextPositive,
++  fontSize: 15,
++  fontWeight: 600,
++  display: 'flex',
++  alignItems: 'center',
++  cursor: 'pointer',
++} as const;
+diff --git a/packages/desktop-client/src/components/mobile/upside/UpsideAccountsPage.tsx b/packages/desktop-client/src/components/mobile/upside/UpsideAccountsPage.tsx
+index 9f95c3a..0648252 100644
+--- a/packages/desktop-client/src/components/mobile/upside/UpsideAccountsPage.tsx
++++ b/packages/desktop-client/src/components/mobile/upside/UpsideAccountsPage.tsx
+@@ -5,7 +5,6 @@ import { Link, Navigate, useLocation } from 'react-router';
+ import { theme } from '@actual-app/components/theme';
+ import type { AccountEntity } from '@actual-app/core/types/models';
+ 
+-import { useSyncAndDownloadMutation } from '#accounts';
+ import { ALL_ACCOUNTS_ID } from '#components/mobile/accounts/AccountsPage';
+ import { MOBILE_NAV_HEIGHT } from '#components/mobile/MobileNavTabs';
+ import { PullToRefresh } from '#components/mobile/PullToRefresh';
+@@ -13,10 +12,9 @@ import { Page } from '#components/Page';
+ import { useAccounts } from '#hooks/useAccounts';
+ import { useFormat } from '#hooks/useFormat';
+ import { useSheetValue } from '#hooks/useSheetValue';
+-import { replaceModal } from '#modals/modalsSlice';
+-import { useDispatch } from '#redux';
+ import * as bindings from '#spreadsheet/bindings';
+ 
++import { BankConnectionCard, BankFooter } from './BankConnectionCard';
+ import {
+   OWNER_COLORS,
+   OWNER_INK,
+@@ -25,6 +23,7 @@ import {
+   usePeople,
+ } from './people';
+ import type { OwnerId, OwnerKey } from './people';
++import { useBankConnection } from './useBankConnection';
+ 
+ // Wallet-style accounts: each account is a colored card with its owner
+ // (you, your partner or Shared). New accounts nobody has claimed yet are
+@@ -53,11 +52,10 @@ function gradientFor(account: AccountEntity) {
+ export function UpsideAccountsPage() {
+   const { t } = useTranslation();
+   const format = useFormat();
+-  const dispatch = useDispatch();
+   const { data: accounts = [] } = useAccounts();
++  const bank = useBankConnection();
+   const { ownerOf, setOwner } = useAccountOwners();
+   const { people, isSetUp } = usePeople();
+-  const syncAndDownload = useSyncAndDownloadMutation();
+   const [openId, setOpenId] = useState<string | null>(null);
+   const netWorth = useSheetValue<'account', 'accounts-balance'>(bindings.allAccountBalance()) ?? 0;
+   const location = useLocation();
+@@ -76,7 +74,7 @@ export function UpsideAccountsPage() {
+ 
+   return (
+     <Page header={null} padding={0}>
+-      <PullToRefresh onRefresh={async () => syncAndDownload.mutate({})}>
++      <PullToRefresh onRefresh={async () => bank.syncNow()}>
+         <div
+           style={{
+             display: 'flex',
+@@ -96,7 +94,11 @@ export function UpsideAccountsPage() {
+                 color: theme.pageTextSubdued,
+               }}
+             >
+-              {t('{{count}} ACCOUNTS · PULL DOWN TO SYNC', { count: open.length })}
++              {bank.isSyncing
++                ? t('SYNCING WITH YOUR BANKS…')
++                : bank.hasLinkedAccounts
++                  ? t('{{count}} ACCOUNTS · PULL DOWN TO SYNC', { count: open.length })
++                  : t('{{count}} ACCOUNTS', { count: open.length })}
+             </span>
+             <h1
+               style={{
+@@ -111,6 +113,7 @@ export function UpsideAccountsPage() {
+             </h1>
+           </header>
+ 
++          {open.length > 0 && (
+           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+             <span style={{ fontSize: 13, color: theme.pageTextSubdued }}>
+               {t('Net worth across everything')}
+@@ -126,6 +129,9 @@ export function UpsideAccountsPage() {
+               {format(netWorth, 'financial-no-decimals')}
+             </span>
+           </div>
++          )}
++
++          <BankConnectionCard bank={bank} />
+ 
+           {isSetUp && unclaimed.length > 0 && (
+             <section
+@@ -195,28 +201,7 @@ export function UpsideAccountsPage() {
+             ))}
+           </div>
+ 
+-          <button
+-            type="button"
+-            onClick={() =>
+-              dispatch(replaceModal({ modal: { name: 'add-account', options: {} } }))
+-            }
+-            style={{
+-              all: 'unset',
+-              alignSelf: 'center',
+-              minHeight: 44,
+-              padding: '0 20px',
+-              borderRadius: 22,
+-              border: `1px solid ${theme.tableBorder}`,
+-              color: theme.pageTextPositive,
+-              fontSize: 15,
+-              fontWeight: 600,
+-              display: 'flex',
+-              alignItems: 'center',
+-              cursor: 'pointer',
+-            }}
+-          >
+-            {t('Connect a bank')}
+-          </button>
++          <BankFooter bank={bank} />
+         </div>
+       </PullToRefresh>
+     </Page>
+diff --git a/packages/desktop-client/src/components/mobile/upside/UpsideSettingsPage.tsx b/packages/desktop-client/src/components/mobile/upside/UpsideSettingsPage.tsx
+new file mode 100644
+index 0000000..5c2bb7c
+--- /dev/null
++++ b/packages/desktop-client/src/components/mobile/upside/UpsideSettingsPage.tsx
+@@ -0,0 +1,599 @@
++import { useState } from 'react';
++import type { ReactNode } from 'react';
++import { useTranslation } from 'react-i18next';
++import { Link } from 'react-router';
++
++import { theme } from '@actual-app/components/theme';
++
++import { closeBudget } from '#budgetfiles/budgetfilesSlice';
++import { MOBILE_NAV_HEIGHT } from '#components/mobile/MobileNavTabs';
++import { Page } from '#components/Page';
++import { useMetadataPref } from '#hooks/useMetadataPref';
++import { useSyncedPref } from '#hooks/useSyncedPref';
++import { useDispatch } from '#redux';
++import { useTheme } from '#style/theme';
++
++import { PeopleSetup } from './PeopleSetup';
++import { OWNER_COLORS, OWNER_INK, initialOf, usePeople } from './people';
++import { useBankConnection } from './useBankConnection';
++
++// Upside's Settings, laid out like the iOS Settings app: a large title,
++// inset grouped lists, colored icon tiles and chevrons. Actual's detailed
++// settings are still reachable under "More".
++
++export function UpsideSettingsPage() {
++  const { t } = useTranslation();
++  const dispatch = useDispatch();
++  const [budgetName] = useMetadataPref('budgetName');
++  const { people, isSetUp, setNames } = usePeople();
++  const bank = useBankConnection();
++  const [syncInterval] = useSyncedPref('bank-sync-interval');
++  const [budgetType] = useSyncedPref('budgetType');
++  const [themePref, setTheme] = useTheme();
++  const [isEditingPeople, setIsEditingPeople] = useState(false);
++
++  const bankValue =
++    bank.state === 'connected'
++      ? t('Connected')
++      : bank.state === 'needs-server'
++        ? t('Needs server')
++        : bank.state === 'needs-token'
++          ? t('Not connected')
++          : '';
++  const minutes = Number(syncInterval || 0);
++  const syncValue =
++    minutes <= 0
++      ? t('Off')
++      : minutes % 60 === 0
++        ? minutes === 60
++          ? t('Every hour')
++          : t('Every {{hours}} hours', { hours: minutes / 60 })
++        : t('Every {{minutes}} min', { minutes });
++
++  return (
++    <Page header={null} padding={0}>
++      <div
++        data-testid="settings"
++        style={{
++          display: 'flex',
++          flexDirection: 'column',
++          gap: 28,
++          padding: '0 16px',
++          paddingTop: 'calc(env(safe-area-inset-top) + 18px)',
++          paddingBottom: `calc(env(safe-area-inset-bottom) + ${MOBILE_NAV_HEIGHT + 24}px)`,
++        }}
++      >
++        <h1
++          style={{
++            margin: 0,
++            fontSize: 34,
++            fontWeight: 800,
++            letterSpacing: -0.6,
++            color: theme.pageText,
++          }}
++        >
++          {t('Settings')}
++        </h1>
++
++        <div
++          style={{
++            borderRadius: 14,
++            background: theme.cardBackground,
++            padding: 16,
++            display: 'flex',
++            alignItems: 'center',
++            gap: 14,
++          }}
++        >
++          <AppIcon size={58} />
++          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
++            <span style={{ fontSize: 22, fontWeight: 700, color: theme.pageText }}>
++              Upside
++            </span>
++            <span
++              style={{
++                fontSize: 14,
++                color: theme.pageTextSubdued,
++                overflow: 'hidden',
++                textOverflow: 'ellipsis',
++                whiteSpace: 'nowrap',
++              }}
++            >
++              {budgetName || t('Your budget')}
++            </span>
++          </div>
++        </div>
++
++        {isEditingPeople || !isSetUp ? (
++          <PeopleSetup
++            people={people}
++            onSave={(p1, p2) => {
++              setNames(p1, p2);
++              setIsEditingPeople(false);
++            }}
++            onCancel={isSetUp ? () => setIsEditingPeople(false) : undefined}
++          />
++        ) : (
++          <Group title={t('People')}>
++            {people.map(person => (
++              <Row
++                key={person.id}
++                icon={
++                  <span
++                    style={{
++                      width: 29,
++                      height: 29,
++                      borderRadius: 15,
++                      background: OWNER_COLORS[person.id],
++                      color: OWNER_INK[person.id],
++                      display: 'flex',
++                      alignItems: 'center',
++                      justifyContent: 'center',
++                      fontSize: 14,
++                      fontWeight: 700,
++                    }}
++                  >
++                    {initialOf(person.name)}
++                  </span>
++                }
++                label={person.name}
++                onPress={() => setIsEditingPeople(true)}
++              />
++            ))}
++          </Group>
++        )}
++
++        <Group
++          title={t('Banks')}
++          footer={t(
++            'Accounts sync on their own. Pull down on Accounts to sync right away.',
++          )}
++        >
++          <Row
++            icon={<Tile color="#30b0c7"><BankGlyph /></Tile>}
++            label={t('Bank connection')}
++            value={bankValue}
++            to="/accounts"
++          />
++          <Row
++            icon={<Tile color="#34c759"><SyncGlyph /></Tile>}
++            label={t('Automatic sync')}
++            value={syncValue}
++            to="/settings/bank-sync"
++          />
++          <Row
++            icon={<Tile color="#5856d6"><ListGlyph /></Tile>}
++            label={t('Linked accounts')}
++            to="/bank-sync"
++          />
++        </Group>
++
++        <Group title={t('Budget')}>
++          <Row
++            icon={<Tile color="#16a34a"><BarsGlyph /></Tile>}
++            label={t('Monthly limits')}
++            to="/budget/limits"
++          />
++          <Row
++            icon={<Tile color="#ff9500"><SlidersGlyph /></Tile>}
++            label={t('Budget style')}
++            value={budgetType === 'tracking' ? t('Limits') : t('Envelopes')}
++            to="/settings/general"
++          />
++          <Row
++            icon={<Tile color="#ff2d55"><TagGlyph /></Tile>}
++            label={t('Payees')}
++            to="/payees"
++          />
++          <Row
++            icon={<Tile color="#af52de"><RuleGlyph /></Tile>}
++            label={t('Rules')}
++            to="/rules"
++          />
++          <Row
++            icon={<Tile color="#ff3b30"><CalendarGlyph /></Tile>}
++            label={t('Schedules')}
++            to="/schedules"
++          />
++        </Group>
++
++        <Group title={t('Appearance')}>
++          <div style={{ padding: '10px 16px' }}>
++            <Segmented
++              label={t('Theme')}
++              value={themePref === 'auto' ? 'auto' : themePref === 'light' ? 'light' : 'dark'}
++              options={[
++                { value: 'auto', label: t('Automatic') },
++                { value: 'light', label: t('Light') },
++                { value: 'dark', label: t('Dark') },
++              ]}
++              onChange={value => setTheme(value)}
++            />
++          </div>
++        </Group>
++
++        <Group title={t('More')}>
++          <Row
++            icon={<Tile color="#8e8e93"><GearGlyph /></Tile>}
++            label={t('General')}
++            to="/settings/general"
++          />
++          <Row
++            icon={<Tile color="#636366"><WrenchGlyph /></Tile>}
++            label={t('Advanced')}
++            to="/settings/advanced"
++          />
++          <Row
++            icon={<Tile color="#636366"><FlaskGlyph /></Tile>}
++            label={t('Experimental')}
++            to="/settings/experimental"
++          />
++        </Group>
++
++        <Group>
++          <button
++            type="button"
++            onClick={() => void dispatch(closeBudget())}
++            style={{
++              all: 'unset',
++              minHeight: 44,
++              display: 'flex',
++              alignItems: 'center',
++              justifyContent: 'center',
++              color: theme.pageTextPositive,
++              fontSize: 17,
++              cursor: 'pointer',
++            }}
++          >
++            {t('Switch budget')}
++          </button>
++        </Group>
++
++        <span
++          style={{
++            textAlign: 'center',
++            fontSize: 12,
++            color: theme.pageTextSubdued,
++          }}
++        >
++          {t('Upside · built on Actual Budget')}
++        </span>
++      </div>
++    </Page>
++  );
++}
++
++function Group({
++  title,
++  footer,
++  children,
++}: {
++  title?: string;
++  footer?: string;
++  children: ReactNode;
++}) {
++  return (
++    <section
++      aria-label={title}
++      style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
++    >
++      {title && (
++        <h2
++          style={{
++            margin: 0,
++            padding: '0 16px',
++            fontSize: 13,
++            fontWeight: 400,
++            textTransform: 'uppercase',
++            letterSpacing: 0.2,
++            color: theme.pageTextSubdued,
++          }}
++        >
++          {title}
++        </h2>
++      )}
++      <div
++        className="upside-group"
++        style={{
++          borderRadius: 12,
++          background: theme.cardBackground,
++          overflow: 'hidden',
++          display: 'flex',
++          flexDirection: 'column',
++        }}
++      >
++        {children}
++      </div>
++      {footer && (
++        <p
++          style={{
++            margin: 0,
++            padding: '0 16px',
++            fontSize: 13,
++            color: theme.pageTextSubdued,
++          }}
++        >
++          {footer}
++        </p>
++      )}
++    </section>
++  );
++}
++
++function Row({
++  icon,
++  label,
++  value,
++  to,
++  onPress,
++}: {
++  icon: ReactNode;
++  label: string;
++  value?: string;
++  to?: string;
++  onPress?: () => void;
++}) {
++  const content = (
++    <>
++      <span style={{ flexShrink: 0, display: 'flex' }}>{icon}</span>
++      <span
++        style={{
++          flex: 1,
++          minWidth: 0,
++          display: 'flex',
++          alignItems: 'center',
++          gap: 8,
++          minHeight: 44,
++          borderBottom: `0.5px solid ${theme.tableBorder}`,
++          marginRight: -16,
++          paddingRight: 16,
++        }}
++      >
++        <span
++          style={{
++            flex: 1,
++            fontSize: 17,
++            color: theme.pageText,
++            overflow: 'hidden',
++            textOverflow: 'ellipsis',
++            whiteSpace: 'nowrap',
++          }}
++        >
++          {label}
++        </span>
++        {value && (
++          <span style={{ fontSize: 17, color: theme.pageTextSubdued }}>{value}</span>
++        )}
++        <Chevron />
++      </span>
++    </>
++  );
++  const style = {
++    all: 'unset',
++    boxSizing: 'border-box',
++    display: 'flex',
++    alignItems: 'center',
++    gap: 14,
++    paddingLeft: 16,
++    paddingRight: 16,
++    color: theme.pageText,
++    textDecoration: 'none',
++    cursor: 'pointer',
++    WebkitTapHighlightColor: 'transparent',
++  } as const;
++  return to ? (
++    <Link to={to} style={style}>
++      {content}
++    </Link>
++  ) : (
++    <button type="button" onClick={onPress} style={style}>
++      {content}
++    </button>
++  );
++}
++
++function Segmented<V extends string>({
++  label,
++  value,
++  options,
++  onChange,
++}: {
++  label: string;
++  value: V;
++  options: Array<{ value: V; label: string }>;
++  onChange: (value: V) => void;
++}) {
++  return (
++    <div
++      role="radiogroup"
++      aria-label={label}
++      style={{
++        display: 'grid',
++        gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`,
++        gap: 2,
++        padding: 2,
++        borderRadius: 9,
++        background: theme.tableBorder,
++      }}
++    >
++      {options.map(option => {
++        const selected = option.value === value;
++        return (
++          <button
++            key={option.value}
++            type="button"
++            role="radio"
++            aria-checked={selected}
++            onClick={() => onChange(option.value)}
++            style={{
++              all: 'unset',
++              minHeight: 32,
++              borderRadius: 7,
++              display: 'flex',
++              alignItems: 'center',
++              justifyContent: 'center',
++              fontSize: 13,
++              fontWeight: 600,
++              color: theme.pageText,
++              background: selected ? theme.cardBackground : 'transparent',
++              boxShadow: selected ? '0 1px 3px rgba(0,0,0,0.15)' : 'none',
++              cursor: 'pointer',
++            }}
++          >
++            {option.label}
++          </button>
++        );
++      })}
++    </div>
++  );
++}
++
++export function AppIcon({ size }: { size: number }) {
++  return (
++    <span
++      aria-hidden="true"
++      style={{
++        width: size,
++        height: size,
++        flexShrink: 0,
++        borderRadius: size * 0.225,
++        background: 'linear-gradient(145deg, #6ee7a0 0%, #0f7a3c 100%)',
++        display: 'flex',
++        alignItems: 'center',
++        justifyContent: 'center',
++      }}
++    >
++      <svg
++        width={size * 0.6}
++        height={size * 0.6}
++        viewBox="0 0 24 24"
++        fill="none"
++        stroke="#ffffff"
++        strokeWidth={2.6}
++        strokeLinecap="round"
++        strokeLinejoin="round"
++      >
++        <path d="M5 17l6-6 3.5 3.5L20 9" />
++        <path d="M14.5 9H20v5.5" />
++      </svg>
++    </span>
++  );
++}
++
++function Tile({ color, children }: { color: string; children: ReactNode }) {
++  return (
++    <span
++      aria-hidden="true"
++      style={{
++        width: 29,
++        height: 29,
++        borderRadius: 7,
++        background: color,
++        color: '#ffffff',
++        display: 'flex',
++        alignItems: 'center',
++        justifyContent: 'center',
++      }}
++    >
++      {children}
++    </span>
++  );
++}
++
++function Glyph({ children }: { children: ReactNode }) {
++  return (
++    <svg
++      width={18}
++      height={18}
++      viewBox="0 0 24 24"
++      fill="none"
++      stroke="currentColor"
++      strokeWidth={2.2}
++      strokeLinecap="round"
++      strokeLinejoin="round"
++    >
++      {children}
++    </svg>
++  );
++}
++
++const BankGlyph = () => (
++  <Glyph>
++    <path d="M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18" />
++  </Glyph>
++);
++const SyncGlyph = () => (
++  <Glyph>
++    <path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4" />
++  </Glyph>
++);
++const ListGlyph = () => (
++  <Glyph>
++    <path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" />
++  </Glyph>
++);
++const BarsGlyph = () => (
++  <Glyph>
++    <path d="M4 19V10M10 19V5M16 19v-6M22 19H2" />
++  </Glyph>
++);
++const SlidersGlyph = () => (
++  <Glyph>
++    <path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" />
++    <circle cx="16" cy="6" r="2" />
++    <circle cx="10" cy="12" r="2" />
++    <circle cx="18" cy="18" r="2" />
++  </Glyph>
++);
++const TagGlyph = () => (
++  <Glyph>
++    <path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z" />
++    <circle cx="8" cy="8" r="1.5" />
++  </Glyph>
++);
++const RuleGlyph = () => (
++  <Glyph>
++    <path d="M4 7h16M4 12h10M4 17h6" />
++  </Glyph>
++);
++const CalendarGlyph = () => (
++  <Glyph>
++    <rect x="3" y="5" width="18" height="16" rx="2" />
++    <path d="M3 10h18M8 3v4M16 3v4" />
++  </Glyph>
++);
++const GearGlyph = () => (
++  <Glyph>
++    <circle cx="12" cy="12" r="3" />
++    <path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1L7 17M17 7l2.1-2.1" />
++  </Glyph>
++);
++const WrenchGlyph = () => (
++  <Glyph>
++    <path d="M14.7 6.3a4 4 0 0 0 5 5L21 13l-8 8-4-4 8-8-1.3-1.3zM3 21l6-6" />
++  </Glyph>
++);
++const FlaskGlyph = () => (
++  <Glyph>
++    <path d="M9 3h6M10 3v6L4 20h16L14 9V3" />
++  </Glyph>
++);
++
++function Chevron() {
++  return (
++    <svg
++      width={8}
++      height={13}
++      viewBox="0 0 8 13"
++      fill="none"
++      stroke={theme.pageTextSubdued}
++      strokeWidth={2}
++      strokeLinecap="round"
++      strokeLinejoin="round"
++      aria-hidden="true"
++      style={{ flexShrink: 0, opacity: 0.6 }}
++    >
++      <path d="M1.5 1.5l5 5-5 5" />
++    </svg>
++  );
++}
+diff --git a/packages/desktop-client/src/components/mobile/upside/useBankConnection.ts b/packages/desktop-client/src/components/mobile/upside/useBankConnection.ts
+new file mode 100644
+index 0000000..9363b44
+--- /dev/null
++++ b/packages/desktop-client/src/components/mobile/upside/useBankConnection.ts
+@@ -0,0 +1,184 @@
++import { useEffect, useState } from 'react';
++
++import { send } from '@actual-app/core/platform/client/connection';
++import type { SyncServerSimpleFinAccount } from '@actual-app/core/types/models/simplefin';
++
++import {
++  useLinkAccountSimpleFinMutation,
++  useSyncAndDownloadMutation,
++} from '#accounts';
++import { useAccounts } from '#hooks/useAccounts';
++import { useSimpleFinStatus } from '#hooks/useSimpleFinStatus';
++import { useSyncedPref } from '#hooks/useSyncedPref';
++import { useSyncServerStatus } from '#hooks/useSyncServerStatus';
++import { pushModal } from '#modals/modalsSlice';
++import { useDispatch } from '#redux';
++
++// Upside's bank connection: one SimpleFIN token covers every bank either of
++// you links at SimpleFIN. Every account found there is added automatically
++// (no per-account setup), and bank sync then runs on its own.
++
++export const SIMPLEFIN_URL = 'https://beta-bridge.simplefin.org/';
++
++// Automatic sync every 4 hours while the app is open, plus whenever it's
++// opened and that much time has passed.
++const DEFAULT_SYNC_MINUTES = '240';
++
++type RawSimpleFinAccount = {
++  id: string;
++  name: string;
++  balance: number;
++  org: { name: string; domain: string; id: string };
++};
++
++export type BankConnectionState =
++  | 'needs-server'
++  | 'loading'
++  | 'needs-token'
++  | 'connected';
++
++export function useBankConnection() {
++  const dispatch = useDispatch();
++  const serverStatus = useSyncServerStatus();
++  const { simpleFinStatus, setSimpleFinStatus, isLoading } =
++    useSimpleFinStatus();
++  const { data: localAccounts = [] } = useAccounts();
++  const linkAccount = useLinkAccountSimpleFinMutation();
++  const syncAndDownload = useSyncAndDownloadMutation();
++  const [syncInterval, setSyncInterval] = useSyncedPref('bank-sync-interval');
++
++  const [newAccounts, setNewAccounts] = useState<SyncServerSimpleFinAccount[]>([]);
++  const [isAdding, setIsAdding] = useState(false);
++  const [lastAdded, setLastAdded] = useState<number | null>(null);
++  const [error, setError] = useState<string | null>(null);
++
++  const state: BankConnectionState =
++    serverStatus === 'no-server'
++      ? 'needs-server'
++      : isLoading || serverStatus !== 'online'
++        ? 'loading'
++        : simpleFinStatus.configured
++          ? 'connected'
++          : 'needs-token';
++
++  const hasLinkedAccounts = localAccounts.some(
++    a => a.closed === 0 && a.account_sync_source === 'simpleFin',
++  );
++
++  // Make sure automatic sync is on once any bank is linked.
++  useEffect(() => {
++    if (hasLinkedAccounts && !syncInterval) {
++      setSyncInterval(DEFAULT_SYNC_MINUTES);
++    }
++  }, [hasLinkedAccounts, syncInterval, setSyncInterval]);
++
++  async function fetchUnlinked(): Promise<SyncServerSimpleFinAccount[] | null> {
++    const results = await send('simplefin-accounts');
++    if (results.error_code === 'INVALID_ACCESS_TOKEN') {
++      setSimpleFinStatus({ ...simpleFinStatus, configured: false });
++      return null;
++    }
++    if (results.error_code || ('error' in results && results.error)) {
++      throw new Error(
++        results.reason || results.error_code || String(results.error),
++      );
++    }
++    const linked = new Set(
++      localAccounts.filter(a => a.closed === 0).map(a => a.account_id),
++    );
++    return ((results.accounts ?? []) as RawSimpleFinAccount[])
++      .filter(a => !linked.has(a.id))
++      .map(a => ({
++        account_id: a.id,
++        name: a.name,
++        institution: a.org.name,
++        orgDomain: a.org.domain,
++        orgId: a.org.id,
++        balance: a.balance,
++      }));
++  }
++
++  // Look for accounts added at SimpleFIN since last time (e.g. your partner
++  // linked her bank there).
++  const localKey = localAccounts.map(a => `${a.id}:${a.account_id}`).join(',');
++  useEffect(() => {
++    if (state !== 'connected') return;
++    let cancelled = false;
++    fetchUnlinked()
++      .then(found => {
++        if (!cancelled && found) setNewAccounts(found);
++      })
++      .catch(() => {});
++    return () => {
++      cancelled = true;
++    };
++    // fetchUnlinked reads the same inputs captured by these keys
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [state, localKey]);
++
++  async function addAllNew() {
++    setIsAdding(true);
++    setError(null);
++    try {
++      const found = (await fetchUnlinked()) ?? [];
++      for (const externalAccount of found) {
++        await linkAccount.mutateAsync({ externalAccount, offBudget: false });
++      }
++      setNewAccounts([]);
++      setLastAdded(found.length);
++      if (!syncInterval) setSyncInterval(DEFAULT_SYNC_MINUTES);
++    } catch (e) {
++      setError(e instanceof Error ? e.message : String(e));
++    } finally {
++      setIsAdding(false);
++    }
++  }
++
++  /** Paste a SimpleFIN setup token, then add every account it can see. */
++  function connect() {
++    if (state === 'connected') {
++      void addAllNew();
++      return;
++    }
++    dispatch(
++      pushModal({
++        modal: {
++          name: 'simplefin-init',
++          options: {
++            credentialSource: simpleFinStatus.source ?? 'global',
++            onSuccess: perBudgetFile => {
++              setSimpleFinStatus({
++                configured: true,
++                source: perBudgetFile ? 'per-budget-file' : 'global',
++              });
++              void addAllNew();
++            },
++          },
++        },
++      }),
++    );
++  }
++
++  function openSimpleFin() {
++    window.Actual.openURLInBrowser(SIMPLEFIN_URL);
++  }
++
++  function addManually() {
++    dispatch(pushModal({ modal: { name: 'add-local-account' } }));
++  }
++
++  return {
++    state,
++    hasLinkedAccounts,
++    newAccounts,
++    isAdding,
++    lastAdded,
++    error,
++    isSyncing: syncAndDownload.isPending,
++    connect,
++    addAllNew,
++    openSimpleFin,
++    addManually,
++    syncNow: () => syncAndDownload.mutateAsync({}),
++  };
++}
+diff --git a/packages/desktop-client/src/components/settings/SettingsGroup.tsx b/packages/desktop-client/src/components/settings/SettingsGroup.tsx
+index f0d55e5..399f5e5 100644
+--- a/packages/desktop-client/src/components/settings/SettingsGroup.tsx
++++ b/packages/desktop-client/src/components/settings/SettingsGroup.tsx
+@@ -18,9 +18,19 @@ export function SettingsGroup({
+   children,
+ }: SettingsGroupProps) {
+   return (
+-    <View style={{ flexShrink: 0, gap: spacing.sm }}>
+-      <View style={{ gap: spacing.xxs }}>
+-        <h2 style={{ ...styles.mediumText, fontWeight: 600, margin: 0 }}>
++    <View style={{ flexShrink: 0, gap: 6 }}>
++      <View style={{ gap: spacing.xxs, padding: '0 16px' }}>
++        <h2
++          style={{
++            ...styles.smallText,
++            fontSize: 13,
++            fontWeight: 400,
++            textTransform: 'uppercase',
++            letterSpacing: 0.2,
++            color: theme.pageTextSubdued,
++            margin: 0,
++          }}
++        >
+           {title}
+         </h2>
+         {description && (
+@@ -39,8 +49,8 @@ export function SettingsGroup({
+         style={{
+           color: theme.settingsCardText,
+           backgroundColor: theme.settingsCardBackground,
+-          border: `1px solid ${theme.settingsCardBorder}`,
+-          borderRadius: 6,
++          borderRadius: 12,
++          overflow: 'hidden',
+           '&& > * + *': {
+             borderTop: `1px solid ${theme.settingsCardBorder}`,
+           },
+diff --git a/packages/desktop-client/src/components/settings/index.tsx b/packages/desktop-client/src/components/settings/index.tsx
+index c12db86..369647a 100644
+--- a/packages/desktop-client/src/components/settings/index.tsx
++++ b/packages/desktop-client/src/components/settings/index.tsx
+@@ -19,6 +19,7 @@ import { closeBudget } from '#budgetfiles/budgetfilesSlice';
+ import { Link } from '#components/common/Link';
+ import { Checkbox, FormField, FormLabel } from '#components/forms';
+ import { MOBILE_NAV_HEIGHT } from '#components/mobile/MobileNavTabs';
++import { UpsideSettingsPage } from '#components/mobile/upside/UpsideSettingsPage';
+ import { MobilePageHeader, Page } from '#components/Page';
+ import { useServerURL, useServerVersion } from '#components/ServerContext';
+ import { useFeatureFlag } from '#hooks/useFeatureFlag';
+@@ -225,6 +226,11 @@ export function SettingsIndex() {
+     return <Navigate to="/settings/general" replace />;
+   }
+ 
++  // Upside: iOS Settings-style screen on phones.
++  if (isNarrowWidth) {
++    return <UpsideSettingsPage />;
++  }
++
+   return (
+     <Page header={t('Settings')}>
+       <View
