@@ -202,6 +202,9 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.data.transactions.first { $0.id == "t1" }?.categoryId, transit?.id)
         XCTAssertFalse(store.recommendedCategories().contains { $0.name == "Transit" })
         XCTAssertEqual(BankSync.categorize(payee: "TESLA SUPERCHARGER US", amount: -1_000, rules: []), "gas")
+        for bill in ["CON ED OF NY", "CONSOLIDATED EDISON CO", "CONEDISON BILL PAYMENT", "NATIONAL GRID NY", "PSEG LI"] {
+            XCTAssertEqual(BankSync.categorize(payee: bill, amount: -9_000, rules: []), "utilities", bill)
+        }
     }
     // MARK: Income, trips, alerts
 
