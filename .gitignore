@@ -1,3 +1,6 @@
 # Actual's source, downloaded by scripts/prepare.sh
 /actual/
 .DS_Store
+# Native app: generated project and build output
+/native/Upside.xcodeproj/
+/native/build/
