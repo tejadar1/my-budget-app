@@ -1,0 +1,42 @@
+name: TestFlight status
+
+# Lists the latest uploads and what App Store Connect did with them
+# (processing, valid, invalid, ready to test). Run it from the Actions tab.
+on:
+  workflow_dispatch:
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ask App Store Connect
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          ISSUER: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+        run: |
+          pip install --quiet "pyjwt[crypto]" requests
+          python3 - <<'PY'
+          import os, time, jwt, requests
+          key = os.environ["P8"]
+          if "BEGIN PRIVATE KEY" not in key:  # stored base64-encoded
+              import base64; key = base64.b64decode(key).decode()
+          token = jwt.encode({"iss": os.environ["ISSUER"], "iat": int(time.time()),
+                              "exp": int(time.time()) + 600, "aud": "appstoreconnect-v1"},
+                             key, algorithm="ES256", headers={"kid": os.environ["KEY_ID"]})
+          api = "https://api.appstoreconnect.apple.com/v1"
+          h = {"Authorization": f"Bearer {token}"}
+          app = requests.get(f"{api}/apps", headers=h, params={"filter[bundleId]": "com.tejadar1.upside"}).json()
+          app_id = app["data"][0]["id"]
+          r = requests.get(f"{api}/builds", headers=h, params={
+              "filter[app]": app_id, "sort": "-uploadedDate", "limit": 6,
+              "include": "buildBetaDetail,preReleaseVersion"}).json()
+          details = {i["id"]: i["attributes"] for i in r.get("included", []) if i["type"] == "buildBetaDetails"}
+          versions = {i["id"]: i["attributes"]["version"] for i in r.get("included", []) if i["type"] == "preReleaseVersions"}
+          for b in r["data"]:
+              a = b["attributes"]
+              d = details.get(b["relationships"]["buildBetaDetail"]["data"]["id"], {})
+              v = versions.get((b["relationships"]["preReleaseVersion"]["data"] or {}).get("id"), "?")
+              print(f'{v} ({a["version"]})  uploaded {a["uploadedDate"]}  processing={a["processingState"]}  '
+                    f'expired={a["expired"]}  internal={d.get("internalBuildState")}  external={d.get("externalBuildState")}')
+          PY
