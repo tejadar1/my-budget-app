@@ -677,6 +677,184 @@ index 9f95c3a..0648252 100644
          </div>
        </PullToRefresh>
      </Page>
+diff --git a/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx b/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
+index 99c5eeb..6b56ef6 100644
+--- a/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
++++ b/packages/desktop-client/src/components/mobile/upside/UpsideBudgetPage.tsx
+@@ -32,6 +32,7 @@ import {
+   useSpendingByOwner,
+ } from './people';
+ import type { OwnerKey } from './people';
++import { useCategoryActivity } from './activity';
+ 
+ type Split = Partial<Record<OwnerKey, number>>;
+ 
+@@ -54,6 +55,10 @@ type Field = SheetFields<'tracking-budget'>;
+ 
+ const AVERAGE_MONTHS = 3;
+ 
++// How many categories show as cards up top; the rest sit under "All
++// categories".
++const TOP_COUNT = 6;
++
+ // Brand constants that stay the same in light and dark mode, like the
+ // mockups' green summary card.
+ const HERO_GRADIENT = 'linear-gradient(150deg, #15803d 0%, #0e5a2b 55%, #052e16 100%)';
+@@ -128,6 +133,8 @@ export function UpsideBudgetPage() {
+   );
+   const spending = useSpendingByOwner(month, accounts, ownerOf, expenseCategoryIds);
+   const [isEditingPeople, setIsEditingPeople] = useState(false);
++  const [showAll, setShowAll] = useState(false);
++  const { activity, isLoaded: isActivityLoaded } = useCategoryActivity(month, AVERAGE_MONTHS);
+ 
+   useEffect(() => {
+     for (const m of [month, ...previous]) {
+@@ -230,46 +237,111 @@ export function UpsideBudgetPage() {
+             })) : []}
+           />
+ 
+-          {expenseGroups.map(group => (
+-            <section
+-              key={group.id}
+-              style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+-            >
+-              <h2
+-                style={{
+-                  margin: 0,
+-                  fontSize: 22,
+-                  fontWeight: 700,
+-                  letterSpacing: -0.3,
+-                  color: theme.pageText,
+-                }}
+-              >
+-                {group.name}
+-              </h2>
+-              <div
+-                style={{
+-                  display: 'grid',
+-                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+-                  gap: 12,
+-                }}
+-              >
+-                {group.categories.map(category => (
+-                  <CategoryCard
+-                    key={category.id}
+-                    category={category}
+-                    month={month}
+-                    split={spending.byCategory[category.id]}
+-                  />
+-                ))}
+-              </div>
+-            </section>
+-          ))}
++          {(() => {
++            // The categories you actually spend in, biggest first.
++            const all = expenseGroups.flatMap(g => g.categories);
++            const top = all
++              .filter(c => (activity.get(c.id)?.score ?? 0) > 0)
++              .sort((a, b) => (activity.get(b.id)?.score ?? 0) - (activity.get(a.id)?.score ?? 0))
++              .slice(0, TOP_COUNT);
++            const hasTop = isActivityLoaded && top.length > 0;
++            const isExpanded = showAll || !hasTop;
++            const restCount = all.length - top.length;
++            return (
++              <>
++                {hasTop && (
++                  <CategorySection title={t('Top categories')}>
++                    {top.map(category => (
++                      <CategoryCard
++                        key={category.id}
++                        category={category}
++                        month={month}
++                        split={spending.byCategory[category.id]}
++                      />
++                    ))}
++                  </CategorySection>
++                )}
++                {hasTop && restCount > 0 && (
++                  <button
++                    type="button"
++                    aria-expanded={isExpanded}
++                    onClick={() => setShowAll(!showAll)}
++                    style={{
++                      all: 'unset',
++                      boxSizing: 'border-box',
++                      minHeight: 50,
++                      padding: '0 16px',
++                      borderRadius: 14,
++                      background: theme.cardBackground,
++                      color: theme.pageText,
++                      display: 'flex',
++                      alignItems: 'center',
++                      justifyContent: 'space-between',
++                      fontSize: 17,
++                      cursor: 'pointer',
++                    }}
++                  >
++                    <span>{t('All categories')}</span>
++                    <span style={{ color: theme.pageTextSubdued, fontSize: 15 }}>
++                      {isExpanded ? t('Hide') : t('{{count}} more', { count: restCount })}
++                    </span>
++                  </button>
++                )}
++                {isExpanded &&
++                  expenseGroups.map(group => (
++                    <CategorySection key={group.id} title={group.name}>
++                      {group.categories.map(category => (
++                        <CategoryCard
++                          key={category.id}
++                          category={category}
++                          month={month}
++                          split={spending.byCategory[category.id]}
++                        />
++                      ))}
++                    </CategorySection>
++                  ))}
++              </>
++            );
++          })()}
+         </div>
+       </SheetNameProvider>
+     </Page>
+   );
+ }
+ 
++function CategorySection({
++  title,
++  children,
++}: {
++  title: string;
++  children: ReactNode;
++}) {
++  return (
++    <section style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
++      <h2
++        style={{
++          margin: 0,
++          fontSize: 22,
++          fontWeight: 700,
++          letterSpacing: -0.3,
++          color: theme.pageText,
++        }}
++      >
++        {title}
++      </h2>
++      <div
++        style={{
++          display: 'grid',
++          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
++          gap: 12,
++        }}
++      >
++        {children}
++      </div>
++    </section>
++  );
++}
++
+ function MonthSummary({
+   month,
+   split,
 diff --git a/packages/desktop-client/src/components/mobile/upside/UpsideSettingsPage.tsx b/packages/desktop-client/src/components/mobile/upside/UpsideSettingsPage.tsx
 new file mode 100644
 index 0000000..10ad273
@@ -1260,6 +1438,82 @@ index 0000000..10ad273
 +      <path d="M1.5 1.5l5 5-5 5" />
 +    </svg>
 +  );
++}
+diff --git a/packages/desktop-client/src/components/mobile/upside/activity.ts b/packages/desktop-client/src/components/mobile/upside/activity.ts
+new file mode 100644
+index 0000000..a090bd1
+--- /dev/null
++++ b/packages/desktop-client/src/components/mobile/upside/activity.ts
+@@ -0,0 +1,70 @@
++import { useQuery } from '@tanstack/react-query';
++
++import * as monthUtils from '@actual-app/core/shared/months';
++import { q } from '@actual-app/core/shared/query';
++
++import { aqlQuery } from '#queries/aqlQuery';
++
++// How much goes to each category: this month, and the average of the
++// previous few months. Used to pick the categories worth showing first.
++
++export type CategoryActivity = {
++  thisMonth: number;
++  average: number;
++  /** Ranking score: whichever is bigger, so a new expense or a usual one both rise. */
++  score: number;
++};
++
++export function useCategoryActivity(month: string, previousMonths: number) {
++  const first = monthUtils.subMonths(month, previousMonths);
++  const { data } = useQuery({
++    queryKey: ['upside', 'category-activity', month, previousMonths],
++    queryFn: async () => {
++      const { data: rows } = await aqlQuery(
++        q('transactions')
++          .filter({
++            date: {
++              $gte: monthUtils.firstDayOfMonth(first),
++              $lte: monthUtils.lastDayOfMonth(month),
++            },
++            category: { $ne: null },
++            'account.offbudget': false,
++          })
++          .options({ splits: 'inline' })
++          .groupBy(['category', { $month: '$date' }])
++          .select([
++            'category',
++            { month: { $month: '$date' } },
++            { amount: { $sum: '$amount' } },
++          ]),
++      );
++      return rows as Array<{ category: string; month: string; amount: number }>;
++    },
++    refetchOnMount: 'always',
++    refetchOnWindowFocus: true,
++  });
++
++  const rows = data ?? [];
++  // Only count months that have any activity at all (a brand-new budget
++  // shouldn't average over empty months).
++  const activeMonths = new Set(rows.filter(r => r.month !== month).map(r => r.month));
++  const divisor = Math.max(1, Math.min(previousMonths, activeMonths.size));
++
++  const result = new Map<string, CategoryActivity>();
++  for (const row of rows) {
++    const spent = -row.amount;
++    const entry = result.get(row.category) ?? { thisMonth: 0, average: 0, score: 0 };
++    if (row.month === month) {
++      entry.thisMonth += spent;
++    } else {
++      entry.average += spent / divisor;
++    }
++    result.set(row.category, entry);
++  }
++  for (const entry of result.values()) {
++    entry.thisMonth = Math.max(0, entry.thisMonth);
++    entry.average = Math.max(0, Math.round(entry.average));
++    entry.score = Math.max(entry.thisMonth, entry.average);
++  }
++  return { activity: result, isLoaded: data != null };
 +}
 diff --git a/packages/desktop-client/src/components/mobile/upside/useBankConnection.ts b/packages/desktop-client/src/components/mobile/upside/useBankConnection.ts
 new file mode 100644
