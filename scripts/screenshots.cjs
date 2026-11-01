@@ -56,6 +56,8 @@ async function run(colorScheme) {
 
   await step('open-demo', async () => {
     await page.goto(baseURL);
+    await page.getByRole('button', { name: 'Try the demo' }).waitFor({ timeout: 60000 });
+    await shoot(page, `${colorScheme}-a00-welcome`);
     await page.getByRole('button', { name: 'Try the demo' }).click({ timeout: 60000 });
     await page.waitForURL('**/budget', { timeout: 90000 });
   });
@@ -130,6 +132,55 @@ async function run(colorScheme) {
   await step('settings', async () => {
     await tab(page, 'Settings');
     await shoot(page, `${colorScheme}-8-settings`);
+  });
+
+  // In-app navigation without a reload (React Router listens to popstate).
+  const go = async route => {
+    await page.evaluate(r => {
+      window.history.pushState({}, '', r);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, route);
+    await page.waitForTimeout(800);
+  };
+  const audit = async (name, fn) => step(`audit-${name}`, async () => {
+    await fn();
+    await shoot(page, `${colorScheme}-a-${name}`);
+  });
+
+  await audit('category', async () => {
+    await tab(page, 'Budget');
+    await page.getByRole('button', { name: /^Food/ }).first().click();
+  });
+  await audit('account', async () => {
+    await tab(page, 'Accounts');
+    await page.locator('button[aria-expanded]').first().click();
+    await page.getByRole('link', { name: 'See transactions' }).first().click();
+  });
+  await audit('transaction', async () => {
+    await page.getByLabel('Transaction list').getByRole('button').first().click();
+  });
+  const routes = [
+    ['settings', '/settings'],
+    ['settings-general', '/settings/general'],
+    ['settings-bank-sync', '/settings/bank-sync'],
+    ['settings-payees', '/settings/payees'],
+    ['settings-rules', '/settings/rules'],
+    ['settings-tags', '/settings/tags'],
+    ['settings-advanced', '/settings/advanced'],
+    ['settings-experimental', '/settings/experimental'],
+    ['schedules', '/schedules'],
+    ['payees', '/payees'],
+    ['rules', '/rules'],
+    ['bank-sync', '/bank-sync'],
+    ['reports', '/reports'],
+    ['notifications', '/notifications'],
+  ];
+  for (const [name, route] of routes) {
+    await audit(name, () => go(route));
+  }
+  await audit('budget-menu', async () => {
+    await go('/budget/limits');
+    await page.getByRole('button', { name: /menu/i }).first().click();
   });
 
   await browser.close();
