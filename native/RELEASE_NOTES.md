@@ -1,0 +1,31 @@
+# Upside release notes
+
+Newest first. The top section goes into TestFlight's "What to Test" for each build.
+
+## 0.28, November 2 (morning)
+
+- Every purchase is sorted automatically. "Check these" lists the few Upside guessed: tap ✓ or fix it once.
+- Savings sits in the This month card. The plan shows the limit to stay under in each category; +$50, +$100 or "Most I can" trims more.
+- Maximize and Minimize: saved & invested (savings, 529, Vanguard) next to fees & interest (card, plan and bank fees).
+- New categories: Commuting & Rides (subway, LIRR, taxis, Uber), Car payment, Taxes. Rides moved out of Gas & Auto.
+- Tap a limit to see the last 3 months behind it. "Recalculate" resets limits after you add a bank.
+- Usual spending counts each bank only for the months it has history.
+- Hide accounts you don't want in the budget.
+- Over-limit bars keep each person's color, with the overspend in red.
+- Settings switches are green.
+
+Try: Check these on the Budget page, the savings line in This month, and Limits › tap a category.
+
+## 0.28, November 1 (night)
+
+- Golf shows up in Recommended categories.
+- Dining & Bars is one category, with more bar names recognized.
+- Uses the bank's merchant code (when sent) to sort unfamiliar stores.
+
+## 0.28, November 1 (evening)
+
+- Sorting one purchase offers to sort others with the same name.
+- Usual income next to Income; the This month card always shows each person.
+- Face ID lock covers open screens; Upside asks once for notification permission.
+- All credit cards recognized; more card payments matched; recap can be swiped away.
+- Lenny's-style regular spots no longer count as bills.
