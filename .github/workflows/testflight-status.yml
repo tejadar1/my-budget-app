@@ -39,6 +39,10 @@ jobs:
               v = versions.get((b["relationships"]["preReleaseVersion"]["data"] or {}).get("id"), "?")
               print(f'{v} ({a["version"]})  uploaded {a["uploadedDate"]}  processing={a["processingState"]}  '
                     f'expired={a["expired"]}  internal={d.get("internalBuildState")}  external={d.get("externalBuildState")}')
+          for v in requests.get(f"{api}/preReleaseVersions", headers=h, params={"filter[app]": app_id, "limit": 50}).json()["data"]:
+              live = [b for b in requests.get(f"{api}/preReleaseVersions/{v['id']}/builds", headers=h, params={"limit": 200}).json()["data"]
+                      if not b["attributes"]["expired"]]
+              print(f'VERSION {v["attributes"]["version"]}: {len(live)} unexpired build(s)')
           groups = requests.get(f"{api}/apps/{app_id}/betaGroups", headers=h).json()["data"]
           for g in groups:
               ga = g["attributes"]
