@@ -2,6 +2,10 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## 0.28, November 2 (savings bars)
+
+- Save money: each bar shows what you keep in gray and what you save in green.
+
 ## 0.28, November 2 (income)
 
 - Income now comes first on the Budget page: this month's paychecks, your usual, and what's left after spending.

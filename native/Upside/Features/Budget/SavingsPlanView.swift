@@ -154,9 +154,9 @@ private struct PlanRow: View {
             // Kept part in gray, the part being saved in green.
             GeometryReader { geo in
                 let keep = usual > 0 ? min(1, Double(limit * 100) / Double(usual)) : 1
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Theme.accent)
-                    Capsule().fill(Color.secondary.opacity(0.3)).frame(width: geo.size.width * keep)
+                HStack(spacing: 2) {
+                    Capsule().fill(Color(.systemGray4)).frame(width: max(0, geo.size.width * keep - 1))
+                    if keep < 1 { Capsule().fill(Theme.accent) }
                 }
             }
             .frame(height: 8)
