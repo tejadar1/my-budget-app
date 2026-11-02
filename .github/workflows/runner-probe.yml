@@ -1,0 +1,16 @@
+name: Runner probe
+
+# Which Mac runners are free right now, and which Xcode they have.
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-26, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    steps:
+      - run: ls -d /Applications/Xcode*.app | tail -4; sw_vers -productVersion; uname -m
