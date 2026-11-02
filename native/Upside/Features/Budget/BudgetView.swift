@@ -9,6 +9,8 @@ struct BudgetView: View {
     @State private var showSave = false
     @State private var recapMonth: MonthRef?
     @State private var openPurchase: PurchaseRef?
+    /// "2026-10" once you hide October's recap; next month's shows again.
+    @AppStorage("hiddenRecap") private var hiddenRecap = ""
     @State private var path = NavigationPath()
     /// The month being looked at; nil means "this month" (follows the date).
     @State private var pickedMonth: Date?
@@ -48,8 +50,12 @@ struct BudgetView: View {
                         // Early in a month, last month's recap.
                         if store.calendar.component(.day, from: store.now()) <= 7 {
                             let last = store.month(-1, from: month)
-                            if last >= store.firstMonth {
-                                RecapRow(month: last) { recapMonth = MonthRef(date: last) }
+                            let key = last.formatted(.iso8601.year().month())
+                            if last >= store.firstMonth && hiddenRecap != key {
+                                RecapRow(month: last, onDismiss: {
+                                    withAnimation(.snappy) { hiddenRecap = key }
+                                }) { recapMonth = MonthRef(date: last) }
+                                .transition(.move(edge: .leading).combined(with: .opacity))
                             }
                         }
                     } else {

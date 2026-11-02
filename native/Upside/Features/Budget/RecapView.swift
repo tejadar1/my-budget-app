@@ -33,7 +33,9 @@ struct CashFlowRow: View {
 /// Budget row that opens a month's recap.
 struct RecapRow: View {
     let month: Date
+    var onDismiss: (() -> Void)? = nil
     let onOpen: () -> Void
+    @State private var dragX: CGFloat = 0
 
     var body: some View {
         Button(action: onOpen) {
@@ -49,12 +51,44 @@ struct RecapRow: View {
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+                if onDismiss == nil {
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+                }
             }
+            .padding(.trailing, onDismiss == nil ? 0 : 24)
             .card()
         }
         .buttonStyle(.plain)
+        .overlay(alignment: .topTrailing) {
+            if let onDismiss {
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel("Hide \(month.formatted(.dateTime.month(.wide))) recap")
+            }
+        }
+        // Swipe left to hide.
+        .offset(x: dragX)
+        .opacity(1 - Double(min(1, abs(dragX) / 300)))
+        .simultaneousGesture(onDismiss == nil ? nil : DragGesture(minimumDistance: 20)
+            .onChanged { value in
+                if abs(value.translation.width) > abs(value.translation.height) {
+                    dragX = min(0, value.translation.width)
+                }
+            }
+            .onEnded { value in
+                if value.translation.width < -110 {
+                    withAnimation(.snappy) { dragX = -500 }
+                    onDismiss?()
+                } else {
+                    withAnimation(.snappy) { dragX = 0 }
+                }
+            })
     }
 }
 

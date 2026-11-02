@@ -121,8 +121,12 @@ enum BankSync {
         let candidates = data.transactions.indices.filter {
             !data.transactions[$0].isTransfer && data.transactions[$0].categoryId == nil
         }
-        // 1. Matching pairs.
-        let incoming = candidates.filter { data.transactions[$0].amount > 0 }
+        // 1. Matching pairs. The arriving side may already be known as a
+        // payment ("PAYMENT THANK YOU" on the card); it still pairs.
+        let incoming = data.transactions.indices.filter {
+            data.transactions[$0].amount > 0
+                && (data.transactions[$0].categoryId == nil || data.transactions[$0].isTransfer)
+        }
         for i in candidates where data.transactions[i].amount < 0 {
             let out = data.transactions[i]
             if let j = incoming.first(where: { j in
@@ -135,12 +139,21 @@ enum BankSync {
                 matched.insert(data.transactions[j].id)
             }
         }
-        // 2. Wording, your "not spending" choices, and payments received on cards.
+        // 2. Wording, your "not spending" choices, payments received on
+        // cards, and payments from checking that name the bank of one of
+        // your cards ("ROBINHOOD DES:PAYMENT" when you have a Robinhood card).
+        let cardBanks = Set(data.accounts.filter { $0.kind == .credit }
+            .compactMap { $0.institution.lowercased().split(separator: " ").first.map(String.init) }
+            .filter { $0.count >= 3 && $0 != "bank" })
         for i in candidates {
             let t = data.transactions[i]
-            let isCardCredit = kinds[t.accountId] == .credit && t.amount > 0
-                && t.payee.lowercased().contains("pay")
-            if matched.contains(t.id) || looksLikeTransfer(t.payee) || isCardCredit
+            let p = t.payee.lowercased()
+            let isCardCredit = kinds[t.accountId] == .credit && t.amount > 0 && p.contains("pay")
+            let paysOwnCard = t.amount < 0 && kinds[t.accountId] != .credit
+                && cardBanks.contains(where: { p.contains($0) })
+                && ["payment", "pymt", "pmt", "autopay", "epay", "crd", "card", "credit"].contains(where: { p.contains($0) })
+                && !["zelle", "venmo", "paypal", "mortgage", "loan", "auto loan"].contains(where: { p.contains($0) })
+            if matched.contains(t.id) || looksLikeTransfer(t.payee) || isCardCredit || paysOwnCard
                 || transferRules.contains(BudgetStore.payeeKey(t.payee)) {
                 data.transactions[i].isTransfer = true
             }
@@ -164,14 +177,20 @@ enum BankSync {
             "transfer", "xfer", "payment thank you", "payment - thank", "pymt thank",
             "payment received", "credit card payment", "card payment", "cc payment",
             "crcardpmt", "card pymt", "crd pmt", "card pmt", "epayment", "venmo cashout",
+            "payment, thank", "payment-thank", "pymt-thank", "payment to crd", "payment to card",
+            "card ending in", "credit crd", "crd autopay", "crd epay", "ba electronic payment",
+            "bill payment to crd", "mobile payment - thank",
         ]
         if always.contains(where: { p.contains($0) }) { return true }
+        // Paying a person isn't paying your card, even through a bank app.
+        if ["zelle", "venmo", "paypal", "cash app", "mortgage", "loan"].contains(where: { p.contains($0) }) { return false }
         let paymentWords = ["payment", "pymt", "pmt", "autopay", "auto pay", "epay"]
         let cardIssuers = [
             "chase card", "chase credit", "robinhood", "american express", "amex", "citi card",
             "citicard", "discover", "capital one", "apple card", "applecard", "gs bank",
             "barclay", "synchrony", "bk of amer visa", "bank of america card", "wells fargo card",
-            "us bank card", "credit one", "card services",
+            "us bank card", "credit one", "card services", "chase", "bank of america", "bofa", "citi ", "citibank",
+            "wells fargo", "capital one", "barclays", "goldman", "gsbank", "bilt", "navy federal",
         ]
         return paymentWords.contains(where: { p.contains($0) })
             && cardIssuers.contains(where: { p.contains($0) })

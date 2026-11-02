@@ -310,6 +310,39 @@ final class BudgetStoreTests: XCTestCase {
 }
 
 final class TransferTests: XCTestCase {
+    func testCardPaymentWordingFromBanks() {
+        for payee in ["Payment to Chase card ending in 1234 11/01", "CHASE CREDIT CRD AUTOPAY", "CHASE CREDIT CRD EPAY",
+                      "Online Banking payment to CRD 1234", "BA ELECTRONIC PAYMENT", "ONLINE PAYMENT, THANK YOU",
+                      "AUTOMATIC PAYMENT - THANK YOU", "CITI AUTOPAY PAYMENT", "AMEX EPAYMENT ACH PMT",
+                      "CAPITAL ONE MOBILE PMT", "DISCOVER E-PAYMENT", "APPLECARD GSBANK PAYMENT"] {
+            XCTAssertTrue(BankSync.looksLikeTransfer(payee), payee)
+        }
+        for bill in ["VERIZON AUTOPAY", "DUKE ENERGY ONLINE PAYMENT", "CON ED OF NY BILL PAYMENT",
+                     "ELECTRICITY PAYMENT", "CONED ONLINE PYMT", "GEICO ACH PMT", "STATE FARM AUTOMATIC PAYMENT",
+                     "ZELLE PAYMENT TO CHASE SMITH"] {
+            XCTAssertFalse(BankSync.looksLikeTransfer(bill), bill)
+        }
+    }
+
+    func testPaymentPairsEvenWhenTheCardSideIsAlreadyKnown() {
+        var data = BudgetData()
+        data.accounts = [
+            Account(id: "chk", name: "Checking", institution: "Ally Bank", kind: .checking, balance: 0),
+            Account(id: "card", name: "Gold", institution: "Robinhood", kind: .credit, balance: 0),
+        ]
+        let day = Date(timeIntervalSince1970: 1_790_000_000)
+        data.transactions = [
+            Transaction(id: "out", accountId: "chk", date: day, amount: -48_312, payee: "ACH DEBIT 0099 WEB", categoryId: nil),
+            Transaction(id: "in", accountId: "card", date: day.addingTimeInterval(86_400), amount: 48_312,
+                        payee: "Payment Thank You", categoryId: nil, isTransfer: true),
+            Transaction(id: "rh", accountId: "chk", date: day, amount: -20_000, payee: "ROBINHOOD DES:CARD PYMT", categoryId: nil),
+            Transaction(id: "zelle", accountId: "chk", date: day, amount: -5_000, payee: "ZELLE PAYMENT TO ROBINHOOD FAN", categoryId: nil),
+        ]
+        BankSync.markTransfers(&data)
+        let marked = Set(data.transactions.filter(\.isTransfer).map(\.id))
+        XCTAssertEqual(marked, ["out", "in", "rh"])
+    }
+
     private func t(_ id: String, _ account: String, _ day: Int, _ amount: Cents, _ payee: String) -> Transaction {
         Transaction(id: id, accountId: account,
                     date: Date(timeIntervalSince1970: 1_790_000_000 + Double(day) * 86_400),
