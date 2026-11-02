@@ -291,9 +291,13 @@ struct SummaryCard: View {
                 .buttonStyle(.plain)
             }
 
-            if store.people.isSetUp && !byOwner.isEmpty {
+            // Always shows each person and Shared, $0 included, so the row
+            // doesn't vanish early in a month; "Unassigned" only when used.
+            if store.people.isSetUp {
+                let owners: [Owner] = [.p1] + (store.people.p2.isEmpty ? [] : [.p2]) + [.shared]
+                    + ((byOwner[.unassigned] ?? 0) > 0 ? [.unassigned] : [])
                 HStack {
-                    ForEach(Owner.allCases.filter { (byOwner[$0] ?? 0) > 0 }) { owner in
+                    ForEach(owners) { owner in
                         HStack(spacing: 6) {
                             Circle().fill(owner.color).frame(width: 8, height: 8)
                                 .overlay(Circle().stroke(.white.opacity(0.6), lineWidth: 1))
@@ -301,7 +305,7 @@ struct SummaryCard: View {
                             Text(Money.short(byOwner[owner] ?? 0)).bold()
                         }
                         .font(.footnote)
-                        if owner != Owner.allCases.last { Spacer(minLength: 4) }
+                        if owner != owners.last { Spacer(minLength: 4) }
                     }
                 }
             }
