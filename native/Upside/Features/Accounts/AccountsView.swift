@@ -33,8 +33,6 @@ struct AccountsView: View {
                         WhoseCard()
                     }
 
-                    CardsCheck()
-
                     VStack(spacing: 12) {
                         ForEach(store.visibleAccounts) { account in
                             Button { selected = account } label: {
