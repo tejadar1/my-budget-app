@@ -206,7 +206,8 @@ enum BankSync {
             let p = payee.lowercased()
             return p.contains("payroll") || p.contains("salary") || p.contains("direct dep") ? "income" : nil
         }
-        let p = payee.lowercased()
+        // A trailing space lets "bar " match a name ending in BAR.
+        let p = payee.lowercased() + " "
         for (category, words) in builtIn where words.contains(where: { p.contains($0) }) {
             return category
         }
@@ -249,7 +250,8 @@ enum BankSync {
                     "olive garden", "applebee", "chili's", "ihop", "denny's", "cheesecake factory",
                     "blue bottle", "peet's", "dutch bros", "tim hortons", "coffee", "bakery", "bagel",
                     "deli ", "diner", "grill", "bistro", "kitchen", "sushi", "ramen", "bar & ", "tavern",
-                    "pub ", "brewery", "tst*", "sq *"]),
+                    "pub ", "brewery", "brewing", "taproom", "bar ", "lounge", "saloon",
+                    "wine bar", "cocktail", "beer garden", "biergarten", "speakeasy", "tst*", "sq *"]),
         ("gas", ["shell", "exxon", "chevron", "bp ", "sunoco", "marathon", "wawa", "speedway", "circle k",
                  "valero", "citgo", "sheetz", "quiktrip", "racetrac", "getty", "phillips 66", "conoco",
                  "arco ", "gulf oil", "uber", "lyft", "parking", "spothero", "parkwhiz", "toll", "ez pass",

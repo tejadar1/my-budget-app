@@ -52,6 +52,10 @@ final class BudgetStore {
                 BankSync.markTransfers(&data)
                 UserDefaults.standard.set(true, forKey: "reguessedCards")
             }
+            if let i = data.categories.firstIndex(where: { $0.id == "dining" && $0.name == "Dining" }) {
+                data.categories[i].name = "Dining & Bars"
+            }
+            mergeBarsIntoDining(&data)
             // Once: undo categories an older version named after stores.
             if !UserDefaults.standard.bool(forKey: "removedStoreCategories") {
                 removeStoreNamedCategories(&data)
@@ -687,6 +691,26 @@ final class BudgetStore {
             data.transactions[i].categoryId = BankSync.categorize(payee: t.payee, amount: t.amount, rules: data.rules)
         }
         BankSync.markTransfers(&data)
+    }
+
+    /// Dining and bars are one category. A separate "Bars" category you
+    /// made is folded in: its purchases and rules move to Dining & Bars.
+    static func mergeBarsIntoDining(_ data: inout BudgetData) {
+        let names: Set<String> = ["bars", "bar", "drinks", "nightlife", "bars & nightlife", "alcohol"]
+        let ids = Set(data.categories.filter { $0.id != "dining" && names.contains($0.name.lowercased()) }.map(\.id))
+        guard !ids.isEmpty else { return }
+        for i in data.transactions.indices where data.transactions[i].categoryId.map(ids.contains) == true {
+            data.transactions[i].categoryId = "dining"
+        }
+        for i in data.rules.indices where ids.contains(data.rules[i].categoryId) {
+            data.rules[i].categoryId = "dining"
+        }
+        let movedLimit = data.categories.filter { ids.contains($0.id) }.compactMap(\.limit).reduce(0, +)
+        if movedLimit > 0, let d = data.categories.firstIndex(where: { $0.id == "dining" }),
+           let current = data.categories[d].limit {
+            data.categories[d].limit = current + movedLimit
+        }
+        data.categories.removeAll { ids.contains($0.id) }
     }
 
     /// Creates the suggested category and sorts its purchases into it.

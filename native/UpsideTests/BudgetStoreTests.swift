@@ -293,6 +293,25 @@ final class BudgetStoreTests: XCTestCase {
         }
         XCTAssertEqual(store.averageIncome(before: store.currentMonth), 288_000)
     }
+
+    func testBarsFoldIntoDining() {
+        var data = BudgetData()
+        data.categories.append(Category(id: "bars-1a2b", name: "Bars", group: "Everyday", limit: 10_000))
+        if let d = data.categories.firstIndex(where: { $0.id == "dining" }) { data.categories[d].limit = 30_000 }
+        data.rules = [PayeeRule(payeeKey: "dead rabbit", categoryId: "bars-1a2b")]
+        data.transactions = [Transaction(id: "b", accountId: "x", date: date(2026, 10, 3), amount: -4_200,
+                                         payee: "DEAD RABBIT", categoryId: "bars-1a2b")]
+        BudgetStore.mergeBarsIntoDining(&data)
+        XCTAssertNil(data.categories.first { $0.name == "Bars" })
+        XCTAssertEqual(data.transactions[0].categoryId, "dining")
+        XCTAssertEqual(data.rules[0].categoryId, "dining")
+        XCTAssertEqual(data.categories.first { $0.id == "dining" }?.limit, 40_000)
+        XCTAssertEqual(data.categories.first { $0.id == "dining" }?.name, "Dining & Bars")
+        XCTAssertEqual(BankSync.categorize(payee: "THE PEOPLES WINE BAR", amount: -6_000, rules: []), "dining")
+        XCTAssertEqual(BankSync.categorize(payee: "OTHER HALF BREWING", amount: -3_000, rules: []), "dining")
+        XCTAssertEqual(BankSync.categorize(payee: "DEAD RABBIT BAR", amount: -3_000, rules: []), "dining")
+        XCTAssertEqual(BankSync.categorize(payee: "BARNES & NOBLE #2675", amount: -3_000, rules: []), "shopping")
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {
