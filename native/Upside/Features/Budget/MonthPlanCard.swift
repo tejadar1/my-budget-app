@@ -104,7 +104,7 @@ struct MonthPlanCard: View {
     }
 
     private func fitButton(_ plan: MonthPlan) -> some View {
-        Button { withAnimation { store.fitLimitsToPlan(month) } } label: {
+        Button { withAnimation { _ = store.fitLimitsToPlan(month) } } label: {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Your everyday limits are \(Money.short(plan.limitsOverBy)) more than you have")
                     .font(.subheadline.weight(.semibold))
