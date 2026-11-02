@@ -662,8 +662,9 @@ final class BudgetStoreTests: XCTestCase {
         }
         let line = store.billLines(store.currentMonth).first { $0.category.id == "utilities" }
         XCTAssertEqual(line?.paid, 0)
-        XCTAssertEqual(line?.stillToCome, 12_000, "usual $120 is planned even before it's paid")
-        XCTAssertEqual(store.monthPlan(store.currentMonth).bills, 12_000)
+        // Con Ed is a known monthly bill still due; its latest bill ($150) beats the $120 usual.
+        XCTAssertEqual(line?.stillToCome, 15_000, "planned before it's paid, at the higher of usual and the latest bill")
+        XCTAssertEqual(store.monthPlan(store.currentMonth).bills, 15_000)
     }
 
     func testFindsSubscriptionsByPattern() {
