@@ -109,6 +109,7 @@ enum BankSync {
         markTransfers(&data)
         BudgetStore.fillHunches(&data)
         store.data = data
+        store.detectSubscriptions()
     }
 
     /// Payments between your own accounts aren't spending. Two signals:
@@ -340,7 +341,17 @@ enum BankSync {
                            "washington post", "the atlantic", "patreon", "substack", "openai", "chatgpt",
                            "claude.ai", "anthropic", "adobe", "microsoft 365", "msft *", "dropbox",
                            "google one", "google storage", "duolingo", "headspace", "calm.com", "nordvpn",
-                           "1password", "linkedin premium", "match.com", "hinge", "bumble"]),
+                           "1password", "linkedin premium", "match.com", "hinge", "bumble",
+                           "apple music", "apple one", "apple tv+", "youtube premium", "youtubepremium", "philo.tv", "philo tv",
+                           "discovery+", "espn plus", "twitch", "kindle unlimited", "xbox game pass", "game pass",
+                           "playstation network", "playstation plus", "nintendo online", "nintendo switch online",
+                           "classpass", "strava", "economist", "new yorker", "medium.com", "masterclass", "skillshare",
+                           "canva.com", "canva*", "canva pty", "notion", "slack", "zoom.us", "zoom video", "github", "midjourney", "grammarly",
+                           "lastpass", "dashlane", "expressvpn", "surfshark", "norton", "mcafee", "ring.com", "ring subscription",
+                           "simplisafe", "noom", "ww international", "weightwatchers", "babbel", "ancestry",
+                           "tinder", "dollar shave", "ipsy", "fabfitfun", "barkbox", "sirius xm", "pandora media",
+                           "amazon digital", "amzn digital", "prime membership", "google *youtube", "google play",
+                           "microsoft*", "msft*", "xbox live", "adobe *", "dropbox*", "icloud+"]),
         ("groceries", ["kroger", "trader joe", "whole foods", "wholefds", "publix", "aldi", "lidl", "safeway",
                        "wegmans", "costco", "sam's club", "sams club", "bj's wholesale", "h-e-b", "heb ",
                        "food lion", "giant", "instacart", "amazon fresh", "fresh direct", "freshdirect",

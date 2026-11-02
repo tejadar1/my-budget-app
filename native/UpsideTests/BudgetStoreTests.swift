@@ -665,6 +665,30 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(line?.stillToCome, 12_000, "usual $120 is planned even before it's paid")
         XCTAssertEqual(store.monthPlan(store.currentMonth).bills, 12_000)
     }
+
+    func testFindsSubscriptionsByPattern() {
+        let store = makeStore()
+        for (m, d) in [(8, 3), (9, 4), (10, 3)] {
+            store.data.transactions.append(Transaction(id: "z\(m)", accountId: "r", date: date(2026, m, d), amount: -1_299,
+                                                       payee: "ZZQ MEDIA LLC", categoryId: "shopping", autoSort: "hunch"))
+        }
+        // A breakfast spot: monthly-ish but the amount changes. Stays in Dining.
+        for (m, amount) in [(8, 1_450), (9, 1_380), (10, 1_520)] {
+            store.data.transactions.append(Transaction(id: "l\(m)", accountId: "r", date: date(2026, m, 6), amount: -amount,
+                                                       payee: "LENNYS BAGELS", categoryId: "dining", autoSort: "sure"))
+        }
+        // You put this one in Shopping yourself (no autoSort): left alone.
+        for m in 8...10 {
+            store.data.transactions.append(Transaction(id: "y\(m)", accountId: "r", date: date(2026, m, 9), amount: -999,
+                                                       payee: "YARN CLUB", categoryId: "shopping"))
+        }
+        XCTAssertEqual(store.detectSubscriptions(), 3)
+        XCTAssertEqual(store.data.transactions.first { $0.id == "z9" }?.categoryId, "subscriptions")
+        XCTAssertTrue(store.toCheck.contains { $0.id == "z10" }, "shows in Check these")
+        XCTAssertEqual(store.data.transactions.first { $0.id == "l9" }?.categoryId, "dining")
+        XCTAssertEqual(store.data.transactions.first { $0.id == "y9" }?.categoryId, "shopping")
+        XCTAssertEqual(BankSync.categorize(payee: "APPLE MUSIC", amount: -1_099, rules: []), "subscriptions")
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {

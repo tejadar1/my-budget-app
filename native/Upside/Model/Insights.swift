@@ -260,3 +260,49 @@ extension BudgetStore {
         .sorted { $0.date > $1.date }
     }
 }
+
+// MARK: - Finding subscriptions
+
+extension BudgetStore {
+    /// Categories a subscription can be hiding in. Groceries, dining and
+    /// gas are left alone: a monthly breakfast spot isn't a subscription.
+    private static let subscriptionHideouts: Set<String> = ["shopping", "entertainment", "personal", "kids", "gifts"]
+
+    /// Same price, about the same day, every month for two months or more,
+    /// still active: a subscription, whatever the name. Moves those charges
+    /// to Subscriptions as a hunch so they show up in Check these. Choices
+    /// you made yourself are never changed. Returns how many it moved.
+    @discardableResult
+    func detectSubscriptions() -> Int {
+        let since = month(-6, from: currentMonth)
+        let today = now()
+        let onBudget = Set(data.accounts.filter(\.countsInBudget).map(\.id))
+        let candidates = data.transactions.filter { t in
+            t.amount < 0 && !t.isTransfer && t.tripId == nil && t.date >= since && onBudget.contains(t.accountId)
+        }
+        var moved = 0
+        var updated = data
+        for (_, list) in Dictionary(grouping: candidates, by: { Self.payeeKey($0.payee) }) {
+            let sorted = list.sorted { $0.date < $1.date }
+            guard let last = sorted.last, sorted.count >= 2 else { continue }
+            let months = Set(sorted.map { monthStart($0.date) })
+            let amounts = sorted.map { -$0.amount }
+            let days = sorted.map { calendar.component(.day, from: $0.date) }
+            guard months.count >= 2, sorted.count <= months.count,
+                  (amounts.max() ?? 0) - (amounts.min() ?? 0) <= 100,
+                  (days.max() ?? 0) - (days.min() ?? 0) <= 6,
+                  today.timeIntervalSince(last.date) <= 45 * 86_400 else { continue }
+            for t in sorted {
+                // Only Upside's own sorting is changed, and only out of shopping-type categories.
+                guard t.categoryId != "subscriptions", t.autoSort != nil || t.categoryId == nil,
+                      t.categoryId.map(Self.subscriptionHideouts.contains) ?? true,
+                      let i = updated.transactions.firstIndex(where: { $0.id == t.id }) else { continue }
+                updated.transactions[i].categoryId = "subscriptions"
+                updated.transactions[i].autoSort = "hunch"
+                moved += 1
+            }
+        }
+        if moved > 0 { data = updated }
+        return moved
+    }
+}

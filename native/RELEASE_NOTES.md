@@ -2,6 +2,11 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## 0.28, November 2 (subscriptions)
+
+- Upside finds subscriptions on its own: the same price around the same day every month. Found ones show in Check these.
+- About 60 more subscription services recognized by name.
+
 ## 0.28, November 2 (savings and subtotals)
 
 - Savings card right under the plan: this month's goal, what's actually been saved or invested, and whether spending leaves room for it.

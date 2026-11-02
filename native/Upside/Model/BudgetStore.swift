@@ -93,7 +93,9 @@ final class BudgetStore {
             }
             BankSync.markTransfers(&data)
             fillHunches(&data)
-            return BudgetStore(data: data)
+            let store = BudgetStore(data: data)
+            store.detectSubscriptions()
+            return store
         }
         return BudgetStore(data: BudgetData())
     }
