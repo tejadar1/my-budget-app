@@ -206,7 +206,8 @@ enum BankSync {
         }
         if amount > 0 {
             let p = payee.lowercased()
-            return p.contains("payroll") || p.contains("salary") || p.contains("direct dep") ? "income" : nil
+            let isIncome = ["payroll", "salary", "direct dep", "tax ref", "taxrfd", "tax refund"].contains { p.contains($0) }
+            return isIncome ? "income" : nil
         }
         // A trailing space lets "bar " match a name ending in BAR.
         let p = payee.lowercased() + " "
@@ -274,6 +275,11 @@ enum BankSync {
         ("bankfees", ["overdraft", "monthly maintenance fee", "maintenance fee", "service charge", "service fee",
                       "atm fee", "atm surcharge", "non-chase atm", "non-bofa atm", "insufficient funds", "nsf fee",
                       "returned item", "wire fee", "wire transfer fee", "stop payment fee", "paper statement fee"]),
+        ("taxes", ["irs usataxpymt", "usataxpymt", "irs ", "us treasury tax", "treas tax", "eftps",
+                   "nys dtf", "ny state dtf", "nys tax", "dept of revenue", "department of revenue",
+                   "franchise tax", "state tax", "tax payment", "property tax", "nyc dof", "nyc finance",
+                   "dept of taxation", "comptroller", "turbotax", "h&r block", "hrblock", "taxact",
+                   "freetaxusa", "tax prep"]),
         ("subscriptions", ["netflix", "spotify", "hulu", "disney+", "disney plus", "apple.com/bill", "youtube",
                            "icloud", "max.com", "hbo max", "peacock", "paramount", "amazon prime", "prime video",
                            "audible", "kindle unltd", "kindle unlimited", "uber one", "dashpass", "walmart+",

@@ -228,6 +228,7 @@ extension Category {
         Category(id: "phone", name: "Phone & Internet", group: "Bills"),
         Category(id: "insurance", name: "Insurance", group: "Bills"),
         Category(id: "subscriptions", name: "Subscriptions", group: "Bills"),
+        Category(id: "taxes", name: "Taxes", group: "Bills"),
         Category(id: "fees", name: "Card fees & interest", group: Category.avoidGroup),
         Category(id: "bankfees", name: "Bank fees", group: Category.avoidGroup),
         Category(id: "travel", name: "Travel", group: "Trips"),

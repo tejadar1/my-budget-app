@@ -365,6 +365,15 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(BankSync.categorize(payee: "PURCHASE INTEREST CHARGE", amount: -900, rules: []), "fees")
         XCTAssertTrue(store.category("bankfees")?.aimsForZero ?? false)
     }
+
+    func testTaxes() {
+        for payee in ["IRS USATAXPYMT 2026", "NYS DTF PIT TAX PAYMENT", "INTUIT *TURBOTAX", "NYC DOF PROPERTY TAX"] {
+            XCTAssertEqual(BankSync.categorize(payee: payee, amount: -50_000, rules: []), "taxes", payee)
+        }
+        XCTAssertFalse(BankSync.looksLikeTransfer("IRS USATAXPYMT 2026"))
+        XCTAssertEqual(BankSync.categorize(payee: "IRS TREAS 310 TAX REF", amount: 120_000, rules: []), "income")
+        XCTAssertEqual(makeStore().category("taxes")?.group, "Bills")
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {
