@@ -11,9 +11,10 @@ struct SavingsPlanView: View {
 
     private var month: Date { store.currentMonth }
 
+    /// Biggest cut first.
     private var categories: [Category] {
-        store.expenseCategories.filter { limits[$0.id] != nil }
-            .sorted { store.baseline($0, before: month) > store.baseline($1, before: month) }
+        func cut(_ c: Category) -> Int { store.baseline(c, before: month) / 100 - (limits[c.id] ?? 0) }
+        return store.expenseCategories.filter { limits[$0.id] != nil }.sorted { cut($0) > cut($1) }
     }
 
     private var saved: Cents {
@@ -52,7 +53,7 @@ struct SavingsPlanView: View {
                                                    set: { limits[category.id] = max(0, $0) }))
                         }
                     } header: {
-                        Text("New limits for \(month.formatted(.dateTime.month(.wide)))")
+                        Text("Where the \(Money.short(goal * 100)) comes from")
                     } footer: {
                         Text(saved >= goal * 100
                              ? "Saves \(Money.short(saved)), meeting your \(Money.short(goal * 100)) goal."
@@ -114,21 +115,35 @@ private struct PlanRow: View {
     let usual: Cents
     @Binding var limit: Int
 
+    private var cut: Cents { max(0, usual - limit * 100) }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(category.name)
-                    Text("usual \(Money.short(usual))").font(.caption).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(category.name).font(.headline)
+                Spacer()
+                Text(cut > 0 ? "−\(Money.short(cut))" : "No cut")
+                    .font(.title3.weight(.bold).monospacedDigit())
+                    .foregroundStyle(cut > 0 ? Theme.accent : Color.secondary)
+            }
+            // Usual vs new limit, with the part being saved highlighted.
+            GeometryReader { geo in
+                let keep = usual > 0 ? min(1, Double(limit * 100) / Double(usual)) : 1
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Theme.accent.opacity(0.25))
+                    Capsule().fill(Color.secondary.opacity(0.45)).frame(width: geo.size.width * keep)
                 }
+            }
+            .frame(height: 8)
+            .accessibilityHidden(true)
+            HStack {
+                Text(limit > 0 ? "Usual \(Money.short(usual)) → \(Money.short(limit * 100))"
+                               : "Usual \(Money.short(usual)) → skip this month")
+                    .font(.footnote).foregroundStyle(.secondary).monospacedDigit()
                 Spacer()
                 if limit > 0 {
-                    Stepper(value: $limit, in: 0...max(limit, usual / 100), step: 10) {
-                        Text(Money.short(limit * 100)).monospacedDigit()
-                    }
-                    .fixedSize()
-                } else {
-                    Text("Skipped").foregroundStyle(.secondary)
+                    Stepper("Limit", value: $limit, in: 0...max(limit, usual / 100), step: 10)
+                        .labelsHidden()
                 }
             }
             Toggle("Skip this month", isOn: Binding(
@@ -136,6 +151,9 @@ private struct PlanRow: View {
                 set: { limit = $0 ? 0 : max(10, usual / 100 / 2 / 10 * 10) }))
                 .font(.footnote)
         }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(category.name): saves \(Money.short(cut)), limit \(Money.short(limit * 100)) of usual \(Money.short(usual))")
     }
 }
 
