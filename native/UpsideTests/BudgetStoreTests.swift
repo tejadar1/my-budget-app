@@ -363,6 +363,9 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(BankSync.categorize(payee: "NON-CHASE ATM FEE", amount: -300, rules: []), "bankfees")
         XCTAssertEqual(BankSync.categorize(payee: "MONTHLY MAINTENANCE FEE", amount: -1_200, rules: []), "bankfees")
         XCTAssertEqual(BankSync.categorize(payee: "PURCHASE INTEREST CHARGE", amount: -900, rules: []), "fees")
+        for plan in ["MY CHASE PLAN FEE", "PLAN IT FEE", "MONTHLY PLAN FEE", "CITI FLEX PAY FEE"] {
+            XCTAssertEqual(BankSync.categorize(payee: plan, amount: -1_299, rules: []), "fees", plan)
+        }
         XCTAssertTrue(store.category("bankfees")?.aimsForZero ?? false)
     }
 
