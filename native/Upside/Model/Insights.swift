@@ -194,10 +194,20 @@ extension BudgetStore {
     /// back out. Only moves between your own accounts count, not interest
     /// or trades inside the account.
     func savedAndInvested(in month: Date) -> Cents {
-        let ids = Set(visibleAccounts.filter { $0.kind == .savings || $0.kind == .investment }.map(\.id))
-        return data.transactions
+        let saving = visibleAccounts.filter { $0.kind == .savings || $0.kind == .investment }
+        let ids = Set(saving.map(\.id))
+        let into = data.transactions
             .filter { ids.contains($0.accountId) && $0.isTransfer && isInMonth($0.date, month) }
             .reduce(0) { $0 + $1.amount }
+        // Sent to a 529, Vanguard, Fidelity… that isn't connected here
+        // (if it is, the deposit above already counts it).
+        let connected = saving.map { $0.institution.lowercased() }
+        let sentOut = data.transactions.filter { t in
+            t.amount < 0 && t.isTransfer && !ids.contains(t.accountId) && isInMonth(t.date, month)
+                && BankSync.isInvestmentPayee(t.payee)
+                && !connected.contains { inst in BankSync.investmentWords.contains { inst.contains($0) && t.payee.lowercased().contains($0) } }
+        }
+        return into - sentOut.reduce(0) { $0 + $1.amount }
     }
 
     /// Paid to cards beyond what was charged, so balances went down.

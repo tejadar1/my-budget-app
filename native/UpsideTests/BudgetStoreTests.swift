@@ -377,6 +377,24 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(BankSync.categorize(payee: "IRS TREAS 310 TAX REF", amount: 120_000, rules: []), "income")
         XCTAssertEqual(makeStore().category("taxes")?.group, "Bills")
     }
+
+    func testCollegeSavingsCountsAsSavedNotSpent() {
+        let store = makeStore()
+        let t = Transaction(id: "v", accountId: "r", date: date(2026, 10, 6), amount: -25_000,
+                            payee: "VANGUARD COLLEGE 529 PLAN", isTransfer: BankSync.looksLikeTransfer("VANGUARD COLLEGE 529 PLAN"))
+        XCTAssertTrue(t.isTransfer)
+        store.data.transactions.append(t)
+        XCTAssertEqual(store.savedAndInvested(in: store.currentMonth), 25_000)
+        XCTAssertEqual(store.transferLabel(t), "Saved & invested")
+        XCTAssertEqual(AccountKind.guess(from: "Vanguard College Savings"), .investment)
+
+        // Once the 529 account is connected, its deposit counts instead (not twice).
+        store.data.accounts.append(Account(id: "529", name: "NY 529 College Savings", institution: "Vanguard",
+                                           kind: .investment, balance: 0))
+        store.data.transactions.append(Transaction(id: "v2", accountId: "529", date: date(2026, 10, 7), amount: 25_000,
+                                                   payee: "Contribution", isTransfer: true))
+        XCTAssertEqual(store.savedAndInvested(in: store.currentMonth), 25_000)
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {

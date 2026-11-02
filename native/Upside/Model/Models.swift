@@ -76,7 +76,8 @@ enum AccountKind: String, Codable, CaseIterable {
             return .loan
         }
         if n.contains("401") || n.contains("ira") || n.contains("brokerage")
-            || n.contains("invest") || n.contains("roth") {
+            || n.contains("invest") || n.contains("roth") || n.contains("529") || n.contains("college")
+            || n.contains("vanguard") || n.contains("fidelity") || n.contains("schwab") {
             return .investment
         }
         if n.contains("checking") { return .checking }

@@ -173,8 +173,22 @@ enum BankSync {
     /// Bills paid from checking ("VERIZON AUTOPAY", "DUKE ENERGY ONLINE
     /// PAYMENT") are spending, so plain "autopay"/"payment" isn't enough:
     /// it has to be a transfer, or a payment that names a card issuer.
+    /// Money sent to college savings, brokerages and retirement accounts:
+    /// saved, not spent, even when that account isn't connected.
+    static let investmentWords = [
+        "vanguard", "529 plan", "529 college", "529 sav", "college 529", "college savings", "ny 529", "nysaves",
+        "fidelity", "schwab", "betterment", "wealthfront", "acorns", "m1 finance", "etrade", "e*trade",
+        "merrill edge", "tiaa", "ira contrib", "roth contrib",
+    ]
+
+    static func isInvestmentPayee(_ payee: String) -> Bool {
+        let p = payee.lowercased()
+        return investmentWords.contains { p.contains($0) }
+    }
+
     static func looksLikeTransfer(_ payee: String) -> Bool {
         let p = payee.lowercased()
+        if isInvestmentPayee(p) { return true }
         let always = [
             "transfer", "xfer", "payment thank you", "payment - thank", "pymt thank",
             "payment received", "credit card payment", "card payment", "cc payment",
