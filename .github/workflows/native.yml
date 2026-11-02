@@ -90,6 +90,7 @@ jobs:
             shot $mode 5-review -demo -tab budget -open review
             shot $mode 6-trip -demo -tab budget -open trip:miami
             shot $mode 7-limits -demo -tab budget -open limits
+            shot $mode 7h-limit-detail -demo -tab budget -open limit:dining
             shot $mode 7g-recommended -demo -tab budget -open recommended
             shot $mode 7b-save -demo -tab budget -open save
             shot $mode 7c-recap -demo -tab budget -open recap

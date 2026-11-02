@@ -461,6 +461,16 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(BankSync.sortSource(payee: "ZZ", amount: -1, rules: [], bankCategory: "Restaurants").autoSort, "hunch")
         XCTAssertEqual(BankSync.sortSource(payee: "ZZ", amount: -1, rules: [], bankCategory: "mcc:5812").autoSort, "sure")
     }
+
+    func testRecalculatingLimitsResetsFromTheLastThreeMonths() {
+        let store = makeStore()
+        store.setLimit("groceries", 99_900)
+        store.setLimit("gifts", 5_000) // nothing spent on gifts lately
+        store.setLimitsFromAverages()
+        XCTAssertEqual(store.category("groceries")?.limit, 60_000, "usual $600")
+        XCTAssertNil(store.category("gifts")?.limit)
+        XCTAssertEqual(store.averagingMonths(before: store.currentMonth).count, 3)
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {

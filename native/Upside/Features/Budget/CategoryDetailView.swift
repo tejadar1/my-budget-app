@@ -260,21 +260,28 @@ struct LimitsView: View {
     @Environment(BudgetStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @State private var showRecommended = LaunchArgs.open?.kind == "recommended"
+    @State private var confirmRecalc = false
+    @State private var openLimit: String? = LaunchArgs.open?.kind == "limit" ? LaunchArgs.open?.id : nil
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
                     Button {
-                        withAnimation { store.setLimitsFromAverages() }
+                        confirmRecalc = true
                     } label: {
-                        Label("Use my 3-month averages", systemImage: "wand.and.stars")
+                        Label("Recalculate from the last 3 months", systemImage: "arrow.clockwise")
+                    }
+                    .confirmationDialog("Recalculate every limit?", isPresented: $confirmRecalc, titleVisibility: .visible) {
+                        Button("Recalculate") { withAnimation { store.setLimitsFromAverages() } }
+                    } message: {
+                        Text("Each limit becomes your usual over the last 3 months, rounded up to $10, including any banks or accounts you've added. Limits you typed in are replaced.")
                     }
                     Button { showRecommended = true } label: {
                         Label("Recommended categories", systemImage: "sparkles")
                     }
                 } footer: {
-                    Text("Sets each limit to what you usually spend, rounded up. Limits reset every month.")
+                    Text("Use it after adding a bank or account. Tap a category to see its last 3 months and how its limit was set.")
                 }
                 ForEach(store.groupedCategories) { group in
                     if group.name != "Trips" {
@@ -295,6 +302,9 @@ struct LimitsView: View {
             .navigationTitle("Categories & limits")
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showRecommended) { RecommendedCategoriesView() }
+            .navigationDestination(isPresented: Binding(get: { openLimit != nil }, set: { if !$0 { openLimit = nil } })) {
+                if let openLimit { LimitDetailView(categoryId: openLimit) }
+            }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
@@ -333,31 +343,117 @@ private struct AddCategorySection: View {
 private struct LimitRow: View {
     @Environment(BudgetStore.self) private var store
     let category: Category
-    @State private var dollars: Int = 0
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(category.name)
-                if let avg = store.averageSpent(category.id, before: store.currentMonth) {
-                    Text("usual \(Money.short(avg))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+        NavigationLink {
+            LimitDetailView(categoryId: category.id)
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(category.name)
+                    if let avg = store.averageSpent(category.id, before: store.currentMonth) {
+                        Text("usual \(Money.short(avg))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+                Text(category.limit.map(Money.short) ?? "No limit")
+                    .foregroundStyle(category.limit == nil ? .secondary : .primary)
+                    .monospacedDigit()
+            }
+        }
+    }
+}
+
+/// One category's limit: the last 3 months behind "usual", how the limit
+/// was set, and where to change it.
+struct LimitDetailView: View {
+    @Environment(BudgetStore.self) private var store
+    let categoryId: String
+    @State private var dollars = 0
+
+    var body: some View {
+        if let category = store.category(categoryId) {
+            let thisMonth = store.currentMonth
+            let counted = store.averagingMonths(before: thisMonth)
+            let shown = (1...3).map { store.month(-$0, from: thisMonth) }
+            let usual = store.averageSpent(categoryId, before: thisMonth)
+            let suggested = store.limitFromAverage(category)
+            Form {
+                Section {
+                    ForEach(shown, id: \.self) { month in
+                        LabeledContent(month.formatted(.dateTime.month(.wide))) {
+                            if counted.contains(month) {
+                                Text(Money.short(store.spent(categoryId, in: month))).monospacedDigit()
+                            } else {
+                                Text(month < store.firstFullMonth ? "not counted, partial month" : "no data")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    LabeledContent("Usual (average)") {
+                        Text(usual.map(Money.short) ?? "—").fontWeight(.semibold).monospacedDigit()
+                    }
+                } header: {
+                    Text("Last 3 months")
+                } footer: {
+                    if counted.count > 0 && counted.count < 3 {
+                        Text("Averaged over \(counted.count) month\(counted.count == 1 ? "" : "s"); the others had no history yet.")
+                    }
+                }
+
+                Section {
+                    HStack {
+                        Text("Monthly limit")
+                        Spacer()
+                        TextField("No limit", value: $dollars, format: .currency(code: "USD").precision(.fractionLength(0)))
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.trailing)
+                            .font(.title3.weight(.semibold))
+                            .frame(maxWidth: 140)
+                    }
+                    if let suggested, category.limit != suggested {
+                        Button("Use my usual: \(Money.short(suggested))") { dollars = suggested / 100 }
+                    }
+                    if category.limit != nil {
+                        Button("Remove limit", role: .destructive) { dollars = 0 }
+                    }
+                } header: {
+                    Text("Limit")
+                } footer: {
+                    Text(explanation(category, usual: usual, suggested: suggested))
+                }
+
+                Section {
+                    LabeledContent("Spent so far", value: Money.short(store.spent(categoryId, in: thisMonth)))
+                    if let lowered = store.plan?.limits[categoryId] {
+                        LabeledContent("Savings plan lowers it to", value: Money.short(lowered))
+                    }
+                } header: {
+                    Text(thisMonth.formatted(.dateTime.month(.wide)))
                 }
             }
-            Spacer()
-            TextField("No limit", value: $dollars, format: .currency(code: "USD").precision(.fractionLength(0)))
-                .keyboardType(.numberPad)
-                .multilineTextAlignment(.trailing)
-                .frame(maxWidth: 120)
-                .onChange(of: dollars) { _, newValue in
-                    store.setLimit(category.id, newValue > 0 ? newValue * 100 : nil)
-                }
+            .navigationTitle(category.name)
+            .navigationBarTitleDisplayMode(.inline)
+            .onAppear { dollars = (category.limit ?? 0) / 100 }
+            .onChange(of: dollars) { _, newValue in
+                store.setLimit(categoryId, newValue > 0 ? newValue * 100 : nil)
+            }
         }
-        .onAppear { dollars = (category.limit ?? 0) / 100 }
-        .onChange(of: category.limit) { _, newValue in
-            dollars = (newValue ?? 0) / 100
+    }
+
+    private func explanation(_ category: Category, usual: Cents?, suggested: Cents?) -> String {
+        guard let limit = category.limit else {
+            return suggested.map { "No limit yet. Your usual would round up to \(Money.short($0))." } ?? "No limit yet."
         }
+        if let usual, let suggested, limit == suggested {
+            return "Your usual \(Money.short(usual)), rounded up to the next $10."
+        }
+        if let suggested {
+            return "You set this. Your usual \(Money.short(usual ?? 0)) would round up to \(Money.short(suggested))."
+        }
+        return "You set this. There isn't enough history for a usual yet."
     }
 }
 

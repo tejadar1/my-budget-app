@@ -188,7 +188,9 @@ final class BudgetStore {
 
     /// Previous months that have any data at all, so a new budget doesn't
     /// average over empty months.
-    private func averagingMonths(before month: Date) -> [Date] {
+    /// The months "usual" averages: up to the last 3 with data, skipping a
+    /// partial first month.
+    func averagingMonths(before month: Date) -> [Date] {
         let candidates = (1...Self.averageMonths).map { self.month(-$0, from: month) }
         let active = Set(data.transactions.map { monthStart($0.date) })
         return candidates.filter { active.contains($0) && $0 >= firstFullMonth }
@@ -257,10 +259,15 @@ final class BudgetStore {
         for index in data.categories.indices where !data.categories[index].isIncome {
             let category = data.categories[index]
             guard category.group != "Trips" else { continue }
-            if let avg = averageSpent(category.id, before: currentMonth), avg > 0 {
-                data.categories[index].limit = Int((Double(avg) / 1000).rounded(.up)) * 1000
-            }
+            // A reset: categories with no recent spending lose their limit.
+            data.categories[index].limit = limitFromAverage(category)
         }
+    }
+
+    /// Usual spending rounded up to the next $10: what "Use my averages" sets.
+    func limitFromAverage(_ category: Category) -> Cents? {
+        guard let avg = averageSpent(category.id, before: currentMonth), avg > 0 else { return nil }
+        return Int((Double(avg) / 1000).rounded(.up)) * 1000
     }
 
     func setLimit(_ categoryId: String, _ limit: Cents?) {
