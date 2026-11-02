@@ -82,6 +82,22 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(BankSync.categorize(payee: "SQ *BLUE BOTTLE #99", amount: -500, rules: store.data.rules), "dining")
     }
 
+
+    func testSortingOneOffersTheOthersWithTheSameName() {
+        let store = makeStore()
+        // Another Blue Bottle purchase already sitting in Shopping.
+        store.data.transactions.append(Transaction(id: "12", accountId: "a", date: date(2026, 9, 9), amount: -800,
+                                                   payee: "SQ *BLUE BOTTLE #3", categoryId: "shopping"))
+        let prompt = store.sort("10", as: "dining")
+        XCTAssertEqual(Set(prompt?.otherIds ?? []), ["11", "12"])
+        XCTAssertEqual(store.uncategorized.count, 1, "the others wait for your answer")
+
+        store.sortAll(prompt!)
+        XCTAssertEqual(store.data.transactions.first { $0.id == "12" }?.categoryId, "dining")
+        XCTAssertTrue(store.uncategorized.isEmpty)
+        XCTAssertEqual(BankSync.categorize(payee: "SQ *BLUE BOTTLE #99", amount: -500, rules: store.data.rules), "dining")
+        XCTAssertNil(store.sort("12", as: "dining"), "nothing left to offer")
+    }
     func testPayeeKeyIgnoresStoreNumbers() {
         XCTAssertEqual(BudgetStore.payeeKey("KROGER #123 CINCINNATI OH"), "kroger cincinnati")
         XCTAssertEqual(BudgetStore.payeeKey("Kroger 456"), "kroger")

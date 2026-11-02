@@ -428,6 +428,53 @@ final class BudgetStore {
         categorize(transactionId, as: categoryId, remember: remember)
     }
 
+    /// After you sort one purchase: other purchases with the same name
+    /// that aren't sorted that way yet, so Upside can offer to sort them too.
+    struct SortPrompt: Identifiable {
+        var id: String { transactionId }
+        var transactionId: String
+        var categoryId: String
+        var otherIds: [String]
+        var storeName: String
+        var categoryName: String
+    }
+
+    /// Sorts one purchase and, when others share its name, returns a
+    /// prompt instead of changing them silently. With no others, the choice
+    /// is remembered for future purchases right away.
+    func sort(_ transactionId: String, as categoryId: String) -> SortPrompt? {
+        guard let t = data.transactions.first(where: { $0.id == transactionId }) else { return nil }
+        categorize(transactionId, as: categoryId, remember: false)
+        let key = Self.payeeKey(t.payee)
+        let isTransfer = categoryId == BankSync.transferCategory
+        let others = data.transactions.filter { o in
+            o.id != transactionId && !key.isEmpty && Self.payeeKey(o.payee) == key
+                && (isTransfer ? !o.isTransfer : (o.isTransfer || o.categoryId != categoryId))
+        }
+        guard !others.isEmpty else {
+            remember(payee: t.payee, as: categoryId)
+            return nil
+        }
+        return SortPrompt(transactionId: transactionId, categoryId: categoryId, otherIds: others.map(\.id),
+                          storeName: t.payee,
+                          categoryName: isTransfer ? "card payments or transfers" : (category(categoryId)?.name ?? "that"))
+    }
+
+    /// "Sort all": the others follow, and so do future purchases.
+    func sortAll(_ prompt: SortPrompt) {
+        for id in prompt.otherIds { categorize(id, as: prompt.categoryId, remember: false) }
+        if let t = data.transactions.first(where: { $0.id == prompt.transactionId }) {
+            remember(payee: t.payee, as: prompt.categoryId)
+        }
+    }
+
+    private func remember(payee: String, as categoryId: String) {
+        let key = Self.payeeKey(payee)
+        guard !key.isEmpty else { return }
+        data.rules.removeAll { $0.payeeKey == key }
+        data.rules.append(PayeeRule(payeeKey: key, categoryId: categoryId))
+    }
+
     /// Starts sorting over: forgets every category choice and payee rule,
     /// then sorts with the built-in store lists and transfer detection.
     /// Trip tags stay. Returns how many purchases still need sorting.

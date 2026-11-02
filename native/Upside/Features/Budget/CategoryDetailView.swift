@@ -150,6 +150,7 @@ struct TransactionRow: View {
 struct ReviewView: View {
     @Environment(BudgetStore.self) private var store
     @State private var newCategoryFor: Transaction?
+    @State private var prompt: BudgetStore.SortPrompt?
     @State private var newCategoryName = ""
 
     var body: some View {
@@ -183,7 +184,7 @@ struct ReviewView: View {
                         TransactionRow(transaction: t)
                         Menu {
                             Button {
-                                withAnimation { store.categorize(t.id, as: BankSync.transferCategory) }
+                                withAnimation { prompt = store.sort(t.id, as: BankSync.transferCategory) }
                             } label: {
                                 Label("Card payment or transfer", systemImage: "arrow.left.arrow.right")
                             }
@@ -191,7 +192,7 @@ struct ReviewView: View {
                                 Section(group.name) {
                                     ForEach(group.categories) { c in
                                         Button(c.name) {
-                                            withAnimation { store.categorize(t.id, as: c.id) }
+                                            withAnimation { prompt = store.sort(t.id, as: c.id) }
                                         }
                                     }
                                 }
@@ -211,7 +212,7 @@ struct ReviewView: View {
                     }
                 }
             } footer: {
-                Text("Choosing a category also sorts future purchases from the same store. Card payments and transfers between your accounts aren’t spending.")
+                Text("When other purchases share a name, Upside offers to sort them the same way. Card payments and transfers between your accounts aren’t spending.")
             }
         }
         .overlay {
@@ -220,6 +221,7 @@ struct ReviewView: View {
                                        description: Text("Every purchase has a category."))
             }
         }
+        .sortOthersPrompt($prompt)
         .navigationTitle("To sort")
         .alert("New category", isPresented: Binding(
             get: { newCategoryFor != nil },
@@ -229,7 +231,7 @@ struct ReviewView: View {
             Button("Create") {
                 if let t = newCategoryFor, !newCategoryName.trimmingCharacters(in: .whitespaces).isEmpty {
                     let id = store.addCategory(newCategoryName, group: "Everyday")
-                    withAnimation { store.categorize(t.id, as: id) }
+                    withAnimation { prompt = store.sort(t.id, as: id) }
                 }
                 newCategoryFor = nil
             }
