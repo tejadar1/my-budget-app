@@ -221,6 +221,14 @@ struct BudgetData: Codable {
     var alertsSent: [String]?
     /// Money set aside each month for trips; trip purchases draw it down.
     var tripFund: TripFund?
+    /// Paid first every month, before everyday spending.
+    var priorities: Priorities?
+}
+
+/// "Pay yourself first": standing monthly amounts taken off the top.
+struct Priorities: Codable, Hashable {
+    var savings: Cents = 0
+    var cardPaydown: Cents = 0
 }
 
 /// A virtual fund: grows by `monthly` each month from `start`, shrinks

@@ -275,12 +275,12 @@ struct LimitsView: View {
                     Button {
                         confirmRecalc = true
                     } label: {
-                        Label("Recalculate from the last 3 months", systemImage: "arrow.clockwise")
+                        Label("Recalculate to fit my plan", systemImage: "arrow.clockwise")
                     }
                     .confirmationDialog("Recalculate every limit?", isPresented: $confirmRecalc, titleVisibility: .visible) {
-                        Button("Recalculate") { withAnimation { store.setLimitsFromAverages() } }
+                        Button("Recalculate") { withAnimation { _ = store.setLimitsToPlan(store.currentMonth) } }
                     } message: {
-                        Text("Each limit becomes your usual over the last 3 months, rounded up to $10, including any banks or accounts you've added. Limits you typed in are replaced.")
+                        Text("Each everyday limit starts from your usual, then shopping, dining and other flexible spending is trimmed so everything fits after bills, savings, card paydown and trips. Limits you typed in are replaced.")
                     }
                     Button { showRecommended = true } label: {
                         Label("Recommended categories", systemImage: "sparkles")

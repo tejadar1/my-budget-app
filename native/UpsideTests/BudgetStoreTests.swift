@@ -689,6 +689,24 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.data.transactions.first { $0.id == "y9" }?.categoryId, "shopping")
         XCTAssertEqual(BankSync.categorize(payee: "APPLE MUSIC", amount: -1_099, rules: []), "subscriptions")
     }
+
+    func testPrioritiesComeFirstAndLimitsFollow() {
+        let store = makeStore()
+        // Shopping has been $1,200 a month; groceries come from makeStore.
+        for m in 7...9 {
+            store.data.transactions.append(Transaction(id: "sh\(m)", accountId: "r", date: date(2026, m, 10), amount: -120_000,
+                                                       payee: "Target", categoryId: "shopping"))
+        }
+        store.data.priorities = Priorities(savings: 100_000, cardPaydown: 50_000)
+        let plan = store.monthPlan(store.currentMonth)
+        XCTAssertEqual(plan.toSpend, 300_000 - 100_000 - 50_000, "income − savings − card paydown")
+        // Habit says $1,200 shopping + $700 groceries = $1,900, more than the $1,500 to spend.
+        store.setLimitsToPlan(store.currentMonth)
+        let shopping = store.category("shopping")!.limit!
+        XCTAssertLessThan(shopping, 120_000, "shopping is trimmed")
+        XCTAssertLessThanOrEqual(store.monthPlan(store.currentMonth).everydayLimits, plan.toSpend)
+        XCTAssertGreaterThan(store.category("groceries")!.limit!, 60_000, "groceries trimmed far less than shopping")
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {

@@ -7,6 +7,7 @@ struct BudgetView: View {
     @State private var showLimits = false
     @State private var showPeople = false
     @State private var showSave = false
+    @State private var showPriorities = false
     @State private var recapMonth: MonthRef?
     @State private var openPurchase: PurchaseRef?
     /// "2026-10" once you hide October's recap; next month's shows again.
@@ -39,10 +40,10 @@ struct BudgetView: View {
                         PeopleCard(isEditing: $showPeople)
                     }
 
-                    MonthPlanCard(month: month, onSavings: isCurrentMonth ? { showSave = true } : nil)
+                    MonthPlanCard(month: month, onSavings: isCurrentMonth ? { showPriorities = true } : nil)
 
                     if isCurrentMonth {
-                        SavingsCard(month: month) { showSave = true }
+                        SavingsCard(month: month) { showPriorities = true }
                     }
 
                     SectionTitle(text: "By category")
@@ -118,6 +119,7 @@ struct BudgetView: View {
             }
             .sheet(isPresented: $showLimits) { LimitsView() }
             .sheet(isPresented: $showSave) { SavingsPlanView() }
+            .sheet(isPresented: $showPriorities) { PrioritiesView() }
             .sheet(item: $recapMonth) { RecapView(month: $0.date) }
             .sheet(item: $openPurchase) { TransactionSheet(transactionId: $0.id) }
             .onAppear(perform: openFromLaunchArgs)
@@ -134,6 +136,7 @@ struct BudgetView: View {
         case "search": path.append(Route.search(open.id))
         case "limits", "recommended", "limit": showLimits = true
         case "save": showSave = true
+        case "priorities": showPriorities = true
         case "recap": recapMonth = MonthRef(date: store.month(-1, from: store.currentMonth))
         case "purchase":
             // Most recent purchase in the category named by the id.

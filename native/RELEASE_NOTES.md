@@ -2,6 +2,14 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## 0.28, November 2 (pay yourself first)
+
+- Pay yourself first: set savings and card paydown each month (with a suggestion to clear your cards in 6 or 12 months). They come off the top with trips and bills.
+- Everyday limits fit what's left: they start from your usual, then shopping, dining and other flexible spending is trimmed until everything fits.
+- Recalculate in Limits now fits your plan instead of copying your averages.
+
+Try: Budget > Savings > Pay yourself first.
+
 ## 0.28, November 2 (subscriptions)
 
 - Upside finds subscriptions on its own: the same price around the same day every month. Found ones show in Check these.

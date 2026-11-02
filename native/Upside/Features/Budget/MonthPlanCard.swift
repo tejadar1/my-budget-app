@@ -57,7 +57,7 @@ struct MonthPlanCard: View {
         let incomeNote: String? = plan.incomeIsUsual ? "usual"
             : (checks.extra > 0 ? "+\(checks.extra) extra paycheck" : nil)
         let billsNote = plan.billsDue > 0 ? "\(Money.short(plan.billsDue)) still due" : "paid"
-        let savingsNote: String? = plan.savings == 0 && onSavings != nil ? "set a goal" : nil
+        let savingsNote: String? = plan.savings == 0 && onSavings != nil ? "pay yourself first" : nil
         return VStack(spacing: 8) {
             line("Income", plan.income, note: incomeNote)
             NavigationLink(value: Route.bills) {
@@ -69,6 +69,7 @@ struct MonthPlanCard: View {
             }
             .buttonStyle(.plain)
             .disabled(onSavings == nil)
+            if plan.cardPaydown > 0 { line("Card paydown", -plan.cardPaydown, note: nil) }
             if plan.trips > 0 { line("Trips", -plan.trips, note: nil) }
             Divider().overlay(Color.white.opacity(0.4))
             line("To spend", plan.toSpend, note: nil, bold: true)

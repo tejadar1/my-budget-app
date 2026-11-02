@@ -9,6 +9,7 @@ struct MonthPlan: Equatable {
     var billsPaid: Cents
     var billsDue: Cents
     var savings: Cents
+    var cardPaydown: Cents = 0
     var trips: Cents
     var everydaySpent: Cents
     /// Sum of everyday limits (not bills or trips), to check they fit.
@@ -16,7 +17,7 @@ struct MonthPlan: Equatable {
     var daysLeft: Int?
 
     var bills: Cents { billsPaid + billsDue }
-    var toSpend: Cents { income - bills - savings - trips }
+    var toSpend: Cents { income - bills - savings - cardPaydown - trips }
     var leftToSpend: Cents { toSpend - everydaySpent }
     var perDay: Cents? { daysLeft.map { leftToSpend > 0 ? leftToSpend / max(1, $0) : 0 } }
     /// How far everyday limits overshoot what there is to spend (0 = fits).
@@ -70,7 +71,8 @@ extension BudgetStore {
             incomeIsUsual: isCurrent && usualIncome > actualIncome,
             billsPaid: billsPaid,
             billsDue: billsDue,
-            savings: plan.map { isInMonth($0.month, month) ? $0.goal : 0 } ?? 0,
+            savings: (data.priorities?.savings ?? 0) + (plan.map { isInMonth($0.month, month) ? $0.goal : 0 } ?? 0),
+            cardPaydown: data.priorities?.cardPaydown ?? 0,
             trips: tripSetAside(in: month),
             everydaySpent: totalSpent(in: month) - billsPaid,
             everydayLimits: everydayLimits,
@@ -80,14 +82,28 @@ extension BudgetStore {
     /// Lowers everyday limits so they fit what there is to spend, taking
     /// more from flexible categories (shopping, dining) and never more than
     /// 40% of a limit. Returns how much is still over (0 = fits).
+    /// What's owed across visible credit cards right now.
+    var cardsOwed: Cents { creditCards.reduce(0) { $0 + max(0, -$1.balance) } }
+
+    /// Limits from the plan, not just habit: each everyday category starts
+    /// at its usual, then flexible ones are trimmed (up to 60%) until they
+    /// fit what's left after bills, savings, card paydown and trips.
     @discardableResult
-    func fitLimitsToPlan(_ month: Date) -> Cents {
+    func setLimitsToPlan(_ month: Date) -> Cents {
+        for category in expenseCategories where category.group != "Bills" && category.group != "Trips" && !category.aimsForZero {
+            setLimit(category.id, limitFromAverage(category))
+        }
+        return fitLimitsToPlan(month, cap: 0.6)
+    }
+
+    @discardableResult
+    func fitLimitsToPlan(_ month: Date, cap: Double = 0.4) -> Cents {
         let over = monthPlan(month).limitsOverBy
         guard over > 0 else { return 0 }
         let candidates = expenseCategories.filter { $0.group != "Bills" && $0.group != "Trips" && !$0.aimsForZero }
             .compactMap { c -> (Category, Cents, Double)? in
                 guard let l = c.limit, l > 0 else { return nil }
-                let room = Double(l) * max(0.1, flexibility(of: c)) * 0.4
+                let room = Double(l) * max(0.1, flexibility(of: c)) * cap
                 return (c, l, room)
             }
         let totalRoom = candidates.reduce(0) { $0 + $1.2 }
