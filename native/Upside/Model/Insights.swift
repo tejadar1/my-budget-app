@@ -229,3 +229,34 @@ extension BudgetStore {
         return months.reduce(0) { $0 + value($1) } / months.count
     }
 }
+
+// MARK: - Transactions tab
+
+extension BudgetStore {
+    enum TransactionFilter: Hashable { case all, toCheck, transfers }
+
+    /// The Transactions tab: visible accounts only, newest first, narrowed
+    /// by search text (store or amount), a filter, a category and a person.
+    func transactions(matching query: String, filter: TransactionFilter,
+                      categoryId: String? = nil, owner: Owner? = nil) -> [Transaction] {
+        let visible = Dictionary(uniqueKeysWithValues: visibleAccounts.map { ($0.id, $0) })
+        let text = query.trimmingCharacters(in: .whitespaces)
+        let amount = Self.parseAmount(text)
+        return data.transactions.filter { t in
+            guard let account = visible[t.accountId] else { return false }
+            if !text.isEmpty {
+                let hit = (amount.map { abs(t.amount) == $0 } ?? false) || t.payee.localizedCaseInsensitiveContains(text)
+                if !hit { return false }
+            }
+            switch filter {
+            case .all: break
+            case .toCheck: if !(t.isHunch || (t.categoryId == nil && !t.isTransfer && t.amount < 0)) { return false }
+            case .transfers: if !t.isTransfer { return false }
+            }
+            if let categoryId, t.categoryId != categoryId || t.isTransfer { return false }
+            if let owner, account.owner != owner { return false }
+            return true
+        }
+        .sorted { $0.date > $1.date }
+    }
+}

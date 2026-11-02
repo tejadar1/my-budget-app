@@ -85,6 +85,7 @@ jobs:
           for mode in light dark; do
             shot $mode 1-budget -demo -tab budget
             shot $mode 2-accounts -demo -tab accounts
+            shot $mode 2b-transactions -demo -tab transactions
             shot $mode 3-settings -demo -tab settings
             shot $mode 4-category -demo -tab budget -open category:groceries
             shot $mode 5-review -demo -tab budget -open review

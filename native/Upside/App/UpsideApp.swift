@@ -53,7 +53,7 @@ enum LaunchArgs {
 }
 
 enum AppTab: String, Hashable {
-    case budget, accounts, settings
+    case budget, transactions, accounts, settings
 }
 
 struct RootView: View {
@@ -75,6 +75,9 @@ struct RootView: View {
             BudgetView()
                 .tabItem { Label("Budget", systemImage: "chart.bar.fill") }
                 .tag(AppTab.budget)
+            TransactionsView()
+                .tabItem { Label("Transactions", systemImage: "list.bullet.rectangle") }
+                .tag(AppTab.transactions)
             AccountsView()
                 .tabItem { Label("Accounts", systemImage: "creditcard.fill") }
                 .tag(AppTab.accounts)

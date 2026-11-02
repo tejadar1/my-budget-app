@@ -2,6 +2,14 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## 0.28, November 2 (Transactions tab)
+
+- New Transactions tab: every purchase by month, with search by store or amount.
+- Filter to All, To check or Transfers, and by category or person.
+- Long-press to change a category, swipe right to confirm a guess, swipe left to mark a transfer.
+
+Try: the Transactions tab, then long-press any purchase.
+
 ## 0.28, November 2 (income card wording)
 
 - Safe to spend says when it's counting your usual income; "Left so far" counts only what's arrived.

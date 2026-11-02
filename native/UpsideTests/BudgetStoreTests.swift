@@ -615,6 +615,19 @@ final class BudgetStoreTests: XCTestCase {
         store.data.tripFund = TripFund(monthly: 30_000, start: date(2026, 10, 1))
         XCTAssertEqual(store.tripSetAside(in: store.currentMonth), 30_000)
     }
+
+    func testTransactionsTabFilters() {
+        let store = makeStore()
+        XCTAssertEqual(store.transactions(matching: "kroger", filter: .all).map(\.id), ["4", "3", "2", "1"])
+        XCTAssertEqual(store.transactions(matching: "", filter: .transfers).map(\.id), ["8"])
+        XCTAssertEqual(Set(store.transactions(matching: "", filter: .toCheck).map(\.id)), ["10", "11"])
+        XCTAssertEqual(Set(store.transactions(matching: "", filter: .all, categoryId: "groceries", owner: .p2).map(\.id)),
+                       ["2", "5", "6"])
+        XCTAssertFalse(store.transactions(matching: "", filter: .all).contains { $0.accountId == "m" } == false,
+                       "off-budget accounts still show; only hidden ones don't")
+        store.setHidden("m", true)
+        XCTAssertFalse(store.transactions(matching: "", filter: .all).contains { $0.accountId == "m" })
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {
