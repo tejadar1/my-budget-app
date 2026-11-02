@@ -7,6 +7,8 @@ struct CategoryDetailView: View {
     @Environment(BudgetStore.self) private var store
     let categoryId: String
     var month: Date? = nil
+    /// A past month picked from the chart, opened as its own page.
+    @State private var drill: MonthRef?
 
     var body: some View {
         let month = self.month ?? store.currentMonth
@@ -50,7 +52,9 @@ struct CategoryDetailView: View {
             }
 
             TrendSection(categoryId: categoryId, month: month,
-                         limit: limit > 0 ? limit : nil, isCurrent: isCurrent)
+                         limit: limit > 0 ? limit : nil, isCurrent: isCurrent) { picked in
+                if picked != month { drill = MonthRef(date: picked) }
+            }
 
             if !byOwner.isEmpty {
                 Section("Who spent") {
@@ -76,6 +80,7 @@ struct CategoryDetailView: View {
         }
         .navigationTitle(category?.name ?? "Category")
         .navigationBarTitleDisplayMode(.large)
+        .navigationDestination(item: $drill) { CategoryDetailView(categoryId: categoryId, month: $0.date) }
     }
 
     private func stat(_ label: String, _ value: String) -> some View {
@@ -465,6 +470,9 @@ private struct TrendSection: View {
     let month: Date
     let limit: Cents?
     let isCurrent: Bool
+    /// Opens a month's purchases in this category.
+    let onPick: (Date) -> Void
+    @State private var selected: Date?
 
     var body: some View {
         let points = store.monthlySpent(categoryId, endingAt: month)
@@ -501,15 +509,39 @@ private struct TrendSection: View {
                         }
                     }
                 }
+                .chartXSelection(value: $selected)
+                .onChange(of: selected) { _, date in
+                    guard let date else { return }
+                    onPick(store.monthStart(date))
+                    selected = nil
+                }
                 .frame(height: 150)
                 .padding(.vertical, 6)
                 .accessibilityLabel("Spending for the last \(points.count) months")
                 .accessibilityValue(points.map { "\($0.month.formatted(.dateTime.month(.wide))) \(Money.short($0.spent))" }
                     .joined(separator: ", "))
+                // The same months as rows: easier to tap, and VoiceOver can reach them.
+                ForEach(points.reversed()) { point in
+                    Button { onPick(point.month) } label: {
+                        HStack {
+                            Text(point.month.formatted(.dateTime.month(.wide).year()))
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            Text(Money.short(point.spent)).monospacedDigit().foregroundStyle(.secondary)
+                            if point.month != month {
+                                Image(systemName: "chevron.right")
+                                    .font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(point.month == month)
+                }
             } header: {
                 Text("Last \(points.count) months")
             } footer: {
-                if let note = BudgetStore.trendNote(finished) { Text(note) }
+                Text([BudgetStore.trendNote(finished), "Tap a month to see its purchases."].compactMap { $0 }.joined(separator: " "))
             }
         }
     }

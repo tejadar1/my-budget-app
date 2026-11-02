@@ -492,7 +492,7 @@ struct ReviewRow: View {
 }
 
 /// A month to show in a sheet.
-struct MonthRef: Identifiable {
+struct MonthRef: Identifiable, Hashable {
     let date: Date
     var id: Date { date }
 }

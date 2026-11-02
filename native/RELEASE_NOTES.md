@@ -6,6 +6,7 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 
 - Upside finds subscriptions on its own: the same price around the same day every month. Found ones show in Check these.
 - About 60 more subscription services recognized by name.
+- On a category page, tap a month in the chart (or the list under it) to see that month's purchases.
 
 ## 0.28, November 2 (savings and subtotals)
 
