@@ -7,6 +7,7 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 - Income now comes first on the Budget page: this month's paychecks, your usual, and what's left after spending.
 - A paycheck that usually lands on the 1st but arrives a day or two early counts for the month it's for.
 - Weekly and every-two-weeks pay: months with an extra paycheck say so, and your usual income doesn't jump.
+- Education (tuition, school, daycare) is a bill: it shows with your bills and the savings plan never trims it.
 
 Try: the Income card at the top of Budget.
 

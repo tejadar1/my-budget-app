@@ -56,6 +56,11 @@ final class BudgetStore {
                 data.categories[i].name = "Dining & Bars"
             }
             mergeBarsIntoDining(&data)
+            for i in data.categories.indices
+            where ["education", "tuition", "school", "childcare", "daycare"].contains(data.categories[i].name.lowercased())
+                && data.categories[i].group == "Everyday" {
+                data.categories[i].group = "Bills"
+            }
             if !UserDefaults.standard.bool(forKey: "splitCommute") {
                 splitCommuteFromGas(&data)
                 UserDefaults.standard.set(true, forKey: "splitCommute")
@@ -853,7 +858,10 @@ final class BudgetStore {
         ("Fitness", "Everyday", ["gym", "fitness", "peloton", "yoga", "crossfit", "orangetheory", "equinox", "ymca"]),
         ("Pets", "Everyday", ["petco", "petsmart", "chewy", "vet ", "veterinary", "animal hosp", "rover"]),
         ("Childcare", "Bills", ["daycare", "childcare", "kindercare", "preschool", "babysit", "nanny"]),
-        ("Education", "Everyday", ["tuition", "university", "college", "coursera", "udemy", "school"]),
+        // Tuition is owed, not optional: a bill the savings plan never cuts.
+        ("Education", "Bills", ["tuition", "university", "college of", "school", "academy", "montessori",
+                                "factsmgt", "facts tuition", "smart tuition", "smarttuition", "flywire",
+                                "blackbaud", "coursera", "udemy"]),
         ("Golf", "Everyday", ["golf", "country club", "golfnow", "teeoff", "tee time", "driving range",
                               "pga tour superstore", "titleist", "callaway", "taylormade", "ping golf",
                               "footjoy", "club champ", "links at", "greens fee"]),

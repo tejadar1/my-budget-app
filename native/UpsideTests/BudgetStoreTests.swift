@@ -532,6 +532,17 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.paychecks(in: store.currentMonth).extra, 0)
         XCTAssertEqual(store.averageIncome(before: store.currentMonth), 300_000)
     }
+
+    func testTuitionIsABillTheSavingsPlanLeavesAlone() {
+        let store = makeStore()
+        store.data.transactions.append(Transaction(id: "t", accountId: "r", date: date(2026, 9, 5), amount: -150_000,
+                                                   payee: "FACTSMGT TUITION", categoryId: nil))
+        let education = store.recommendedCategories().first { $0.name == "Education" }
+        XCTAssertEqual(education?.group, "Bills")
+        store.accept(education!)
+        let category = store.data.categories.first { $0.name == "Education" }!
+        XCTAssertEqual(store.flexibility(of: category), 0, "never trimmed")
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {
