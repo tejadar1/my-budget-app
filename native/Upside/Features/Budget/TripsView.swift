@@ -72,13 +72,37 @@ extension BudgetStore {
         return count
     }
 
+    // MARK: Paying for a trip over time
+
+    /// A trip is paid for evenly from the month of its first purchase (or
+    /// now, if nothing's bought yet) through the month after it ends.
+    /// Cost is its budget, or what's been spent if that's more.
+    func tripSchedule(_ trip: Trip) -> (start: Date, end: Date, perMonth: Cents)? {
+        let cost = max(trip.budget ?? 0, tripSpent(trip.id))
+        guard cost > 0 else { return nil }
+        let first = tripTransactions(trip.id).map(\.date).min()
+        let start = monthStart(min(first ?? now(), now()))
+        let end = month(1, from: monthStart(trip.end))
+        let months = max(1, (calendar.dateComponents([.month], from: start, to: end).month ?? 0) + 1)
+        return (start, end, cost / months)
+    }
+
+    /// What trips need set aside in a month: a fixed trip fund if you set
+    /// one, otherwise each trip's share for months it's being paid off.
+    func tripSetAside(in month: Date) -> Cents {
+        if let fund = data.tripFund {
+            return monthStart(fund.start) <= month ? fund.monthly : 0
+        }
+        return data.trips.compactMap(tripSchedule).filter { $0.start <= month && month <= $0.end }
+            .reduce(0) { $0 + $1.perMonth }
+    }
+
     // MARK: Keep first, then spend
 
-    /// Savings goal plus trip fund for a month: kept before spending.
+    /// Savings goal plus trips for a month: kept before spending.
     func setAside(in month: Date) -> Cents {
         let saving = plan.map { isInMonth($0.month, month) ? $0.goal : 0 } ?? 0
-        let trips = data.tripFund.map { monthStart($0.start) <= month ? $0.monthly : 0 } ?? 0
-        return saving + trips
+        return saving + tripSetAside(in: month)
     }
 
     /// What can still be spent this month and keep the set-asides: income
@@ -144,6 +168,9 @@ struct TripCard: View {
                     Text(need.covered ? "The trip fund covers it" : "\(Money.short(need.perMonth))/month more to cover it")
                         .font(.caption)
                         .foregroundStyle(need.covered ? Theme.accent : Theme.warning)
+                } else if store.data.tripFund == nil, let plan = store.tripSchedule(trip), plan.end >= store.currentMonth {
+                    Text("Saving \(Money.short(plan.perMonth))/month · \(plan.start.formatted(.dateTime.month(.abbreviated)))–\(plan.end.formatted(.dateTime.month(.abbreviated)))")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
             }
             .padding(14)

@@ -11,7 +11,7 @@ struct IncomeCard: View {
         let spent = store.totalSpent(in: month, includeTrips: true)
         // Trip purchases come out of the fund, so the month sets aside the
         // fund's amount instead of counting the trip spending.
-        let fund = store.data.tripFund.map { $0.start <= month || store.isInMonth($0.start, month) ? $0.monthly : 0 } ?? 0
+        let fund = store.tripSetAside(in: month)
         let tripSpend = fund > 0 ? store.totalSpent(in: month, includeTrips: true) - store.totalSpent(in: month) : 0
         let left = income - (spent - tripSpend) - fund
         let usual = store.averageIncome(before: month)

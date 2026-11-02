@@ -9,6 +9,7 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 - Each upcoming trip says whether the fund covers it, or how much a month would.
 - Safe to spend: the Income card shows what you can still spend and keep your savings and trip money, after bills still due.
 - The trip fund only gets what a month actually had left; overspending means less for trips.
+- Each trip is paid for evenly from its first purchase through the month after it, and Safe to spend keeps that amount each month.
 
 Try: Budget > Trips > Start a trip fund.
 

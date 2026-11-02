@@ -600,6 +600,21 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.setAside(in: store.currentMonth), 55_000)
         XCTAssertEqual(store.safeToSpend(in: store.currentMonth), 300_000 - 13_000 - 55_000)
     }
+
+    func testATripIsPaidForFromFirstPurchaseUntilAfterIt() {
+        let store = makeStore()
+        store.saveTrip(Trip(id: "m", name: "Miami", start: date(2027, 1, 10), end: date(2027, 1, 14), budget: 250_000))
+        store.data.transactions.append(Transaction(id: "f", accountId: "r", date: date(2026, 9, 20), amount: -82_000,
+                                                   payee: "JetBlue", categoryId: "travel", tripId: "m"))
+        let plan = store.tripSchedule(store.data.trips[0])!
+        // September (flights) through February (the month after): 6 months.
+        XCTAssertEqual(plan.perMonth, 41_666)
+        XCTAssertEqual(store.tripSetAside(in: store.currentMonth), 41_666)
+        XCTAssertEqual(store.tripSetAside(in: store.monthStart(date(2027, 3, 1))), 0, "done after February")
+        // A fixed trip fund replaces the per-trip plan.
+        store.data.tripFund = TripFund(monthly: 30_000, start: date(2026, 10, 1))
+        XCTAssertEqual(store.tripSetAside(in: store.currentMonth), 30_000)
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {
