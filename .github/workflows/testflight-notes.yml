@@ -1,0 +1,72 @@
+name: TestFlight notes
+
+# Puts the newest section of native/RELEASE_NOTES.md into a build's
+# "What to Test". Runs after each ship, or by hand for a build number.
+on:
+  workflow_call:
+    inputs:
+      build:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      build:
+        description: Build number, like 202611021037
+        required: true
+
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Add What to Test notes
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          ISSUER: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          BUILD: ${{ inputs.build }}
+        run: |
+          pip install --quiet "pyjwt[crypto]" requests
+          python3 - <<'PY'
+          import os, re, time, jwt, requests
+          text = open("native/RELEASE_NOTES.md").read()
+          section = re.split(r"^## ", text, flags=re.M)[1]
+          notes = section.split("\n", 1)[1].strip()
+          # Apple rejects symbols like a check mark; keep plain text.
+          for a, b in {"✓": "the check", "›": ">", "→": "->", "–": "-", "—": "-", "•": "-",
+                       "’": "'", "‘": "'", "“": '"', "”": '"', "…": "..."}.items():
+              notes = notes.replace(a, b)
+          notes = "".join(c for c in notes if ord(c) < 0x2000)[:3900]
+          def headers():
+              token = jwt.encode({"iss": os.environ["ISSUER"], "iat": int(time.time()),
+                                  "exp": int(time.time()) + 600, "aud": "appstoreconnect-v1"},
+                                 os.environ["P8"], algorithm="ES256", headers={"kid": os.environ["KEY_ID"]})
+              return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+          api = "https://api.appstoreconnect.apple.com/v1"
+          app = requests.get(f"{api}/apps", headers=headers(), params={"filter[bundleId]": "com.tejadar1.upside"}).json()["data"][0]["id"]
+          build = None
+          for _ in range(80):  # Apple takes a few minutes to process
+              found = requests.get(f"{api}/builds", headers=headers(), params={
+                  "filter[app]": app, "filter[version]": os.environ["BUILD"]}).json()["data"]
+              if found and found[0]["attributes"]["processingState"] in ("VALID", "INVALID", "FAILED"):
+                  build = found[0]; break
+              time.sleep(30)
+          if not build:
+              print(f'::warning::Build {os.environ["BUILD"]} not processed yet; notes not added.'); raise SystemExit(0)
+          locs = requests.get(f"{api}/builds/{build['id']}/betaBuildLocalizations", headers=headers()).json()["data"]
+          en = next((l for l in locs if l["attributes"]["locale"].startswith("en")), None)
+          if en:
+              r = requests.patch(f"{api}/betaBuildLocalizations/{en['id']}", headers=headers(), json={"data": {
+                  "type": "betaBuildLocalizations", "id": en["id"], "attributes": {"whatsNew": notes}}})
+          else:
+              r = requests.post(f"{api}/betaBuildLocalizations", headers=headers(), json={"data": {
+                  "type": "betaBuildLocalizations", "attributes": {"locale": "en-US", "whatsNew": notes},
+                  "relationships": {"build": {"data": {"type": "builds", "id": build["id"]}}}}})
+          if r.ok:
+              print("What to Test added")
+          else:
+              print(f"::warning::Couldn't add notes: {r.status_code} {r.text[:600]}")
+          PY
