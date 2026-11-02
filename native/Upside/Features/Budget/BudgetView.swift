@@ -63,9 +63,9 @@ struct BudgetView: View {
 
                     BundlesRow(month: month)
 
-                    if !store.uncategorized.isEmpty {
+                    if !store.toCheck.isEmpty {
                         NavigationLink(value: Route.review) {
-                            ReviewRow(count: store.uncategorized.count)
+                            ReviewRow(count: store.toCheck.count)
                         }
                         .buttonStyle(.plain)
                     }
@@ -462,15 +462,15 @@ struct ReviewRow: View {
     let count: Int
     var body: some View {
         HStack(spacing: 14) {
-            Image(systemName: "tray.full.fill")
+            Image(systemName: "checklist")
                 .font(.title3)
                 .foregroundStyle(.white)
                 .frame(width: 36, height: 36)
                 .background(Color.orange, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
-                Text(count == 1 ? "1 purchase to sort" : "\(count) purchases to sort")
+                Text(count == 1 ? "1 purchase to check" : "\(count) purchases to check")
                     .font(.headline)
-                Text("Pick a category once; Upside remembers the store.")
+                Text("Sorted on a hunch. Tap ✓ or fix it once.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }

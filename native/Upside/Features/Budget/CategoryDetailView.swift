@@ -139,7 +139,7 @@ struct TransactionRow: View {
         } else if let trip = transaction.tripId.flatMap({ id in store.data.trips.first { $0.id == id } }) {
             parts.append(trip.name)
         } else if let category = store.category(transaction.categoryId) {
-            parts.append(category.name)
+            parts.append(transaction.isHunch ? "\(category.name)?" : category.name)
         }
         return parts.joined(separator: " · ")
     }
@@ -147,7 +147,8 @@ struct TransactionRow: View {
 
 // MARK: - Sorting new purchases
 
-/// Purchases the bank couldn't place. Pick once; Upside remembers the store.
+/// Purchases Upside sorted on a hunch. Confirm with ✓ or pick the right
+/// category; either way it remembers the store.
 struct ReviewView: View {
     @Environment(BudgetStore.self) private var store
     @State private var newCategoryFor: Transaction?
@@ -180,9 +181,18 @@ struct ReviewView: View {
                 }
             }
             Section {
-                ForEach(store.uncategorized) { t in
-                    HStack {
+                ForEach(store.toCheck) { t in
+                    HStack(spacing: 10) {
                         TransactionRow(transaction: t)
+                        if t.categoryId != nil {
+                            Button { withAnimation { store.confirm(t.id) } } label: {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.title2)
+                                    .foregroundStyle(Theme.accent)
+                            }
+                            .buttonStyle(.borderless)
+                            .accessibilityLabel("\(store.category(t.categoryId)?.name ?? "Category") is right")
+                        }
                         Menu {
                             Button {
                                 withAnimation { prompt = store.sort(t.id, as: BankSync.transferCategory) }
@@ -205,25 +215,25 @@ struct ReviewView: View {
                                 Label("New category…", systemImage: "plus")
                             }
                         } label: {
-                            Image(systemName: "tag.circle.fill")
+                            Image(systemName: "pencil.circle")
                                 .font(.title2)
-                                .foregroundStyle(Theme.accent)
+                                .foregroundStyle(.secondary)
                         }
-                        .accessibilityLabel("Choose category")
+                        .accessibilityLabel("Pick a different category")
                     }
                 }
             } footer: {
-                Text("When other purchases share a name, Upside offers to sort them the same way. Card payments and transfers between your accounts aren’t spending.")
+                Text("Upside sorted these on a hunch, and they already count in that category. Tap ✓ if it’s right or the pencil to change it; either way Upside remembers the store.")
             }
         }
         .overlay {
-            if store.uncategorized.isEmpty {
-                ContentUnavailableView("All sorted", systemImage: "checkmark.circle",
-                                       description: Text("Every purchase has a category."))
+            if store.toCheck.isEmpty {
+                ContentUnavailableView("All checked", systemImage: "checkmark.circle",
+                                       description: Text("Upside is sure about every purchase."))
             }
         }
         .sortOthersPrompt($prompt)
-        .navigationTitle("To sort")
+        .navigationTitle("Check these")
         .alert("New category", isPresented: Binding(
             get: { newCategoryFor != nil },
             set: { if !$0 { newCategoryFor = nil } })) {

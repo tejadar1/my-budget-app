@@ -69,8 +69,8 @@ struct SettingsView: View {
                     NavigationLink {
                         ReviewView()
                     } label: {
-                        row("Purchases to sort", icon: "tray.full.fill", color: .orange,
-                            value: store.uncategorized.isEmpty ? nil : "\(store.uncategorized.count)",
+                        row("Purchases to check", icon: "tray.full.fill", color: .orange,
+                            value: store.toCheck.isEmpty ? nil : "\(store.toCheck.count)",
                             chevron: false)
                     }
                     Button { confirmResort = true } label: {

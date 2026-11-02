@@ -70,10 +70,14 @@ final class BudgetStore {
             }
             for i in data.transactions.indices
             where data.transactions[i].categoryId == nil && !data.transactions[i].isTransfer {
-                data.transactions[i].categoryId = BankSync.categorize(
-                    payee: data.transactions[i].payee, amount: data.transactions[i].amount, rules: data.rules,
-                    bankCategory: data.transactions[i].bankCategory)
+                let t = data.transactions[i]
+                let sorted = BankSync.sortSource(payee: t.payee, amount: t.amount, rules: data.rules,
+                                                 bankCategory: t.bankCategory)
+                data.transactions[i].categoryId = sorted.category
+                data.transactions[i].autoSort = sorted.autoSort
             }
+            BankSync.markTransfers(&data)
+            fillHunches(&data)
             return BudgetStore(data: data)
         }
         return BudgetStore(data: BudgetData())
@@ -291,6 +295,49 @@ final class BudgetStore {
 
     // MARK: Review
 
+    /// Purchases Upside sorted on a hunch (plus any it couldn't place):
+    /// the Check these list.
+    var toCheck: [Transaction] {
+        let onBudget = Set(data.accounts.filter(\.countsInBudget).map(\.id))
+        return data.transactions
+            .filter { !$0.isTransfer && $0.amount < 0 && onBudget.contains($0.accountId)
+                && ($0.isHunch || $0.categoryId == nil) }
+            .sorted { $0.date > $1.date }
+    }
+
+    /// "Yes, that's right": keeps the category and remembers the store.
+    func confirm(_ transactionId: String) {
+        guard let t = data.transactions.first(where: { $0.id == transactionId }), let c = t.categoryId else { return }
+        _ = sort(transactionId, as: c)
+        remember(payee: t.payee, as: c)
+        // Others from the same store that were hunches in this category are right too.
+        let key = Self.payeeKey(t.payee)
+        for i in data.transactions.indices
+        where data.transactions[i].isHunch && data.transactions[i].categoryId == c
+            && Self.payeeKey(data.transactions[i].payee) == key {
+            data.transactions[i].autoSort = nil
+        }
+    }
+
+    /// Every purchase gets a category. Ones nothing matched get a hunch:
+    /// the category you've used most for stores starting with the same
+    /// word, otherwise Shopping. Hunches show up in Check these.
+    static func fillHunches(_ data: inout BudgetData) {
+        var byFirstWord: [String: [String: Int]] = [:]
+        for t in data.transactions where !t.isTransfer && !t.isHunch && t.amount < 0 {
+            guard let c = t.categoryId, let word = payeeKey(t.payee).split(separator: " ").first else { continue }
+            byFirstWord[String(word), default: [:]][c, default: 0] += 1
+        }
+        for i in data.transactions.indices {
+            let t = data.transactions[i]
+            guard t.categoryId == nil, !t.isTransfer, t.amount < 0 else { continue }
+            let word = payeeKey(t.payee).split(separator: " ").first.map(String.init) ?? ""
+            let guess = byFirstWord[word]?.max { $0.value < $1.value }?.key ?? "shopping"
+            data.transactions[i].categoryId = guess
+            data.transactions[i].autoSort = "hunch"
+        }
+    }
+
     /// Bank transactions that still need a category.
     var uncategorized: [Transaction] {
         let onBudget = Set(data.accounts.filter(\.countsInBudget).map(\.id))
@@ -307,6 +354,7 @@ final class BudgetStore {
         let isTransfer = categoryId == BankSync.transferCategory
         updated.transactions[i].categoryId = isTransfer ? nil : categoryId
         updated.transactions[i].isTransfer = isTransfer
+        updated.transactions[i].autoSort = nil
         if remember {
             let key = Self.payeeKey(updated.transactions[i].payee)
             updated.rules.removeAll { $0.payeeKey == key }
@@ -502,7 +550,7 @@ final class BudgetStore {
 
     /// Starts sorting over: forgets every category choice and payee rule,
     /// then sorts with the built-in store lists and transfer detection.
-    /// Trip tags stay. Returns how many purchases still need sorting.
+    /// Trip tags stay. Returns how many purchases are left to check.
     @discardableResult
     func resortAllPurchases() -> Int {
         var updated = data
@@ -510,12 +558,15 @@ final class BudgetStore {
         for i in updated.transactions.indices {
             let t = updated.transactions[i]
             updated.transactions[i].isTransfer = BankSync.looksLikeTransfer(t.payee)
-            updated.transactions[i].categoryId = updated.transactions[i].isTransfer ? nil
-                : BankSync.categorize(payee: t.payee, amount: t.amount, rules: [], bankCategory: t.bankCategory)
+            let sorted = updated.transactions[i].isTransfer ? (category: nil, autoSort: nil)
+                : BankSync.sortSource(payee: t.payee, amount: t.amount, rules: [], bankCategory: t.bankCategory)
+            updated.transactions[i].categoryId = sorted.category
+            updated.transactions[i].autoSort = sorted.autoSort
         }
         BankSync.markTransfers(&updated)
+        Self.fillHunches(&updated)
         data = updated
-        return uncategorized.count
+        return toCheck.count
     }
 
     /// "Credit card payment" when a card is involved, otherwise "Transfer".
@@ -666,7 +717,7 @@ final class BudgetStore {
     /// known kinds of spending you don't have a category for yet, and
     /// stores you buy from often.
     var suggestedCategories: [CategorySuggestion] {
-        let unsorted = uncategorized
+        let unsorted = toCheck
         guard !unsorted.isEmpty else { return [] }
         let existing = Set(data.categories.filter { !$0.isHidden }.map { $0.name.lowercased() })
         var result: [CategorySuggestion] = []

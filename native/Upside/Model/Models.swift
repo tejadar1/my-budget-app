@@ -127,6 +127,11 @@ struct Transaction: Identifiable, Codable, Hashable {
     var isTransfer: Bool = false
     /// The bank's own category or merchant code, when the feed sends one.
     var bankCategory: String? = nil
+    /// How Upside sorted it: "sure" (known store, merchant code), "hunch"
+    /// (a guess you can check), nil (you chose, or older data).
+    var autoSort: String? = nil
+
+    var isHunch: Bool { autoSort == "hunch" }
 }
 
 struct Category: Identifiable, Codable, Hashable {

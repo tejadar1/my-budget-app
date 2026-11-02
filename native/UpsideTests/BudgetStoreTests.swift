@@ -122,7 +122,7 @@ final class BudgetStoreTests: XCTestCase {
         let store = BudgetStore(data: data, isDemo: true)
         XCTAssertGreaterThan(store.totalSpent(in: store.currentMonth), 0)
         XCTAssertFalse(store.topCategories(in: store.currentMonth).isEmpty)
-        XCTAssertEqual(store.uncategorized.count, 3)
+        XCTAssertEqual(store.toCheck.count, 3)
     }
 
 
@@ -436,6 +436,30 @@ final class BudgetStoreTests: XCTestCase {
         ]
         BankSync.markTransfers(&data)
         XCTAssertEqual(data.transactions.first { $0.id == "out" }?.isTransfer, false)
+    }
+
+    func testEverythingGetsSortedAndHunchesWaitForAQuickCheck() {
+        let store = makeStore()
+        store.data.transactions += [
+            Transaction(id: "l1", accountId: "r", date: date(2026, 9, 2), amount: -900, payee: "LUNA BAKERY BROOKLYN", categoryId: "dining"),
+            Transaction(id: "l2", accountId: "r", date: date(2026, 10, 2), amount: -1_100, payee: "LUNA BAKERY BROOKLYN", categoryId: nil),
+            Transaction(id: "z", accountId: "a", date: date(2026, 10, 3), amount: -4_000, payee: "ZZQX HOLDINGS LLC", categoryId: nil),
+        ]
+        BudgetStore.fillHunches(&store.data)
+        XCTAssertTrue(store.data.transactions.filter { $0.amount < 0 && !$0.isTransfer }.allSatisfy { $0.categoryId != nil },
+                      "every purchase has a category")
+        XCTAssertEqual(store.data.transactions.first { $0.id == "l2" }?.categoryId, "dining", "same store, sorted like before")
+        XCTAssertEqual(store.data.transactions.first { $0.id == "z" }?.categoryId, "shopping", "nothing to go on")
+        XCTAssertTrue(Set(store.toCheck.map(\.id)).isSuperset(of: ["l2", "z"]))
+
+        store.confirm("l2")
+        XCTAssertFalse(store.toCheck.contains { $0.id == "l2" })
+        XCTAssertEqual(BankSync.categorize(payee: "LUNA BAKERY BROOKLYN", amount: -500, rules: store.data.rules), "dining")
+
+        // A known store is sure, the bank's text category is a hunch, a merchant code is sure.
+        XCTAssertEqual(BankSync.sortSource(payee: "KROGER", amount: -1, rules: []).autoSort, "sure")
+        XCTAssertEqual(BankSync.sortSource(payee: "ZZ", amount: -1, rules: [], bankCategory: "Restaurants").autoSort, "hunch")
+        XCTAssertEqual(BankSync.sortSource(payee: "ZZ", amount: -1, rules: [], bankCategory: "mcc:5812").autoSort, "sure")
     }
     // MARK: Income, trips, alerts
 

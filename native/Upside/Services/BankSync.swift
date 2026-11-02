@@ -92,20 +92,22 @@ enum BankSync {
                 }
                 let amount = cents(t.amount)
                 let isTransfer = looksLikeTransfer(payee)
+                let sorted = isTransfer ? (category: nil, autoSort: nil)
+                    : sortSource(payee: payee, amount: amount, rules: data.rules, bankCategory: t.extra?.bankCategory)
                 data.transactions.append(Transaction(
                     id: id, accountId: sf.id,
                     date: Date(timeIntervalSince1970: TimeInterval(t.transacted_at ?? t.posted)),
                     amount: amount, payee: payee,
-                    categoryId: isTransfer ? nil
-                        : categorize(payee: payee, amount: amount, rules: data.rules,
-                                     bankCategory: t.extra?.bankCategory),
+                    categoryId: sorted.category,
                     isPending: t.pending ?? false,
                     isTransfer: isTransfer,
-                    bankCategory: t.extra?.bankCategory))
+                    bankCategory: t.extra?.bankCategory,
+                    autoSort: sorted.autoSort))
             }
         }
         data.transactions.sort { $0.date > $1.date }
         markTransfers(&data)
+        BudgetStore.fillHunches(&data)
         store.data = data
     }
 
@@ -120,15 +122,18 @@ enum BankSync {
         let transferRules = Set(data.rules.filter { $0.categoryId == transferCategory }.map(\.payeeKey))
 
         var matched = Set<String>()
+        // Unsorted purchases and hunches can turn out to be transfers.
         let candidates = data.transactions.indices.filter {
-            !data.transactions[$0].isTransfer && data.transactions[$0].categoryId == nil
+            !data.transactions[$0].isTransfer
+                && (data.transactions[$0].categoryId == nil || data.transactions[$0].isHunch)
         }
         // 1. Matching pairs. The arriving side may already be known as a
         // payment ("PAYMENT THANK YOU" on the card); it still pairs.
         // Payments into a loan (mortgage, car) are bills, so they don't pair.
         let incoming = data.transactions.indices.filter {
             data.transactions[$0].amount > 0 && kinds[data.transactions[$0].accountId] != .loan
-                && (data.transactions[$0].categoryId == nil || data.transactions[$0].isTransfer)
+                && (data.transactions[$0].categoryId == nil || data.transactions[$0].isTransfer
+                    || data.transactions[$0].isHunch)
         }
         for i in candidates where data.transactions[i].amount < 0 {
             let out = data.transactions[i]
@@ -160,6 +165,8 @@ enum BankSync {
             if matched.contains(t.id) || looksLikeTransfer(t.payee) || isCardCredit || paysOwnCard
                 || transferRules.contains(BudgetStore.payeeKey(t.payee)) {
                 data.transactions[i].isTransfer = true
+                data.transactions[i].categoryId = nil
+                data.transactions[i].autoSort = nil
             }
         }
     }
@@ -227,10 +234,26 @@ enum BankSync {
 
     /// Your rules first, then common stores.
     static func categorize(payee: String, amount: Cents, rules: [PayeeRule], bankCategory: String? = nil) -> String? {
+        sortSource(payee: payee, amount: amount, rules: rules, bankCategory: bankCategory).category
+    }
+
+    /// The category and how sure Upside is: your rules (nil = yours),
+    /// known stores and merchant codes ("sure"), the bank's text category
+    /// ("hunch"). Nil category when nothing matched.
+    static func sortSource(payee: String, amount: Cents, rules: [PayeeRule],
+                           bankCategory: String? = nil) -> (category: String?, autoSort: String?) {
         let key = BudgetStore.payeeKey(payee)
         if let rule = rules.first(where: { $0.payeeKey == key }) {
-            return rule.categoryId == transferCategory ? nil : rule.categoryId
+            return (rule.categoryId == transferCategory ? nil : rule.categoryId, nil)
         }
+        if let c = builtInCategory(payee: payee, amount: amount) { return (c, "sure") }
+        if let bank = bankCategory, let c = category(fromBank: bank) {
+            return (c, bank.hasPrefix("mcc:") ? "sure" : "hunch")
+        }
+        return (nil, nil)
+    }
+
+    private static func builtInCategory(payee: String, amount: Cents) -> String? {
         if amount > 0 {
             let p = payee.lowercased()
             let isIncome = ["payroll", "salary", "direct dep", "tax ref", "taxrfd", "tax refund"].contains { p.contains($0) }
@@ -241,7 +264,7 @@ enum BankSync {
         for (category, words) in builtIn where words.contains(where: { p.contains($0) }) {
             return category
         }
-        return bankCategory.flatMap(category(fromBank:))
+        return nil
     }
 
     /// The bank's category or merchant code (MCC) mapped to Upside's, for

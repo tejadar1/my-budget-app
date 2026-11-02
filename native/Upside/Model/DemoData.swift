@@ -131,15 +131,15 @@ enum DemoData {
             date: calendar.date(byAdding: .day, value: 2, to: calendar.date(byAdding: .month, value: -1, to: thisMonth)!)!,
             amount: -1_200, payee: "MONTHLY MAINTENANCE FEE", categoryId: "bankfees"))
 
-        // A few new ones the bank couldn't categorize yet.
-        for (payee, amount, account) in [("SQ *BLUE BOTTLE", 7.25, "ron-card"),
-                                         ("PAYPAL *ETSY", 34.10, "ana-checking"),
-                                         ("TST* HARBOR GRILL", 61.80, "ron-card")] {
+        // A few Upside sorted on a hunch, for Check these.
+        for (payee, amount, account, guess) in [("SQ *BLUE BOTTLE", 7.25, "ron-card", "dining"),
+                                                ("PAYPAL *ETSY", 34.10, "ana-checking", "shopping"),
+                                                ("TST* HARBOR GRILL", 61.80, "ron-card", "dining")] {
             counter += 1
             transactions.append(Transaction(
                 id: "demo-\(counter)", accountId: account,
                 date: calendar.date(byAdding: .day, value: max(0, today - 2), to: thisMonth)!,
-                amount: -Int(amount * 100), payee: payee, categoryId: nil))
+                amount: -Int(amount * 100), payee: payee, categoryId: guess, autoSort: "hunch"))
         }
 
         // A prepaid trip.
