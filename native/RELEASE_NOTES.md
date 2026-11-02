@@ -2,6 +2,14 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## 0.28, November 2 (income)
+
+- Income now comes first on the Budget page: this month's paychecks, your usual, and what's left after spending.
+- A paycheck that usually lands on the 1st but arrives a day or two early counts for the month it's for.
+- Weekly and every-two-weeks pay: months with an extra paycheck say so, and your usual income doesn't jump.
+
+Try: the Income card at the top of Budget.
+
 ## 0.28, November 2 (morning)
 
 - Every purchase is sorted automatically. "Check these" lists the few Upside guessed: tap ✓ or fix it once.

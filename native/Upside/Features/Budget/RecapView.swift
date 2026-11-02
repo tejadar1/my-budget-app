@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Income, everything spent (bills and trips included) and what's left.
-struct CashFlowRow: View {
+/// First thing on Budget: what came in, how that compares with usual,
+/// and what's left after everything spent (bills and trips included).
+struct IncomeCard: View {
     @Environment(BudgetStore.self) private var store
     let month: Date
 
@@ -9,28 +10,45 @@ struct CashFlowRow: View {
         let income = store.income(in: month)
         let spent = store.totalSpent(in: month, includeTrips: true)
         let left = income - spent
-        let usualIncome = store.averageIncome(before: month)
-        if income > 0 {
-            HStack(alignment: .top) {
-                figure("Income", income, color: .primary,
-                       note: usualIncome.flatMap { $0 > 0 ? "usual \(Money.short($0))" : nil })
-                Spacer()
-                figure("Spent", spent, color: .primary)
-                Spacer()
-                figure(left >= 0 ? "Left over" : "Short", left, color: left >= 0 ? Theme.accent : Theme.over)
+        let usual = store.averageIncome(before: month)
+        let checks = store.paychecks(in: month)
+        if income > 0 || (usual ?? 0) > 0 {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("INCOME").font(.footnote.weight(.bold)).foregroundStyle(.secondary)
+                HStack(alignment: .firstTextBaseline) {
+                    Text(Money.short(income))
+                        .font(.system(size: 30, weight: .heavy, design: .rounded))
+                        .monospacedDigit()
+                    Spacer()
+                    if let usual, usual > 0 {
+                        Text("usual \(Money.short(usual))")
+                            .font(.subheadline).foregroundStyle(.secondary).monospacedDigit()
+                    }
+                }
+                if checks.extra > 0 {
+                    Label("Includes \(checks.extra) extra paycheck\(checks.extra == 1 ? "" : "s") this month",
+                          systemImage: "plus.circle.fill")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                } else if income == 0 {
+                    Text("No paychecks yet this month").font(.footnote).foregroundStyle(.secondary)
+                }
+                Divider()
+                HStack {
+                    figure("Spent, incl. bills", spent, color: .primary)
+                    Spacer()
+                    figure(left >= 0 ? "Left over" : "Short", left, color: left >= 0 ? Theme.accent : Theme.over)
+                }
             }
             .card()
             .accessibilityElement(children: .combine)
         }
     }
 
-    private func figure(_ label: String, _ value: Cents, color: Color, note: String? = nil) -> some View {
+    private func figure(_ label: String, _ value: Cents, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label).font(.caption).foregroundStyle(.secondary)
             Text(Money.short(value)).font(.headline.monospacedDigit()).foregroundStyle(color)
-            if let note {
-                Text(note).font(.caption2).foregroundStyle(.secondary).monospacedDigit()
-            }
         }
     }
 }

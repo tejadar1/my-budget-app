@@ -39,9 +39,9 @@ struct BudgetView: View {
                         PeopleCard(isEditing: $showPeople)
                     }
 
-                    SummaryCard(month: month, onSave: isCurrentMonth ? { showSave = true } : nil)
+                    IncomeCard(month: month)
 
-                    CashFlowRow(month: month)
+                    SummaryCard(month: month, onSave: isCurrentMonth ? { showSave = true } : nil)
 
                     if isCurrentMonth {
                         CardWarningRow()

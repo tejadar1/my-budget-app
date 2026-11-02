@@ -163,15 +163,12 @@ final class BudgetStore {
     }
 
     /// Paychecks and other income (positive amounts in Income).
+    /// Paychecks for this month, counting an early "paid on the 1st"
+    /// deposit toward the month it's for (see Income.swift).
     func income(in month: Date) -> Cents {
-        let onBudget = Set(data.accounts.filter(\.countsInBudget).map(\.id))
-        let incomeIds = Set(data.categories.filter(\.isIncome).map(\.id))
-        return data.transactions
-            .filter { t in
-                guard let c = t.categoryId else { return false }
-                return incomeIds.contains(c) && !t.isTransfer && onBudget.contains(t.accountId)
-                    && isInMonth(t.date, month)
-            }
+        let all = payers()
+        return incomeTransactions
+            .filter { isInMonth(incomeMonth($0, payers: all), month) }
             .reduce(0) { $0 + $1.amount }
     }
 
@@ -237,12 +234,7 @@ final class BudgetStore {
     }
 
     func averageIncome(before month: Date) -> Cents? {
-        let onBudget = Set(data.accounts.filter(\.countsInBudget).map(\.id))
-        let incomeIds = Set(data.categories.filter(\.isIncome).map(\.id))
-        let txns = data.transactions.filter { t in
-            t.categoryId.map(incomeIds.contains) == true && !t.isTransfer && onBudget.contains(t.accountId)
-        }
-        return perAccountAverage(txns, before: month).map { max(0, $0) }
+        averageIncomeSmoothed(before: month)
     }
 
     func averageSpent(_ categoryId: String, before month: Date) -> Cents? {

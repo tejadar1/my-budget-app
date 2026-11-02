@@ -491,6 +491,47 @@ final class BudgetStoreTests: XCTestCase {
         store.now = { self.date(2026, 11, 15) }
         XCTAssertEqual(store.averageSpent("dining", before: store.currentMonth), 45_000)
     }
+
+    func testPaidOnTheFirstButDepositedEarlyCountsForTheRightMonth() {
+        let store = makeStore()
+        // Usually paid on the 1st; August 1, 2026 is a Saturday, so it arrived July 31.
+        for (id, m, d) in [("p1", 7, 1), ("p2", 7, 31), ("p3", 9, 1), ("p4", 10, 1)] {
+            store.data.transactions.append(Transaction(id: id, accountId: "r", date: date(2026, m, d), amount: 100_000,
+                                                       payee: "ACME CORP PAYROLL", categoryId: "income"))
+        }
+        XCTAssertEqual(store.income(in: store.monthStart(date(2026, 7, 1))), 100_000, "not two paychecks in July")
+        XCTAssertEqual(store.income(in: store.monthStart(date(2026, 8, 1))), 100_000, "August's arrived July 31")
+    }
+
+    func testBiweeklyPayHasExtraPaychecksAndASteadyUsual() {
+        let store = makeStore()
+        store.data.transactions.removeAll { $0.categoryId == "income" }
+        var day = date(2026, 7, 3)
+        var n = 0
+        while day < date(2026, 10, 15) {
+            n += 1
+            store.data.transactions.append(Transaction(id: "b\(n)", accountId: "r", date: day, amount: 200_000,
+                                                       payee: "BIWEEKLY INC PAYROLL", categoryId: "income"))
+            day = day.addingTimeInterval(14 * 86_400)
+        }
+        let july = store.monthStart(date(2026, 7, 1))
+        XCTAssertEqual(store.paychecks(in: july).count, 3) // Jul 3, 17, 31
+        XCTAssertEqual(store.paychecks(in: july).extra, 1)
+        XCTAssertEqual(store.averageIncome(before: store.currentMonth), 433_333, "$2,000 × 26 ÷ 12")
+    }
+
+    func testTwiceAMonthPayIsNotMistakenForBiweekly() {
+        let store = makeStore()
+        store.data.transactions.removeAll { $0.categoryId == "income" }
+        for m in 7...10 {
+            for d in [1, 15] {
+                store.data.transactions.append(Transaction(id: "s\(m)-\(d)", accountId: "r", date: date(2026, m, d),
+                                                           amount: 150_000, payee: "PAYROLL DEPOSIT", categoryId: "income"))
+            }
+        }
+        XCTAssertEqual(store.paychecks(in: store.currentMonth).extra, 0)
+        XCTAssertEqual(store.averageIncome(before: store.currentMonth), 300_000)
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {
