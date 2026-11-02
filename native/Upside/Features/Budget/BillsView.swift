@@ -73,6 +73,30 @@ struct BillsView: View {
                 .padding(.vertical, 6)
             }
 
+            let lines = store.billLines(store.currentMonth)
+            if !lines.isEmpty {
+                Section {
+                    ForEach(lines) { line in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(line.category.name)
+                                Text(line.stillToCome > 0
+                                     ? "paid \(Money.short(line.paid)) · usual \(Money.short(line.usual))"
+                                     : "paid \(Money.short(line.paid))")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Text(line.stillToCome > 0 ? "\(Money.short(line.stillToCome)) to come" : "done")
+                                .monospacedDigit()
+                                .foregroundStyle(line.stillToCome > 0 ? Color.primary : Theme.accent)
+                        }
+                    }
+                } header: {
+                    Text("Counted in your plan")
+                } footer: {
+                    Text("Each bill category counts at least its usual amount, so bills that haven't been paid yet are planned for. A bill in another category isn't counted; move it to the right category in Transactions.")
+                }
+            }
             if !due.isEmpty {
                 Section("Still due") {
                     ForEach(due) { BillRow(bill: $0, when: $0.dueDate.map { "Due \(day($0))" } ?? "") }

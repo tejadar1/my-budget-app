@@ -28,16 +28,40 @@ extension BudgetStore {
         Set(expenseCategories.filter { $0.group == "Bills" }.map(\.id))
     }
 
+    /// One Bills category this month: paid so far, and what's expected.
+    struct BillLine: Identifiable {
+        var category: Category
+        var paid: Cents
+        var usual: Cents
+        var expected: Cents
+        var id: String { category.id }
+        var stillToCome: Cents { max(0, expected - paid) }
+    }
+
+    /// Each Bills category expects at least its usual (3-month average),
+    /// or more when a known bill is still due, so bills that vary or
+    /// haven't been paid yet are still counted. Past months: what was paid.
+    func billLines(_ month: Date) -> [BillLine] {
+        let isCurrent = month == currentMonth
+        let due = isCurrent ? Dictionary(grouping: recurringCharges().filter { !$0.paidThisMonth },
+                                         by: { $0.categoryId ?? "" }) : [:]
+        return expenseCategories.filter { $0.group == "Bills" }.compactMap { c in
+            let paid = spent(c.id, in: month)
+            let usual = averageSpent(c.id, before: month) ?? 0
+            let knownDue = (due[c.id] ?? []).reduce(0) { $0 + $1.amount }
+            let expected = isCurrent ? max(usual, paid + knownDue) : paid
+            return expected > 0 || paid > 0 ? BillLine(category: c, paid: paid, usual: usual, expected: max(expected, paid)) : nil
+        }
+        .sorted { $0.expected > $1.expected }
+    }
+
     func monthPlan(_ month: Date) -> MonthPlan {
         let isCurrent = month == currentMonth
         let actualIncome = income(in: month)
         let usualIncome = averageIncome(before: month) ?? 0
-        let billIds = billCategoryIds
-        let billsPaid = billIds.reduce(0) { $0 + spent($1, in: month) }
-        let billsDue = isCurrent
-            ? recurringCharges().filter { !$0.paidThisMonth && $0.categoryId.map(billIds.contains) == true }
-                .reduce(0) { $0 + $1.amount }
-            : 0
+        let lines = billLines(month)
+        let billsPaid = lines.reduce(0) { $0 + $1.paid }
+        let billsDue = lines.reduce(0) { $0 + $1.stillToCome }
         let everydayLimits = expenseCategories
             .filter { $0.group != "Bills" && $0.group != "Trips" && !$0.aimsForZero }
             .compactMap { limit($0, in: month) }.reduce(0, +)

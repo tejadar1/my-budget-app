@@ -652,6 +652,19 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertLessThan(stillOver, 45_000, "trimmed, though never more than 40% of a limit")
         XCTAssertLessThan(store.category("shopping")!.limit!, 80_000)
     }
+
+    func testBillsCountAtLeastTheirUsualAmount() {
+        let store = makeStore()
+        // Electric: $120, $90, $150 the last three months; nothing paid yet in October.
+        for (m, amount) in [(7, 12_000), (8, 9_000), (9, 15_000)] {
+            store.data.transactions.append(Transaction(id: "e\(m)", accountId: "r", date: date(2026, m, 20),
+                                                       amount: -amount, payee: "Con Ed", categoryId: "utilities"))
+        }
+        let line = store.billLines(store.currentMonth).first { $0.category.id == "utilities" }
+        XCTAssertEqual(line?.paid, 0)
+        XCTAssertEqual(line?.stillToCome, 12_000, "usual $120 is planned even before it's paid")
+        XCTAssertEqual(store.monthPlan(store.currentMonth).bills, 12_000)
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {

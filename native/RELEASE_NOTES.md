@@ -2,6 +2,11 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## 0.28, November 2 (bills)
+
+- Bills in the plan count at least each bill category's usual amount, so bills not paid yet are planned for.
+- Tap Bills to see each category: paid so far, usual, and what's still to come.
+
 ## 0.28, November 2 (month plan)
 
 - Budget now reads top-down: Income, minus Bills, Savings and Trips, leaves To spend.
