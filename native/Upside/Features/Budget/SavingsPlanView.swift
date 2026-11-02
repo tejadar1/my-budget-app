@@ -130,8 +130,8 @@ private struct PlanRow: View {
             GeometryReader { geo in
                 let keep = usual > 0 ? min(1, Double(limit * 100) / Double(usual)) : 1
                 ZStack(alignment: .leading) {
-                    Capsule().fill(Theme.accent.opacity(0.25))
-                    Capsule().fill(Color.secondary.opacity(0.45)).frame(width: geo.size.width * keep)
+                    Capsule().fill(Theme.accent)
+                    Capsule().fill(Color.secondary.opacity(0.3)).frame(width: geo.size.width * keep)
                 }
             }
             .frame(height: 8)
