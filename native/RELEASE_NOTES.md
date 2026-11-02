@@ -2,6 +2,10 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## 0.28, November 2 (income card wording)
+
+- Safe to spend says when it's counting your usual income; "Left so far" counts only what's arrived.
+
 ## 0.28, November 2 (trip fund)
 
 - Trip fund: set aside an amount each month; anything tagged to a trip comes out of it, and what's unused carries over.

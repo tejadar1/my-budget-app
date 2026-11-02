@@ -45,10 +45,12 @@ struct IncomeCard: View {
                                        : "\(Money.short(-safe)) over")
                             .font(.headline)
                             .foregroundStyle(safe >= 0 ? Theme.accent : Theme.over)
-                        Text(keep > 0
-                             ? (safe >= 0 ? "Keeps \(Money.short(keep)) for savings and trips, after bills still due."
-                                          : "This comes out of the \(Money.short(keep)) for savings and trips.")
-                             : "After bills still due this month.")
+                        let expecting = (usual ?? 0) > income
+                        Text((expecting ? "Counts your usual \(Money.short(usual ?? 0)) income. " : "")
+                             + (keep > 0
+                                ? (safe >= 0 ? "Keeps \(Money.short(keep)) for savings and trips, after bills still due."
+                                             : "This comes out of the \(Money.short(keep)) for savings and trips.")
+                                : "After bills still due this month."))
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                 }
@@ -59,7 +61,9 @@ struct IncomeCard: View {
                         figure("Set aside for trips", fund, color: .primary)
                     }
                     Spacer()
-                    figure(left >= 0 ? "Left over" : "Short", left, color: left >= 0 ? Theme.accent : Theme.over)
+                    figure(month == store.currentMonth ? (left >= 0 ? "Left so far" : "Short so far")
+                                                       : (left >= 0 ? "Left over" : "Short"),
+                           left, color: left >= 0 ? Theme.accent : Theme.over)
                 }
             }
             .card()
