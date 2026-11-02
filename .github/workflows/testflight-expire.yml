@@ -1,0 +1,45 @@
+name: Expire TestFlight version
+
+# Expires every build of one version (e.g. old 27.0.0 builds that sort above
+# 0.x) so TestFlight offers the newest real build. Can't be undone.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to expire, like 27.0.0
+        required: true
+
+jobs:
+  expire:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Expire builds
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          ISSUER: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+          P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          pip install --quiet "pyjwt[crypto]" requests
+          python3 - <<'PY'
+          import os, time, jwt, requests
+          key = os.environ["P8"]
+          token = jwt.encode({"iss": os.environ["ISSUER"], "iat": int(time.time()),
+                              "exp": int(time.time()) + 600, "aud": "appstoreconnect-v1"},
+                             key, algorithm="ES256", headers={"kid": os.environ["KEY_ID"]})
+          api = "https://api.appstoreconnect.apple.com/v1"
+          h = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+          app_id = requests.get(f"{api}/apps", headers=h, params={"filter[bundleId]": "com.tejadar1.upside"}).json()["data"][0]["id"]
+          versions = requests.get(f"{api}/preReleaseVersions", headers=h, params={
+              "filter[app]": app_id, "filter[version]": os.environ["VERSION"]}).json()["data"]
+          if not versions:
+              raise SystemExit(f'No version {os.environ["VERSION"]} found')
+          for v in versions:
+              builds = requests.get(f"{api}/preReleaseVersions/{v['id']}/builds", headers=h, params={"limit": 200}).json()["data"]
+              for b in builds:
+                  if b["attributes"]["expired"]:
+                      print(f'{b["attributes"]["version"]} already expired'); continue
+                  r = requests.patch(f"{api}/builds/{b['id']}", headers=h,
+                                     json={"data": {"type": "builds", "id": b["id"], "attributes": {"expired": True}}})
+                  print(f'{b["attributes"]["version"]} -> {"expired" if r.ok else "FAILED " + r.text[:200]}')
+          PY
