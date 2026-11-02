@@ -62,7 +62,7 @@ struct BudgetView: View {
                         RecapRow(month: month) { recapMonth = MonthRef(date: month) }
                     }
 
-                    FeesRow(month: month)
+                    BundlesRow(month: month)
 
                     if !store.uncategorized.isEmpty {
                         NavigationLink(value: Route.review) {
@@ -376,7 +376,7 @@ struct CategoryCard: View {
                     Text(Money.short(spent))
                         .font(.system(.title2, design: .rounded).weight(.heavy))
                         .foregroundStyle(spent > 0 ? Theme.over : Theme.accent)
-                    Text(spent > 0 ? "aim for $0" : "none this month")
+                    Text(spent > 0 ? "keep this at $0" : "none this month")
                         .font(.caption).foregroundStyle(.secondary)
                 } else {
                     Text(limit == 0 && !isPlanned ? Money.short(spent)

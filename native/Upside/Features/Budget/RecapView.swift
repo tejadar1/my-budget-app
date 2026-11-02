@@ -148,6 +148,7 @@ struct RecapView: View {
                             LabeledContent("Usual income", value: Money.short(usualIncome))
                         }
                         LabeledContent("Spent, including bills and trips", value: Money.short(allSpent))
+                        LabeledContent("Saved & invested", value: Money.short(store.savedAndInvested(in: month)))
                         LabeledContent(income >= allSpent ? "Left over" : "Short") {
                             Text(Money.short(income - allSpent))
                                 .fontWeight(.semibold)
@@ -189,7 +190,7 @@ struct RecapView: View {
                 }
 
                 Section("Cards") {
-                    LabeledContent("Fees & interest") {
+                    LabeledContent("Fees & interest (minimize)") {
                         Text(Money.short(fees)).foregroundStyle(fees > 0 ? Theme.over : Theme.accent)
                     }
                     ForEach(store.creditCards) { card in

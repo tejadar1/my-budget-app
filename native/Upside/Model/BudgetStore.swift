@@ -56,6 +56,9 @@ final class BudgetStore {
                 data.categories[i].name = "Dining & Bars"
             }
             mergeBarsIntoDining(&data)
+            for i in data.categories.indices where data.categories[i].group == "Aim for $0" {
+                data.categories[i].group = Category.avoidGroup
+            }
             // Once: undo categories an older version named after stores.
             if !UserDefaults.standard.bool(forKey: "removedStoreCategories") {
                 removeStoreNamedCategories(&data)

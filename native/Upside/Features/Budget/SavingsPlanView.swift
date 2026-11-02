@@ -200,38 +200,6 @@ struct SavingsRow: View {
     }
 }
 
-/// Red when card fees or interest show up this month.
-struct FeesRow: View {
-    @Environment(BudgetStore.self) private var store
-    let month: Date
-
-    var body: some View {
-        let fees = store.expenseCategories.filter(\.aimsForZero)
-        let total = fees.reduce(0) { $0 + store.spent($1.id, in: month) }
-        if total > 0, let first = fees.first {
-            NavigationLink(value: Route.category(first.id, month)) {
-                HStack(spacing: 14) {
-                    Image(systemName: "exclamationmark.circle.fill")
-                        .font(.title3)
-                        .foregroundStyle(.white)
-                        .frame(width: 36, height: 36)
-                        .background(Theme.over, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("\(Money.short(total)) in card fees & interest").font(.headline)
-                        Text("Aim for $0: pay cards in full and on time.")
-                            .font(.footnote).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
-                }
-                .card()
-            }
-            .buttonStyle(.plain)
-        }
-    }
-}
-
 extension String {
     var capitalizedFirst: String { prefix(1).uppercased() + dropFirst() }
 }

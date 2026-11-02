@@ -342,6 +342,29 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.spent("groceries", in: store.currentMonth), 13_000)
         XCTAssertNil(store.data.accounts[1].hidden)
     }
+
+    func testMaximizeSavedAndCardPayoffMinimizeFees() {
+        let store = makeStore()
+        store.data.accounts.append(Account(id: "s", name: "Online Savings", institution: "Ally", kind: .savings, balance: 0))
+        store.data.accounts.append(Account(id: "c", name: "Gold", institution: "Robinhood", kind: .credit, balance: 0))
+        store.data.transactions += [
+            Transaction(id: "s1", accountId: "s", date: date(2026, 10, 2), amount: 50_000, payee: "From CHK", isTransfer: true),
+            Transaction(id: "s2", accountId: "s", date: date(2026, 10, 9), amount: -10_000, payee: "To CHK", isTransfer: true),
+            Transaction(id: "s3", accountId: "s", date: date(2026, 10, 31), amount: 120, payee: "Interest Paid"),
+            Transaction(id: "c1", accountId: "c", date: date(2026, 10, 3), amount: -20_000, payee: "Target", categoryId: "shopping"),
+            Transaction(id: "c2", accountId: "c", date: date(2026, 10, 20), amount: 35_000, payee: "Payment Thank You", isTransfer: true),
+            Transaction(id: "f1", accountId: "r", date: date(2026, 10, 5), amount: -300, payee: "NON-CHASE ATM FEE", categoryId: "bankfees"),
+            Transaction(id: "f2", accountId: "c", date: date(2026, 10, 25), amount: -1_500, payee: "INTEREST CHARGE", categoryId: "fees"),
+        ]
+        let month = store.currentMonth
+        XCTAssertEqual(store.savedAndInvested(in: month), 40_000, "in minus out, interest doesn't count")
+        XCTAssertEqual(store.extraCardPayoff(in: month), 13_500, "paid $350 vs $215 charged (incl. interest)")
+        XCTAssertEqual(store.minimizeSpent(in: month), 1_800)
+        XCTAssertEqual(BankSync.categorize(payee: "NON-CHASE ATM FEE", amount: -300, rules: []), "bankfees")
+        XCTAssertEqual(BankSync.categorize(payee: "MONTHLY MAINTENANCE FEE", amount: -1_200, rules: []), "bankfees")
+        XCTAssertEqual(BankSync.categorize(payee: "PURCHASE INTEREST CHARGE", amount: -900, rules: []), "fees")
+        XCTAssertTrue(store.category("bankfees")?.aimsForZero ?? false)
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {

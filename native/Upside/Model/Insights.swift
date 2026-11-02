@@ -186,3 +186,36 @@ extension BudgetStore {
         return months == 0 ? 0 : -list.reduce(0) { $0 + $1.amount } / months
     }
 }
+
+// MARK: - Maximize and minimize
+
+extension BudgetStore {
+    /// Money moved into savings and investment accounts, minus what came
+    /// back out. Only moves between your own accounts count, not interest
+    /// or trades inside the account.
+    func savedAndInvested(in month: Date) -> Cents {
+        let ids = Set(visibleAccounts.filter { $0.kind == .savings || $0.kind == .investment }.map(\.id))
+        return data.transactions
+            .filter { ids.contains($0.accountId) && $0.isTransfer && isInMonth($0.date, month) }
+            .reduce(0) { $0 + $1.amount }
+    }
+
+    /// Paid to cards beyond what was charged, so balances went down.
+    func extraCardPayoff(in month: Date) -> Cents {
+        creditCards.reduce(0) { total, card in
+            let m = cardMonth(card, month)
+            return total + max(0, m.paid - m.charged)
+        }
+    }
+
+    /// Everything in the Minimize bundle (card fees, interest, bank fees).
+    func minimizeSpent(in month: Date) -> Cents {
+        expenseCategories.filter(\.aimsForZero).reduce(0) { $0 + spent($1.id, in: month) }
+    }
+
+    func usual(_ value: (Date) -> Cents, before month: Date) -> Cents? {
+        let months = (1...3).map { self.month(-$0, from: month) }.filter { $0 >= firstFullMonth }
+        guard !months.isEmpty else { return nil }
+        return months.reduce(0) { $0 + value($1) } / months.count
+    }
+}

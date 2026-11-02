@@ -137,9 +137,9 @@ struct Category: Identifiable, Codable, Hashable {
     var isIncome: Bool = false
     var isHidden: Bool = false
 
-    /// Spending you want at $0 (card fees, interest).
+    /// The Minimize bundle: spending you want at $0 (fees, interest).
     var aimsForZero: Bool { group == Category.avoidGroup }
-    static let avoidGroup = "Aim for $0"
+    static let avoidGroup = "Minimize"
 }
 
 /// A month where you cut flexible spending to save. Only that month's
@@ -229,6 +229,7 @@ extension Category {
         Category(id: "insurance", name: "Insurance", group: "Bills"),
         Category(id: "subscriptions", name: "Subscriptions", group: "Bills"),
         Category(id: "fees", name: "Card fees & interest", group: Category.avoidGroup),
+        Category(id: "bankfees", name: "Bank fees", group: Category.avoidGroup),
         Category(id: "travel", name: "Travel", group: "Trips"),
         Category(id: "income", name: "Income", group: "Income", isIncome: true),
     ]

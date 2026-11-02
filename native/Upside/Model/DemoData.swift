@@ -113,6 +113,23 @@ enum DemoData {
             }
         }
 
+        // $500 to savings every month on the 2nd, and one bank fee.
+        for monthOffset in -5...0 where monthOffset < 0 || today >= 2 {
+            let month = calendar.date(byAdding: .month, value: monthOffset, to: thisMonth)!
+            let day = calendar.date(byAdding: .day, value: 1, to: month)!
+            counter += 1
+            transactions.append(Transaction(id: "demo-\(counter)", accountId: "joint", date: day, amount: -50_000,
+                                            payee: "Online Transfer to SAV ...4410", isTransfer: true))
+            counter += 1
+            transactions.append(Transaction(id: "demo-\(counter)", accountId: "ally", date: day, amount: 50_000,
+                                            payee: "Online Transfer from CHK ...2231", isTransfer: true))
+        }
+        counter += 1
+        transactions.append(Transaction(
+            id: "demo-\(counter)", accountId: "joint",
+            date: calendar.date(byAdding: .day, value: 2, to: calendar.date(byAdding: .month, value: -1, to: thisMonth)!)!,
+            amount: -1_200, payee: "MONTHLY MAINTENANCE FEE", categoryId: "bankfees"))
+
         // A few new ones the bank couldn't categorize yet.
         for (payee, amount, account) in [("SQ *BLUE BOTTLE", 7.25, "ron-card"),
                                          ("PAYPAL *ETSY", 34.10, "ana-checking"),

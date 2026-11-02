@@ -270,8 +270,10 @@ enum BankSync {
     private static let builtIn: [(String, [String])] = [
         // First, so "LATE FEE" on a card isn't read as something else.
         ("fees", ["interest charge", "finance charge", "purchase interest", "late fee", "annual fee",
-                  "membership fee", "foreign transaction", "overdraft", "returned payment",
-                  "cash advance fee", "monthly maintenance fee", "service charge"]),
+                  "membership fee", "foreign transaction", "returned payment", "cash advance fee"]),
+        ("bankfees", ["overdraft", "monthly maintenance fee", "maintenance fee", "service charge", "service fee",
+                      "atm fee", "atm surcharge", "non-chase atm", "non-bofa atm", "insufficient funds", "nsf fee",
+                      "returned item", "wire fee", "wire transfer fee", "stop payment fee", "paper statement fee"]),
         ("subscriptions", ["netflix", "spotify", "hulu", "disney+", "disney plus", "apple.com/bill", "youtube",
                            "icloud", "max.com", "hbo max", "peacock", "paramount", "amazon prime", "prime video",
                            "audible", "kindle unltd", "kindle unlimited", "uber one", "dashpass", "walmart+",
