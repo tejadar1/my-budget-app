@@ -24,7 +24,7 @@ enum DemoData {
         ]
 
         let limits: [String: Cents] = [
-            "groceries": 60_000, "dining": 30_000, "gas": 25_000, "shopping": 40_000,
+            "groceries": 60_000, "dining": 30_000, "gas": 20_000, "commute": 12_000, "shopping": 40_000,
             "entertainment": 15_000, "health": 10_000, "housing": 220_000,
             "utilities": 18_000, "phone": 22_000, "subscriptions": 6_000,
         ]
@@ -38,7 +38,8 @@ enum DemoData {
              ["ron-card", "ana-checking", "joint"], 9, 62),
             ("dining", ["Chipotle", "Starbucks", "Sweetgreen", "Local Diner"],
              ["ron-card", "ana-checking"], 10, 24),
-            ("gas", ["Shell", "Exxon", "Uber"], ["ron-card", "ana-checking"], 5, 42),
+            ("gas", ["Shell", "Exxon", "Tesla Supercharger"], ["ron-card", "ana-checking"], 4, 42),
+            ("commute", ["MTA*NYCT PAYGO", "Uber", "LIRR eTix"], ["ron-card", "ana-checking"], 6, 14),
             ("shopping", ["Amazon", "Target", "Nordstrom"], ["ana-checking", "ron-card"], 5, 58),
             ("entertainment", ["AMC Theatres", "Ticketmaster"], ["ron-card", "ana-checking"], 2, 38),
             ("health", ["CVS Pharmacy", "Walgreens"], ["ana-checking"], 2, 28),

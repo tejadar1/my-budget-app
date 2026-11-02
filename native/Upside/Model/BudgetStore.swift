@@ -56,6 +56,10 @@ final class BudgetStore {
                 data.categories[i].name = "Dining & Bars"
             }
             mergeBarsIntoDining(&data)
+            if !UserDefaults.standard.bool(forKey: "splitCommute") {
+                splitCommuteFromGas(&data)
+                UserDefaults.standard.set(true, forKey: "splitCommute")
+            }
             for i in data.categories.indices where data.categories[i].group == "Aim for $0" {
                 data.categories[i].group = Category.avoidGroup
             }
@@ -332,7 +336,7 @@ final class BudgetStore {
     /// (1 = very flexible). Bills, health and "aim for $0" aren't cut.
     static let flexibility: [String: Double] = [
         "shopping": 1, "dining": 1, "entertainment": 1, "gifts": 0.8,
-        "personal": 0.5, "kids": 0.3, "gas": 0.3, "groceries": 0.3,
+        "personal": 0.5, "kids": 0.3, "gas": 0.3, "groceries": 0.3, "commute": 0.5,
     ]
 
     /// The most a plan will cut from a category without you choosing to skip it.
@@ -726,6 +730,29 @@ final class BudgetStore {
         data.categories.removeAll { ids.contains($0.id) }
     }
 
+    /// Rides and transit used to land in Gas & Auto. Moves them (and any
+    /// "Transit" category you made) to Commuting & Rides, and car loan
+    /// payments to Car payment.
+    static func splitCommuteFromGas(_ data: inout BudgetData) {
+        let transitIds = Set(data.categories.filter { ["transit", "commuting", "commute", "rides"].contains($0.name.lowercased()) }.map(\.id))
+        for i in data.transactions.indices {
+            let t = data.transactions[i]
+            guard let c = t.categoryId, c == "gas" || transitIds.contains(c) || c == "housing" || c == "travel" else { continue }
+            let fresh = BankSync.categorize(payee: t.payee, amount: t.amount, rules: [])
+            if transitIds.contains(c) || ((fresh == "commute" || fresh == "carpayment") && c != fresh) {
+                data.transactions[i].categoryId = transitIds.contains(c) ? "commute" : fresh
+            }
+        }
+        for i in data.rules.indices {
+            let r = data.rules[i]
+            let fresh = BankSync.categorize(payee: r.payeeKey, amount: -100, rules: [])
+            if transitIds.contains(r.categoryId) || (r.categoryId == "gas" && (fresh == "commute" || fresh == "carpayment")) {
+                data.rules[i].categoryId = transitIds.contains(r.categoryId) ? "commute" : fresh!
+            }
+        }
+        data.categories.removeAll { transitIds.contains($0.id) }
+    }
+
     /// Creates the suggested category and sorts its purchases into it.
     func accept(_ suggestion: CategorySuggestion) {
         let id = addCategory(suggestion.name, group: suggestion.group)
@@ -742,8 +769,6 @@ final class BudgetStore {
         ("Golf", "Everyday", ["golf", "country club", "golfnow", "teeoff", "tee time", "driving range",
                               "pga tour superstore", "titleist", "callaway", "taylormade", "ping golf",
                               "footjoy", "club champ", "links at", "greens fee"]),
-        ("Transit", "Everyday", ["mta*", "mta ", "nyct", "omny", "metrocard", "metropolitan trans", "nj transit",
-                                 "lirr", "amtrak", "metro-north"]),
         ("Home", "Everyday", ["wayfair", "bed bath", "crate & barrel", "pottery barn", "west elm", "furniture"]),
         ("Clothing", "Everyday", ["zara", "h&m", "old navy", "gap ", "uniqlo", "nike", "lululemon", "j.crew"]),
         ("Giving", "Everyday", ["donation", "charity", "church", "red cross", "gofundme", "unicef"]),

@@ -216,20 +216,21 @@ final class BudgetStoreTests: XCTestCase {
             Transaction(id: "g3", accountId: "r", date: date(2026, 9, 20), amount: -6_400, payee: "GOLFNOW*TEE TIME", categoryId: nil),
         ]
         let recommended = store.recommendedCategories()
-        XCTAssertEqual(Set(recommended.map(\.name)), ["Transit", "Coffee", "Fitness", "Golf"]) // Blue Bottle → Coffee
-        XCTAssertEqual(recommended.first { $0.name == "Golf" }?.transactionIds.count, 3)
-        let transitSuggestion = recommended.first { $0.name == "Transit" }!
-        XCTAssertEqual(store.monthlyAverage(of: transitSuggestion), 290)
+        // MTA now has a home (Commuting & Rides), so no Transit suggestion.
+        XCTAssertEqual(Set(recommended.map(\.name)), ["Coffee", "Fitness", "Golf"]) // Blue Bottle → Coffee
+        let golfSuggestion = recommended.first { $0.name == "Golf" }!
+        XCTAssertEqual(golfSuggestion.transactionIds.count, 3)
+        XCTAssertEqual(store.monthlyAverage(of: golfSuggestion), 17_400)
 
-        store.accept(transitSuggestion)
-        let transit = store.data.categories.first { $0.name == "Transit" }
-        XCTAssertNotNil(transit)
-        XCTAssertEqual(store.data.transactions.first { $0.id == "t1" }?.categoryId, transit?.id)
-        XCTAssertFalse(store.recommendedCategories().contains { $0.name == "Transit" })
+        store.accept(golfSuggestion)
+        let golf = store.data.categories.first { $0.name == "Golf" }
+        XCTAssertNotNil(golf)
+        XCTAssertEqual(store.data.transactions.first { $0.id == "g2" }?.categoryId, golf?.id)
+        XCTAssertFalse(store.recommendedCategories().contains { $0.name == "Golf" })
         XCTAssertEqual(BankSync.categorize(payee: "TESLA SUPERCHARGER US", amount: -1_000, rules: []), "gas")
         let expected: [(String, String)] = [
             ("VEOLIA WATER NEW YORK", "utilities"), ("AMAZON PRIME*2K4", "subscriptions"), ("AMZN Mktp US", "shopping"),
-            ("UBER *EATS", "dining"), ("UBER *TRIP", "gas"), ("UBER EATS PENDING", "dining"),
+            ("UBER *EATS", "dining"), ("UBER *TRIP", "commute"), ("UBER EATS PENDING", "dining"),
             ("COMEDY CELLAR", "entertainment"), ("STOP & SHOP 0412", "groceries"), ("SHAKE SHACK 1102", "dining"),
             ("METLIFE AUTO", "insurance"), ("DUANE READE #14", "health"), ("GREAT CLIPS", "personal"),
             ("PETSMART 1234", "kids"), ("HERTZ RENT-A-CAR", "travel"), ("T-MOBILE AUTOPAY", "phone"),
@@ -394,6 +395,47 @@ final class BudgetStoreTests: XCTestCase {
         store.data.transactions.append(Transaction(id: "v2", accountId: "529", date: date(2026, 10, 7), amount: 25_000,
                                                    payee: "Contribution", isTransfer: true))
         XCTAssertEqual(store.savedAndInvested(in: store.currentMonth), 25_000)
+    }
+
+    func testCommutingAndCarPayments() {
+        for (payee, category) in [("MTA*NYCT PAYGO", "commute"), ("LIRR ETIX", "commute"), ("CITI BIKE", "commute"),
+                                  ("LYFT *RIDE SUN", "commute"), ("CURB NYC TAXI", "commute"), ("NYC SUBWAY FARE", "commute"), ("SUBWAY 41022", "dining"),
+                                  ("TESLA SUPERCHARGER", "gas"), ("E-ZPASS NY", "gas"),
+                                  ("TESLA FINANCE PAYMENT", "carpayment"), ("ALLY AUTO PMT", "carpayment"),
+                                  ("CHASE AUTO LOAN PMT", "carpayment")] {
+            XCTAssertEqual(BankSync.categorize(payee: payee, amount: -3_000, rules: []), category, payee)
+        }
+        XCTAssertFalse(BankSync.looksLikeTransfer("CHASE AUTO PMT"), "a car payment isn't a card payment")
+
+        // Old data: Uber and MTA were in Gas & Auto; a Transit category existed.
+        var data = BudgetData()
+        data.categories.append(Category(id: "transit-9", name: "Transit", group: "Everyday"))
+        data.rules = [PayeeRule(payeeKey: "uber trip", categoryId: "gas")]
+        data.transactions = [
+            Transaction(id: "1", accountId: "x", date: date(2026, 10, 1), amount: -2_000, payee: "UBER *TRIP", categoryId: "gas"),
+            Transaction(id: "2", accountId: "x", date: date(2026, 10, 1), amount: -290, payee: "OMNY", categoryId: "transit-9"),
+            Transaction(id: "3", accountId: "x", date: date(2026, 10, 1), amount: -4_000, payee: "SHELL OIL", categoryId: "gas"),
+            Transaction(id: "4", accountId: "x", date: date(2026, 10, 1), amount: -60_000, payee: "TESLA FINANCE", categoryId: "gas"),
+        ]
+        BudgetStore.splitCommuteFromGas(&data)
+        XCTAssertEqual(data.transactions.map { $0.categoryId }, ["commute", "commute", "gas", "carpayment"])
+        XCTAssertEqual(data.rules.first?.categoryId, "commute")
+        XCTAssertNil(data.categories.first { $0.name == "Transit" })
+    }
+
+    func testLoanPaymentsDontPairAsTransfers() {
+        var data = BudgetData()
+        data.accounts = [
+            Account(id: "chk", name: "Checking", institution: "Chase", kind: .checking, balance: 0),
+            Account(id: "car", name: "Auto Loan", institution: "Tesla", kind: .loan, balance: 0, isOnBudget: false),
+        ]
+        let day = date(2026, 10, 1)
+        data.transactions = [
+            Transaction(id: "out", accountId: "chk", date: day, amount: -60_000, payee: "ACH DEBIT 1234", categoryId: nil),
+            Transaction(id: "in", accountId: "car", date: day, amount: 60_000, payee: "Payment", categoryId: nil),
+        ]
+        BankSync.markTransfers(&data)
+        XCTAssertEqual(data.transactions.first { $0.id == "out" }?.isTransfer, false)
     }
     // MARK: Income, trips, alerts
 

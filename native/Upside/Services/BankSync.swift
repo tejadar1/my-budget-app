@@ -125,8 +125,9 @@ enum BankSync {
         }
         // 1. Matching pairs. The arriving side may already be known as a
         // payment ("PAYMENT THANK YOU" on the card); it still pairs.
+        // Payments into a loan (mortgage, car) are bills, so they don't pair.
         let incoming = data.transactions.indices.filter {
-            data.transactions[$0].amount > 0
+            data.transactions[$0].amount > 0 && kinds[data.transactions[$0].accountId] != .loan
                 && (data.transactions[$0].categoryId == nil || data.transactions[$0].isTransfer)
         }
         for i in candidates where data.transactions[i].amount < 0 {
@@ -154,7 +155,8 @@ enum BankSync {
             let paysOwnCard = t.amount < 0 && kinds[t.accountId] != .credit
                 && cardBanks.contains(where: { p.contains($0) })
                 && ["payment", "pymt", "pmt", "autopay", "epay", "crd", "card", "credit"].contains(where: { p.contains($0) })
-                && !["zelle", "venmo", "paypal", "mortgage", "loan", "auto loan"].contains(where: { p.contains($0) })
+                && !["zelle", "venmo", "paypal", "mortgage", "loan"].contains(where: { p.contains($0) })
+                && !carLoanWords.contains(where: { p.contains($0) })
             if matched.contains(t.id) || looksLikeTransfer(t.payee) || isCardCredit || paysOwnCard
                 || transferRules.contains(BudgetStore.payeeKey(t.payee)) {
                 data.transactions[i].isTransfer = true
@@ -181,6 +183,16 @@ enum BankSync {
         "merrill edge", "tiaa", "ira contrib", "roth contrib",
     ]
 
+    /// Car loans and leases: a bill, never a transfer.
+    static let carLoanWords = [
+        "tesla finance", "tesla motors fin", "ally auto", "toyota financial", "toyota motor cred", "honda financial",
+        "american honda fin", "gm financial", "ford credit", "ford motor credit", "hyundai motor fin", "kia finance",
+        "kia motors fin", "nissan motor acc", "nissan-infiniti", "bmw financial", "bmw fs", "mercedes-benz fin",
+        "mb financial", "lexus financial", "vw credit", "audi financial", "subaru motors fin", "santander consumer",
+        "chase auto", "capital one auto", "wells fargo auto", "carmax auto", "auto loan", "car loan", "car payment",
+        "auto lease", "lease payment",
+    ]
+
     static func isInvestmentPayee(_ payee: String) -> Bool {
         let p = payee.lowercased()
         return investmentWords.contains { p.contains($0) }
@@ -189,6 +201,7 @@ enum BankSync {
     static func looksLikeTransfer(_ payee: String) -> Bool {
         let p = payee.lowercased()
         if isInvestmentPayee(p) { return true }
+        if carLoanWords.contains(where: { p.contains($0) }) { return false }
         let always = [
             "transfer", "xfer", "payment thank you", "payment - thank", "pymt thank",
             "payment received", "credit card payment", "card payment", "cc payment",
@@ -313,6 +326,8 @@ enum BankSync {
                        "albertsons", "vons", "ralphs", "fred meyer", "market basket", "hannaford",
                        "piggly wiggly", "winn-dixie", "food 4 less", "save a lot", "weis markets",
                        "gristedes", "d'agostino", "morton williams", "western beef", "supermarket", "grocery"]),
+        // Fares that name the subway, before Subway the sandwich shop.
+        ("commute", ["subway fare", "nyc subway", "mta subway", "subway mta", "mta*", "omny", "nyct", "metrocard"]),
         ("dining", ["starbucks", "chipotle", "mcdonald", "dunkin", "doordash", "uber eats", "uber *eats", "ubereats", "grubhub",
                     "seamless", "postmates", "caviar", "restaurant", "cafe", "pizza", "taco", "burger",
                     "sweetgreen", "panera", "subway", "wendy's", "chick-fil-a", "kfc", "popeyes",
@@ -323,9 +338,15 @@ enum BankSync {
                     "deli ", "diner", "grill", "bistro", "kitchen", "sushi", "ramen", "bar & ", "tavern",
                     "pub ", "brewery", "brewing", "taproom", "bar ", "lounge", "saloon",
                     "wine bar", "cocktail", "beer garden", "biergarten", "speakeasy", "tst*", "sq *"]),
+        // Before gas & auto so "TESLA FINANCE" is the car payment, not charging.
+        ("carpayment", carLoanWords),
+        ("commute", ["mta*", "mta ", "nyct", "omny", "metrocard", "metropolitan trans", "lirr", "long island rail",
+                     "metro-north", "metro north", "nj transit", "njt ", "path ", "panynj", "citi bike", "citibike",
+                     "lyft", "uber", "curb ", "nyc taxi", "taxi", "yellow cab", "revel", "septa", "wmata", "mbta",
+                     "bart ", "clipper", "ventra"]),
         ("gas", ["shell", "exxon", "chevron", "bp ", "sunoco", "marathon", "wawa", "speedway", "circle k",
                  "valero", "citgo", "sheetz", "quiktrip", "racetrac", "getty", "phillips 66", "conoco",
-                 "arco ", "gulf oil", "uber", "lyft", "parking", "spothero", "parkwhiz", "toll", "ez pass",
+                 "arco ", "gulf oil", "parking", "spothero", "parkwhiz", "toll", "ez pass",
                  "e-zpass", "ezpass", "zipcar", "tesla", "supercharger", "chargepoint", "electrify america",
                  "evgo", "ev charging", "autozone", "jiffy lube", "car wash", "dmv", "discount tire",
                  "goodyear", "firestone", "auto parts", "o'reilly auto", "advance auto", "napa auto",
