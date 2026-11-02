@@ -93,12 +93,15 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    // Green switches and colored icons, like the rest of Settings.
                     Toggle(isOn: $limitAlerts) {
-                        Label("Nearing a limit", systemImage: "bell.badge.fill")
+                        row("Nearing a limit", icon: "bell.badge.fill", color: .red, chevron: false)
                     }
+                    .tint(Theme.accent)
                     Toggle(isOn: $weeklySummary) {
-                        Label("Weekly summary", systemImage: "calendar")
+                        row("Weekly summary", icon: "calendar", color: .blue, chevron: false)
                     }
+                    .tint(Theme.accent)
                 } header: {
                     Text("Alerts")
                 } footer: {
@@ -109,8 +112,9 @@ struct SettingsView: View {
 
                 Section {
                     Toggle(isOn: $faceIDLock) {
-                        Label("Require Face ID", systemImage: "faceid")
+                        row("Require Face ID", icon: "faceid", color: .green, chevron: false)
                     }
+                    .tint(Theme.accent)
                 } header: {
                     Text("Privacy")
                 } footer: {
