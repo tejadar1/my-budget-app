@@ -101,23 +101,28 @@ extension View {
 private struct SortOthersPrompt: ViewModifier {
     @Environment(BudgetStore.self) private var store
     @Binding var prompt: BudgetStore.SortPrompt?
+    /// Shown a moment after `prompt` is set, so a closing menu or picker
+    /// doesn't dismiss it on the way out. Stays until you answer.
+    @State private var shown: BudgetStore.SortPrompt?
 
     func body(content: Content) -> some View {
-        content.confirmationDialog(
-            title,
-            isPresented: Binding(get: { prompt != nil }, set: { if !$0 { prompt = nil } }),
-            titleVisibility: .visible,
-            presenting: prompt
-        ) { p in
-            Button("Sort all \(p.otherIds.count + 1)") { withAnimation { store.sortAll(p) } }
-            Button("Just this one", role: .cancel) { }
-        } message: { p in
-            Text("New \(p.storeName) purchases will follow if you sort all.")
-        }
+        content
+            .onChange(of: prompt?.id) { _, id in
+                guard id != nil else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { shown = prompt }
+            }
+            .alert(title, isPresented: Binding(get: { shown != nil },
+                                               set: { if !$0 { shown = nil; prompt = nil } }),
+                   presenting: shown) { p in
+                Button("Sort all \(p.otherIds.count + 1)") { withAnimation { store.sortAll(p) } }
+                Button("Just this one", role: .cancel) { }
+            } message: { p in
+                Text("New \(p.storeName) purchases will follow if you sort all.")
+            }
     }
 
     private var title: String {
-        guard let p = prompt else { return "" }
+        guard let p = shown else { return "" }
         let n = p.otherIds.count
         return "Sort \(n) other \(p.storeName) purchase\(n == 1 ? "" : "s") as \(p.categoryName) too?"
     }

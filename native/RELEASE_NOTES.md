@@ -5,6 +5,7 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 ## 0.28, November 2 (income card wording)
 
 - Safe to spend says when it's counting your usual income; "Left so far" counts only what's arrived.
+- Check these: the "Sort all" question stays on screen until you answer.
 
 ## 0.28, November 2 (trip fund)
 
