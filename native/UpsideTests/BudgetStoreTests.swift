@@ -255,6 +255,24 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(AccountKind.guess(from: "Home Mortgage", balance: -30_000_000), .loan)
         XCTAssertEqual(AccountKind.guess(from: "Account 5678", balance: 12_000), .other)
     }
+
+    func testPartialFirstMonthIsLeftOutOfAveragesAndCharts() {
+        let store = makeStore()
+        // History now starts June 20: June is partial.
+        store.data.transactions.append(Transaction(id: "jun", accountId: "r", date: date(2026, 6, 20), amount: -1_000,
+                                                   payee: "Kroger", categoryId: "groceries"))
+        XCTAssertEqual(store.firstFullMonth, store.monthStart(date(2026, 7, 1)))
+        XCTAssertEqual(store.monthlySpent("groceries", endingAt: store.currentMonth).count, 4)
+    }
+
+    func testUsualIncome() {
+        let store = makeStore()
+        for m in 7...9 {
+            store.data.transactions.append(Transaction(id: "pay\(m)", accountId: "r", date: date(2026, m, 15),
+                                                       amount: 280_000 + m * 1_000, payee: "Payroll", categoryId: "income"))
+        }
+        XCTAssertEqual(store.averageIncome(before: store.currentMonth), 288_000)
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {

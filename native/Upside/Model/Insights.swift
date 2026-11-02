@@ -100,7 +100,7 @@ extension BudgetStore {
     func monthlySpent(_ categoryId: String, endingAt month: Date, count: Int = 6) -> [MonthSpend] {
         (0..<count).reversed()
             .map { self.month(-$0, from: month) }
-            .filter { $0 >= firstMonth }
+            .filter { $0 >= firstFullMonth }
             .map { MonthSpend(month: $0, spent: spent(categoryId, in: $0)) }
     }
 

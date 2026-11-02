@@ -9,9 +9,11 @@ struct CashFlowRow: View {
         let income = store.income(in: month)
         let spent = store.totalSpent(in: month, includeTrips: true)
         let left = income - spent
+        let usualIncome = store.averageIncome(before: month)
         if income > 0 {
-            HStack {
-                figure("Income", income, color: .primary)
+            HStack(alignment: .top) {
+                figure("Income", income, color: .primary,
+                       note: usualIncome.flatMap { $0 > 0 ? "usual \(Money.short($0))" : nil })
                 Spacer()
                 figure("Spent", spent, color: .primary)
                 Spacer()
@@ -22,10 +24,13 @@ struct CashFlowRow: View {
         }
     }
 
-    private func figure(_ label: String, _ value: Cents, color: Color) -> some View {
+    private func figure(_ label: String, _ value: Cents, color: Color, note: String? = nil) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label).font(.caption).foregroundStyle(.secondary)
             Text(Money.short(value)).font(.headline.monospacedDigit()).foregroundStyle(color)
+            if let note {
+                Text(note).font(.caption2).foregroundStyle(.secondary).monospacedDigit()
+            }
         }
     }
 }
@@ -139,6 +144,9 @@ struct RecapView: View {
                 if income > 0 {
                     Section("Money in and out") {
                         LabeledContent("Income", value: Money.short(income))
+                        if let usualIncome = store.averageIncome(before: month), usualIncome > 0 {
+                            LabeledContent("Usual income", value: Money.short(usualIncome))
+                        }
                         LabeledContent("Spent, including bills and trips", value: Money.short(allSpent))
                         LabeledContent(income >= allSpent ? "Left over" : "Short") {
                             Text(Money.short(income - allSpent))

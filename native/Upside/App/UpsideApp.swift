@@ -60,7 +60,6 @@ struct RootView: View {
     @Environment(BudgetStore.self) private var store
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("faceIDLock") private var lockEnabled = false
-    @State private var isLocked = UserDefaults.standard.bool(forKey: "faceIDLock")
     @State private var tab: AppTab = {
         // `-tab accounts` opens a specific tab (used for screenshots).
         let args = ProcessInfo.processInfo.arguments
@@ -83,22 +82,22 @@ struct RootView: View {
                 .tabItem { Label("Settings", systemImage: "gearshape.fill") }
                 .tag(AppTab.settings)
         }
-        .overlay {
-            if isLocked && lockEnabled && !store.isDemo {
-                LockView { isLocked = false }
-            }
-        }
         // Bank sync runs whenever Upside comes to the front (at most hourly).
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .active: Task { await autoSync() }
             case .background:
-                if lockEnabled { isLocked = true }
+                if lockEnabled && !store.isDemo { LockScreen.show() }
                 Alerts.scheduleRefresh()
             default: break
             }
         }
-        .task { await autoSync() }
+        .task {
+            if lockEnabled && !store.isDemo { LockScreen.show() }
+            // Budgets connected before alerts existed were never asked.
+            if !store.isDemo && BankSync.isConnected { _ = await Alerts.requestPermission() }
+            await autoSync()
+        }
     }
 
     private func autoSync() async {

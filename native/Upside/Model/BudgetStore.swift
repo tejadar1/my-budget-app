@@ -168,7 +168,20 @@ final class BudgetStore {
     private func averagingMonths(before month: Date) -> [Date] {
         let candidates = (1...Self.averageMonths).map { self.month(-$0, from: month) }
         let active = Set(data.transactions.map { monthStart($0.date) })
-        return candidates.filter(active.contains)
+        return candidates.filter { active.contains($0) && $0 >= firstFullMonth }
+    }
+
+    /// Bank history usually starts mid-month; a month missing more than its
+    /// first week would make averages and charts look low, so it's skipped.
+    var firstFullMonth: Date {
+        guard let earliest = data.transactions.map(\.date).min() else { return currentMonth }
+        return calendar.component(.day, from: earliest) > 7 ? month(1, from: monthStart(earliest)) : monthStart(earliest)
+    }
+
+    func averageIncome(before month: Date) -> Cents? {
+        let months = averagingMonths(before: month)
+        guard !months.isEmpty else { return nil }
+        return months.reduce(0) { $0 + income(in: $1) } / months.count
     }
 
     func averageSpent(_ categoryId: String, before month: Date) -> Cents? {
