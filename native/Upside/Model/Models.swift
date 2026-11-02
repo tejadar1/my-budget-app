@@ -70,6 +70,11 @@ enum AccountKind: String, Codable, CaseIterable {
             || n.contains("mastercard") || n.contains("amex") || n.contains("gold") {
             return .credit
         }
+        // College plans and brokerages before "savings": "Vanguard College Savings" is a 529.
+        if n.contains("529") || n.contains("college") || n.contains("vanguard") || n.contains("fidelity")
+            || n.contains("schwab") {
+            return .investment
+        }
         if n.contains("saving") || n.contains("money market") { return .savings }
         if n.contains("mortgage") || n.contains("loan") || n.contains("auto") || n.contains("heloc")
             || n.contains("home equity") || n.contains("student") {
