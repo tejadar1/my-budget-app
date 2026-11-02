@@ -5,9 +5,13 @@ import SwiftUI
 struct TripsSection: View {
     @Environment(BudgetStore.self) private var store
     @State private var showNew = false
+    @State private var editFund = false
 
     var body: some View {
         SectionTitle(text: "Trips", trailing: "kept out of everyday")
+        Button { editFund = true } label: { TripFundCard() }
+            .buttonStyle(.plain)
+            .sheet(isPresented: $editFund) { TripFundEditor() }
         ForEach(store.data.trips) { trip in
             NavigationLink(value: Route.trip(trip.id)) {
                 TripCard(trip: trip)
@@ -26,6 +30,28 @@ struct TripsSection: View {
 }
 
 extension BudgetStore {
+    /// Trip fund: what's been set aside since it started, minus every trip
+    /// purchase since then (prepaid flights included).
+    func tripFundBalance() -> Cents? {
+        guard let fund = data.tripFund else { return nil }
+        let start = monthStart(fund.start)
+        let months = (calendar.dateComponents([.month], from: start, to: currentMonth).month ?? 0) + 1
+        let spent = -data.transactions
+            .filter { $0.amount != 0 && $0.date >= start && $0.tripId != nil && !$0.isTransfer }
+            .reduce(0) { $0 + $1.amount }
+        return fund.startingBalance + fund.monthly * max(1, months) - spent
+    }
+
+    /// For a trip with a budget that hasn't started: covered by the fund,
+    /// or the monthly amount that would cover it by the start date.
+    func tripFundNeed(_ trip: Trip) -> (covered: Bool, perMonth: Cents)? {
+        guard let budget = trip.budget, let balance = tripFundBalance(), trip.start > now() else { return nil }
+        let remaining = max(0, budget - tripSpent(trip.id))
+        if balance >= remaining { return (true, 0) }
+        let months = max(1, calendar.dateComponents([.month], from: currentMonth, to: monthStart(trip.start)).month ?? 1)
+        return (false, (remaining - max(0, balance)) / months)
+    }
+
     func tripTransactions(_ tripId: String) -> [Transaction] {
         data.transactions.filter { $0.tripId == tripId }
     }
@@ -63,6 +89,11 @@ struct TripCard: View {
                      ?? "\(Money.short(store.tripSpent(trip.id))) spent")
                     .font(.footnote.weight(.semibold))
                     .padding(.top, 2)
+                if let need = store.tripFundNeed(trip) {
+                    Text(need.covered ? "The trip fund covers it" : "\(Money.short(need.perMonth))/month more to cover it")
+                        .font(.caption)
+                        .foregroundStyle(need.covered ? Theme.accent : Theme.warning)
+                }
             }
             .padding(14)
             Spacer()
@@ -222,5 +253,90 @@ struct TripEditor: View {
         store.saveTrip(saved)
         if trip == nil { onCreate?(saved) }
         dismiss()
+    }
+}
+
+/// "Trip fund $1,450 · +$300 a month", or an offer to start one.
+struct TripFundCard: View {
+    @Environment(BudgetStore.self) private var store
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "suitcase.fill")
+                .font(.title3).foregroundStyle(.white)
+                .frame(width: 36, height: 36)
+                .background(Color.orange, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            VStack(alignment: .leading, spacing: 2) {
+                if let fund = store.data.tripFund, let balance = store.tripFundBalance() {
+                    Text(balance >= 0 ? "Trip fund \(Money.short(balance))" : "Trip fund short \(Money.short(-balance))")
+                        .font(.headline)
+                        .foregroundStyle(balance >= 0 ? Color.primary : Theme.over)
+                    Text("+\(Money.short(fund.monthly)) a month · trip purchases come out of it")
+                        .font(.footnote).foregroundStyle(.secondary)
+                } else {
+                    Text("Start a trip fund").font(.headline)
+                    Text("Set money aside each month; trips draw it down.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+        }
+        .card()
+    }
+}
+
+struct TripFundEditor: View {
+    @Environment(BudgetStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    @State private var monthly = 0
+    @State private var starting = 0
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    HStack {
+                        Text("Each month")
+                        Spacer()
+                        TextField("Amount", value: $monthly, format: .currency(code: "USD").precision(.fractionLength(0)))
+                            .keyboardType(.numberPad).multilineTextAlignment(.trailing).frame(maxWidth: 140)
+                    }
+                    HStack {
+                        Text("Already saved")
+                        Spacer()
+                        TextField("$0", value: $starting, format: .currency(code: "USD").precision(.fractionLength(0)))
+                            .keyboardType(.numberPad).multilineTextAlignment(.trailing).frame(maxWidth: 140)
+                    }
+                } footer: {
+                    Text("The monthly amount is set aside on the Budget page, so Left over is after it. Anything you tag to a trip comes out of the fund, flights booked months ahead included.")
+                }
+                if store.data.tripFund != nil {
+                    Section {
+                        Button("Stop the trip fund", role: .destructive) {
+                            store.data.tripFund = nil
+                            dismiss()
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Trip fund")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        let start = store.data.tripFund?.start ?? store.currentMonth
+                        store.data.tripFund = TripFund(monthly: monthly * 100, start: start, startingBalance: starting * 100)
+                        dismiss()
+                    }
+                    .disabled(monthly <= 0)
+                }
+            }
+            .onAppear {
+                monthly = (store.data.tripFund?.monthly ?? 0) / 100
+                starting = (store.data.tripFund?.startingBalance ?? 0) / 100
+            }
+        }
     }
 }

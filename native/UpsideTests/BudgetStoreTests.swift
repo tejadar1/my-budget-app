@@ -560,6 +560,20 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(BankSync.categorize(payee: "MTA*NYCT PAYGO", amount: -290, rules: []), "commute")
         XCTAssertNotEqual(BankSync.categorize(payee: "VANGUARD RETIREMENT", amount: -2_000, rules: []), "gas")
     }
+
+    func testTripFundFillsMonthlyAndTripsDrawItDown() {
+        let store = makeStore()
+        store.data.tripFund = TripFund(monthly: 30_000, start: date(2026, 8, 1))
+        XCTAssertEqual(store.tripFundBalance(), 90_000, "Aug, Sep, Oct")
+        store.saveTrip(Trip(id: "m", name: "Miami", start: date(2027, 1, 10), end: date(2027, 1, 14), budget: 250_000))
+        store.data.transactions.append(Transaction(id: "f", accountId: "r", date: date(2026, 9, 20), amount: -82_000,
+                                                   payee: "JetBlue", categoryId: "travel", tripId: "m"))
+        XCTAssertEqual(store.tripFundBalance(), 8_000)
+        // $1,680 left to cover, $80 in the fund, 3 months to January → $533 a month.
+        let need = store.tripFundNeed(store.data.trips[0])
+        XCTAssertEqual(need?.covered, false)
+        XCTAssertEqual(need?.perMonth, 53_333)
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {

@@ -2,6 +2,14 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## 0.28, November 2 (trip fund)
+
+- Trip fund: set aside an amount each month; anything tagged to a trip comes out of it, and what's unused carries over.
+- The Income card shows what's set aside for trips, and Left over is after it.
+- Each upcoming trip says whether the fund covers it, or how much a month would.
+
+Try: Budget > Trips > Start a trip fund.
+
 ## 0.28, November 2 (sorting and cards)
 
 - Many more restaurants recognized (chains and words like pizzeria, taqueria, pho, halal, steakhouse).

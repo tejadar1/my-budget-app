@@ -219,6 +219,16 @@ struct BudgetData: Codable {
     /// Alerts already sent ("2026-11:dining:80"), so each goes out once.
     /// Optional so budgets saved by older versions still load.
     var alertsSent: [String]?
+    /// Money set aside each month for trips; trip purchases draw it down.
+    var tripFund: TripFund?
+}
+
+/// A virtual fund: grows by `monthly` each month from `start`, shrinks
+/// by everything tagged to a trip. Nothing actually moves between banks.
+struct TripFund: Codable, Hashable {
+    var monthly: Cents
+    var start: Date
+    var startingBalance: Cents = 0
 }
 
 // MARK: - Default categories

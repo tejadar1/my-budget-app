@@ -9,7 +9,11 @@ struct IncomeCard: View {
     var body: some View {
         let income = store.income(in: month)
         let spent = store.totalSpent(in: month, includeTrips: true)
-        let left = income - spent
+        // Trip purchases come out of the fund, so the month sets aside the
+        // fund's amount instead of counting the trip spending.
+        let fund = store.data.tripFund.map { $0.start <= month || store.isInMonth($0.start, month) ? $0.monthly : 0 } ?? 0
+        let tripSpend = fund > 0 ? store.totalSpent(in: month, includeTrips: true) - store.totalSpent(in: month) : 0
+        let left = income - (spent - tripSpend) - fund
         let usual = store.averageIncome(before: month)
         let checks = store.paychecks(in: month)
         if income > 0 || (usual ?? 0) > 0 {
@@ -35,7 +39,11 @@ struct IncomeCard: View {
                 }
                 Divider()
                 HStack {
-                    figure("Spent, incl. bills", spent, color: .primary)
+                    figure("Spent, incl. bills", spent - tripSpend, color: .primary)
+                    if fund > 0 {
+                        Spacer()
+                        figure("Set aside for trips", fund, color: .primary)
+                    }
                     Spacer()
                     figure(left >= 0 ? "Left over" : "Short", left, color: left >= 0 ? Theme.accent : Theme.over)
                 }
