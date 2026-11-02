@@ -211,9 +211,13 @@ final class BudgetStoreTests: XCTestCase {
             Transaction(id: "t2", accountId: "r", date: date(2026, 10, 3), amount: -290, payee: "MTA*NYCT PAYGO", categoryId: nil),
             Transaction(id: "f1", accountId: "a", date: date(2026, 10, 1), amount: -4_000, payee: "PLANET FITNESS", categoryId: "personal"),
             Transaction(id: "c1", accountId: "a", date: date(2026, 10, 2), amount: -5_000, payee: "TESLA SUPERCHARGER", categoryId: "gas"),
+            Transaction(id: "g1", accountId: "r", date: date(2026, 10, 4), amount: -9_500, payee: "BETHPAGE STATE PARK GOLF", categoryId: nil),
+            Transaction(id: "g2", accountId: "r", date: date(2026, 9, 12), amount: -18_900, payee: "PGA TOUR SUPERSTORE", categoryId: "shopping"),
+            Transaction(id: "g3", accountId: "r", date: date(2026, 9, 20), amount: -6_400, payee: "GOLFNOW*TEE TIME", categoryId: nil),
         ]
         let recommended = store.recommendedCategories()
-        XCTAssertEqual(Set(recommended.map(\.name)), ["Transit", "Coffee", "Fitness"]) // Blue Bottle → Coffee
+        XCTAssertEqual(Set(recommended.map(\.name)), ["Transit", "Coffee", "Fitness", "Golf"]) // Blue Bottle → Coffee
+        XCTAssertEqual(recommended.first { $0.name == "Golf" }?.transactionIds.count, 3)
         let transitSuggestion = recommended.first { $0.name == "Transit" }!
         XCTAssertEqual(store.monthlyAverage(of: transitSuggestion), 290)
 
