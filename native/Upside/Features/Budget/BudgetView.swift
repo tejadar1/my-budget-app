@@ -39,12 +39,18 @@ struct BudgetView: View {
                         PeopleCard(isEditing: $showPeople)
                     }
 
-                    IncomeCard(month: month)
+                    MonthPlanCard(month: month, onSavings: isCurrentMonth ? { showSave = true } : nil)
 
-                    SummaryCard(month: month, onSave: isCurrentMonth ? { showSave = true } : nil)
+                    if !store.toCheck.isEmpty {
+                        NavigationLink(value: Route.review) {
+                            ReviewRow(count: store.toCheck.count)
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    categories
 
                     if isCurrentMonth {
-                        BillsRow()
                         // Early in a month, last month's recap.
                         if store.calendar.component(.day, from: store.now()) <= 7 {
                             let last = store.month(-1, from: month)
@@ -64,15 +70,6 @@ struct BudgetView: View {
 
                     // Charged vs paid on each card, same as on Accounts.
                     if isCurrentMonth { CardsCheck() }
-
-                    if !store.toCheck.isEmpty {
-                        NavigationLink(value: Route.review) {
-                            ReviewRow(count: store.toCheck.count)
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    categories
 
                     TripsSection()
                 }

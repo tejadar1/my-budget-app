@@ -628,6 +628,27 @@ final class BudgetStoreTests: XCTestCase {
         store.setHidden("m", true)
         XCTAssertFalse(store.transactions(matching: "", filter: .all).contains { $0.accountId == "m" })
     }
+
+    func testMonthPlanIsIncomeMinusBillsSavingsTripsThenSpending() {
+        let store = makeStore()
+        store.data.transactions.append(Transaction(id: "rent", accountId: "r", date: date(2026, 10, 1), amount: -150_000,
+                                                   payee: "Rent", categoryId: "housing"))
+        store.data.plan = SavingsPlan(month: store.currentMonth, goal: 25_000, limits: [:])
+        store.data.tripFund = TripFund(monthly: 30_000, start: date(2026, 10, 1))
+        let plan = store.monthPlan(store.currentMonth)
+        XCTAssertEqual(plan.income, 300_000)
+        XCTAssertEqual(plan.bills, 150_000)
+        XCTAssertEqual(plan.toSpend, 300_000 - 150_000 - 25_000 - 30_000)
+        XCTAssertEqual(plan.everydaySpent, 13_000, "groceries; rent is a bill")
+        XCTAssertEqual(plan.leftToSpend, 95_000 - 13_000)
+
+        // Limits bigger than what there is to spend get trimmed to fit.
+        store.setLimit("groceries", 60_000); store.setLimit("shopping", 80_000)
+        XCTAssertEqual(store.monthPlan(store.currentMonth).limitsOverBy, 45_000)
+        let stillOver = store.fitLimitsToPlan(store.currentMonth)
+        XCTAssertLessThan(stillOver, 45_000, "trimmed, though never more than 40% of a limit")
+        XCTAssertLessThan(store.category("shopping")!.limit!, 80_000)
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {

@@ -2,6 +2,13 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## 0.28, November 2 (month plan)
+
+- Budget now reads top-down: Income, minus Bills, Savings and Trips, leaves To spend.
+- One number to watch: left to spend, with about how much a day.
+- If your everyday limits add up to more than you have, Upside says so and trims them to fit.
+- Tap Bills for what's paid and due, Savings to set or change your goal.
+
 ## 0.28, November 2 (Transactions tab)
 
 - New Transactions tab: every purchase by month, with search by store or amount.
