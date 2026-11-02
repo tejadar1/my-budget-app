@@ -52,7 +52,9 @@ final class BudgetStoreTests: XCTestCase {
 
     func testUsualIsThreeMonthAverage() {
         let store = makeStore()
-        XCTAssertEqual(store.averageSpent("groceries", before: store.currentMonth), 60_000)
+        // Ron's account: Jul $300, Aug $0, Sep $900 → $400. Ana's starts in
+        // August: Aug $600, Sep $0 → $300. Usual $700.
+        XCTAssertEqual(store.averageSpent("groceries", before: store.currentMonth), 70_000)
     }
 
     func testWhoSpent() {
@@ -65,7 +67,7 @@ final class BudgetStoreTests: XCTestCase {
     func testLimitsFromAveragesRoundUpToTenDollars() {
         let store = makeStore()
         store.setLimitsFromAverages()
-        XCTAssertEqual(store.category("groceries")?.limit, 60_000)
+        XCTAssertEqual(store.category("groceries")?.limit, 70_000)
         XCTAssertTrue(store.hasLimits)
     }
 
@@ -467,9 +469,27 @@ final class BudgetStoreTests: XCTestCase {
         store.setLimit("groceries", 99_900)
         store.setLimit("gifts", 5_000) // nothing spent on gifts lately
         store.setLimitsFromAverages()
-        XCTAssertEqual(store.category("groceries")?.limit, 60_000, "usual $600")
+        XCTAssertEqual(store.category("groceries")?.limit, 70_000, "usual $700")
         XCTAssertNil(store.category("gifts")?.limit)
         XCTAssertEqual(store.averagingMonths(before: store.currentMonth).count, 3)
+    }
+
+    func testABankWithShortHistoryIsntCountedAsZero() {
+        let store = makeStore()
+        // A card connected with only 30 days of history: $450 of dining in October so far,
+        // $300 in September (from the 20th on, so September is partial for this card).
+        store.data.accounts.append(Account(id: "new", name: "New Card", institution: "Amex", kind: .credit, balance: 0))
+        store.data.transactions += [
+            Transaction(id: "n1", accountId: "new", date: date(2026, 9, 20), amount: -30_000, payee: "Chipotle", categoryId: "dining"),
+            Transaction(id: "n2", accountId: "new", date: date(2026, 10, 3), amount: -45_000, payee: "Chipotle", categoryId: "dining"),
+        ]
+        // Old way: $300 over 3 months = $100. The card has no full month yet, so it adds nothing
+        // rather than dragging the usual down.
+        XCTAssertEqual(store.averageSpent("dining", before: store.currentMonth), 0)
+
+        // A month later (November), its October counts on its own: $450.
+        store.now = { self.date(2026, 11, 15) }
+        XCTAssertEqual(store.averageSpent("dining", before: store.currentMonth), 45_000)
     }
     // MARK: Income, trips, alerts
 

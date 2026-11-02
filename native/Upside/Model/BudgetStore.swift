@@ -203,23 +203,55 @@ final class BudgetStore {
         return calendar.component(.day, from: earliest) > 7 ? month(1, from: monthStart(earliest)) : monthStart(earliest)
     }
 
+    /// The first full month each account has history for. A bank that
+    /// only sent 30 or 60 days starts later than the others.
+    var accountHistoryStart: [String: Date] {
+        var earliest: [String: Date] = [:]
+        for t in data.transactions where earliest[t.accountId].map({ t.date < $0 }) ?? true {
+            earliest[t.accountId] = t.date
+        }
+        return earliest.mapValues { date in
+            calendar.component(.day, from: date) > 7 ? month(1, from: monthStart(date)) : monthStart(date)
+        }
+    }
+
+    /// Usual per month, averaged account by account: each account counts
+    /// only the months it has history for, so a bank that sent a month of
+    /// data doesn't read as $0 the months before. Nil without any history.
+    private func perAccountAverage(_ transactions: [Transaction], before month: Date) -> Cents? {
+        let months = (1...Self.averageMonths).map { self.month(-$0, from: month) }
+        let starts = accountHistoryStart
+        let byAccount = Dictionary(grouping: transactions) { $0.accountId }
+        var total = 0
+        var anyCovered = false
+        for (accountId, start) in starts {
+            let covered = months.filter { $0 >= start }
+            guard !covered.isEmpty else { continue }
+            anyCovered = true
+            let sum = (byAccount[accountId] ?? [])
+                .filter { t in covered.contains { isInMonth(t.date, $0) } }
+                .reduce(0) { $0 + $1.amount }
+            total += sum / covered.count
+        }
+        return anyCovered ? total : nil
+    }
+
     func averageIncome(before month: Date) -> Cents? {
-        let months = averagingMonths(before: month)
-        guard !months.isEmpty else { return nil }
-        return months.reduce(0) { $0 + income(in: $1) } / months.count
+        let onBudget = Set(data.accounts.filter(\.countsInBudget).map(\.id))
+        let incomeIds = Set(data.categories.filter(\.isIncome).map(\.id))
+        let txns = data.transactions.filter { t in
+            t.categoryId.map(incomeIds.contains) == true && !t.isTransfer && onBudget.contains(t.accountId)
+        }
+        return perAccountAverage(txns, before: month).map { max(0, $0) }
     }
 
     func averageSpent(_ categoryId: String, before month: Date) -> Cents? {
-        let months = averagingMonths(before: month)
-        guard !months.isEmpty else { return nil }
-        let total = months.reduce(0) { $0 + spent(categoryId, in: $1) }
-        return total / months.count
+        let txns = spendingTransactions.filter { $0.categoryId == categoryId && ($0.tripId == nil || categoryId == "travel") }
+        return perAccountAverage(txns, before: month).map { max(0, -$0) }
     }
 
     func averageTotal(before month: Date) -> Cents? {
-        let months = averagingMonths(before: month)
-        guard !months.isEmpty else { return nil }
-        return months.reduce(0) { $0 + totalSpent(in: $1) } / months.count
+        perAccountAverage(spendingTransactions.filter { !isTripSpending($0) }, before: month).map { max(0, -$0) }
     }
 
     /// This month's spending split by whose account it came from.
