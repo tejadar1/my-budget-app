@@ -7,6 +7,8 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 - Trip fund: set aside an amount each month; anything tagged to a trip comes out of it, and what's unused carries over.
 - The Income card shows what's set aside for trips, and Left over is after it.
 - Each upcoming trip says whether the fund covers it, or how much a month would.
+- Safe to spend: the Income card shows what you can still spend and keep your savings and trip money, after bills still due.
+- The trip fund only gets what a month actually had left; overspending means less for trips.
 
 Try: Budget > Trips > Start a trip fund.
 

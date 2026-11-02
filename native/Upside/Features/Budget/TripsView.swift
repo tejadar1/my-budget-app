@@ -35,11 +35,62 @@ extension BudgetStore {
     func tripFundBalance() -> Cents? {
         guard let fund = data.tripFund else { return nil }
         let start = monthStart(fund.start)
-        let months = (calendar.dateComponents([.month], from: start, to: currentMonth).month ?? 0) + 1
         let spent = -data.transactions
             .filter { $0.amount != 0 && $0.date >= start && $0.tripId != nil && !$0.isTransfer }
             .reduce(0) { $0 + $1.amount }
-        return fund.startingBalance + fund.monthly * max(1, months) - spent
+        return fund.startingBalance + tripFundAdded(since: start) - spent
+    }
+
+    /// What actually went into the fund: the monthly amount for this month
+    /// (planned), and for finished months only what that month had left over.
+    /// Overspending a month means less, or nothing, for trips.
+    func tripFundAdded(since start: Date) -> Cents {
+        guard let fund = data.tripFund else { return 0 }
+        var total = 0
+        var month = start
+        while month <= currentMonth {
+            if month == currentMonth {
+                total += fund.monthly
+            } else {
+                let left = income(in: month) - totalSpent(in: month)
+                total += min(fund.monthly, max(0, left))
+            }
+            month = self.month(1, from: month)
+        }
+        return total
+    }
+
+    /// Months since the fund started that couldn't put the full amount in.
+    func tripFundShortMonths() -> Int {
+        guard let fund = data.tripFund else { return 0 }
+        var count = 0
+        var month = monthStart(fund.start)
+        while month < currentMonth {
+            if income(in: month) - totalSpent(in: month) < fund.monthly { count += 1 }
+            month = self.month(1, from: month)
+        }
+        return count
+    }
+
+    // MARK: Keep first, then spend
+
+    /// Savings goal plus trip fund for a month: kept before spending.
+    func setAside(in month: Date) -> Cents {
+        let saving = plan.map { isInMonth($0.month, month) ? $0.goal : 0 } ?? 0
+        let trips = data.tripFund.map { monthStart($0.start) <= month ? $0.monthly : 0 } ?? 0
+        return saving + trips
+    }
+
+    /// What can still be spent this month and keep the set-asides: income
+    /// (your usual, until this month's is in) minus spending so far, bills
+    /// still due, and the set-asides. Negative means it's eating into them.
+    func safeToSpend(in month: Date) -> Cents? {
+        let income = month == currentMonth ? max(self.income(in: month), averageIncome(before: month) ?? 0)
+                                           : self.income(in: month)
+        guard income > 0 else { return nil }
+        let billsDue = month == currentMonth
+            ? recurringCharges().filter { !$0.paidThisMonth }.reduce(0) { $0 + $1.amount } : 0
+        return income - totalSpent(in: month) - billsDue - setAside(in: month)
     }
 
     /// For a trip with a budget that hasn't started: covered by the fund,
@@ -271,8 +322,10 @@ struct TripFundCard: View {
                     Text(balance >= 0 ? "Trip fund \(Money.short(balance))" : "Trip fund short \(Money.short(-balance))")
                         .font(.headline)
                         .foregroundStyle(balance >= 0 ? Color.primary : Theme.over)
-                    Text("+\(Money.short(fund.monthly)) a month · trip purchases come out of it")
-                        .font(.footnote).foregroundStyle(.secondary)
+                    let short = store.tripFundShortMonths()
+                    Text(short == 0 ? "+\(Money.short(fund.monthly)) a month · trip purchases come out of it"
+                                    : "+\(Money.short(fund.monthly)) a month · \(short) month\(short == 1 ? "" : "s") overspent, so less went in")
+                        .font(.footnote).foregroundStyle(short == 0 ? Color.secondary : Theme.warning)
                 } else {
                     Text("Start a trip fund").font(.headline)
                     Text("Set money aside each month; trips draw it down.")
@@ -309,7 +362,7 @@ struct TripFundEditor: View {
                             .keyboardType(.numberPad).multilineTextAlignment(.trailing).frame(maxWidth: 140)
                     }
                 } footer: {
-                    Text("The monthly amount is set aside on the Budget page, so Left over is after it. Anything you tag to a trip comes out of the fund, flights booked months ahead included.")
+                    Text("Kept before spending on the Budget page. A month only adds what it actually has left over, so overspending means less for trips. Anything tagged to a trip comes out of the fund, flights booked months ahead included.")
                 }
                 if store.data.tripFund != nil {
                     Section {

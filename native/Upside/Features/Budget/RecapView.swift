@@ -38,6 +38,20 @@ struct IncomeCard: View {
                     Text("No paychecks yet this month").font(.footnote).foregroundStyle(.secondary)
                 }
                 Divider()
+                let keep = store.setAside(in: month)
+                if let safe = store.safeToSpend(in: month), month == store.currentMonth {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(safe >= 0 ? "\(Money.short(safe)) safe to spend"
+                                       : "\(Money.short(-safe)) over")
+                            .font(.headline)
+                            .foregroundStyle(safe >= 0 ? Theme.accent : Theme.over)
+                        Text(keep > 0
+                             ? (safe >= 0 ? "Keeps \(Money.short(keep)) for savings and trips, after bills still due."
+                                          : "This comes out of the \(Money.short(keep)) for savings and trips.")
+                             : "After bills still due this month.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
+                }
                 HStack {
                     figure("Spent, incl. bills", spent - tripSpend, color: .primary)
                     if fund > 0 {

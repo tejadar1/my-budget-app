@@ -563,6 +563,10 @@ final class BudgetStoreTests: XCTestCase {
 
     func testTripFundFillsMonthlyAndTripsDrawItDown() {
         let store = makeStore()
+        for m in 8...9 {
+            store.data.transactions.append(Transaction(id: "pay\(m)", accountId: "r", date: date(2026, m, 15),
+                                                       amount: 300_000, payee: "Payroll", categoryId: "income"))
+        }
         store.data.tripFund = TripFund(monthly: 30_000, start: date(2026, 8, 1))
         XCTAssertEqual(store.tripFundBalance(), 90_000, "Aug, Sep, Oct")
         store.saveTrip(Trip(id: "m", name: "Miami", start: date(2027, 1, 10), end: date(2027, 1, 14), budget: 250_000))
@@ -573,6 +577,28 @@ final class BudgetStoreTests: XCTestCase {
         let need = store.tripFundNeed(store.data.trips[0])
         XCTAssertEqual(need?.covered, false)
         XCTAssertEqual(need?.perMonth, 53_333)
+    }
+
+    func testOverspendingAMonthMeansLessForTrips() {
+        let store = makeStore()
+        // August: $3,000 in, $600 groceries + $2,300 shopping = $100 left.
+        store.data.transactions += [
+            Transaction(id: "pay8", accountId: "r", date: date(2026, 8, 15), amount: 300_000, payee: "Payroll", categoryId: "income"),
+            Transaction(id: "big", accountId: "r", date: date(2026, 8, 20), amount: -230_000, payee: "Best Buy", categoryId: "shopping"),
+        ]
+        store.data.tripFund = TripFund(monthly: 30_000, start: date(2026, 8, 1))
+        // Aug adds $100 (all that was left), Sep adds $0 (no income), Oct adds the planned $300.
+        XCTAssertEqual(store.tripFundBalance(), 40_000)
+        XCTAssertEqual(store.tripFundShortMonths(), 2)
+    }
+
+    func testSafeToSpendKeepsSavingsAndTripsFirst() {
+        let store = makeStore()
+        store.data.tripFund = TripFund(monthly: 30_000, start: date(2026, 10, 1))
+        store.data.plan = SavingsPlan(month: store.currentMonth, goal: 25_000, limits: [:])
+        // $3,000 in; $130 groceries spent; no bills due; $550 kept → $2,320.
+        XCTAssertEqual(store.setAside(in: store.currentMonth), 55_000)
+        XCTAssertEqual(store.safeToSpend(in: store.currentMonth), 300_000 - 13_000 - 55_000)
     }
     // MARK: Income, trips, alerts
 
