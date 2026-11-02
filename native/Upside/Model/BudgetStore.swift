@@ -64,7 +64,8 @@ final class BudgetStore {
             for i in data.transactions.indices
             where data.transactions[i].categoryId == nil && !data.transactions[i].isTransfer {
                 data.transactions[i].categoryId = BankSync.categorize(
-                    payee: data.transactions[i].payee, amount: data.transactions[i].amount, rules: data.rules)
+                    payee: data.transactions[i].payee, amount: data.transactions[i].amount, rules: data.rules,
+                    bankCategory: data.transactions[i].bankCategory)
             }
             return BudgetStore(data: data)
         }
@@ -490,7 +491,7 @@ final class BudgetStore {
             let t = updated.transactions[i]
             updated.transactions[i].isTransfer = BankSync.looksLikeTransfer(t.payee)
             updated.transactions[i].categoryId = updated.transactions[i].isTransfer ? nil
-                : BankSync.categorize(payee: t.payee, amount: t.amount, rules: [])
+                : BankSync.categorize(payee: t.payee, amount: t.amount, rules: [], bankCategory: t.bankCategory)
         }
         BankSync.markTransfers(&updated)
         data = updated
@@ -688,7 +689,8 @@ final class BudgetStore {
         data.categories.removeAll { ids.contains($0.id) }
         for i in data.transactions.indices where data.transactions[i].categoryId.map(ids.contains) == true {
             let t = data.transactions[i]
-            data.transactions[i].categoryId = BankSync.categorize(payee: t.payee, amount: t.amount, rules: data.rules)
+            data.transactions[i].categoryId = BankSync.categorize(payee: t.payee, amount: t.amount, rules: data.rules,
+                                                                  bankCategory: t.bankCategory)
         }
         BankSync.markTransfers(&data)
     }

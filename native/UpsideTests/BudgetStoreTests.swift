@@ -312,6 +312,22 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(BankSync.categorize(payee: "DEAD RABBIT BAR", amount: -3_000, rules: []), "dining")
         XCTAssertEqual(BankSync.categorize(payee: "BARNES & NOBLE #2675", amount: -3_000, rules: []), "shopping")
     }
+
+    func testBankCategoryOrMerchantCodeSortsUnknownStores() throws {
+        XCTAssertEqual(BankSync.categorize(payee: "ZZ UNKNOWN 44", amount: -2_000, rules: [], bankCategory: "mcc:5813"), "dining")
+        XCTAssertEqual(BankSync.categorize(payee: "ZZ UNKNOWN 44", amount: -2_000, rules: [], bankCategory: "Bars & Nightlife"), "dining")
+        XCTAssertEqual(BankSync.categorize(payee: "ZZ UNKNOWN 44", amount: -2_000, rules: [], bankCategory: "mcc:5411"), "groceries")
+        XCTAssertNil(BankSync.categorize(payee: "ZZ UNKNOWN 44", amount: -2_000, rules: [], bankCategory: nil))
+        // Store lists and your rules come first.
+        XCTAssertEqual(BankSync.categorize(payee: "KROGER", amount: -2_000, rules: [], bankCategory: "mcc:5813"), "groceries")
+
+        let json = #"{"id":"t1","posted":1790000000,"amount":"-12.00","description":"X","extra":{"category":"Restaurants","mcc":5812,"nested":{"a":1}}}"#
+        let t = try JSONDecoder().decode(SimpleFIN.SFTransaction.self, from: Data(json.utf8))
+        XCTAssertEqual(t.extra?.bankCategory, "mcc:5812")
+        let plain = try JSONDecoder().decode(SimpleFIN.SFTransaction.self,
+                                             from: Data(#"{"id":"t2","posted":1,"amount":"-1","description":"Y"}"#.utf8))
+        XCTAssertNil(plain.extra)
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {

@@ -97,9 +97,11 @@ enum BankSync {
                     date: Date(timeIntervalSince1970: TimeInterval(t.transacted_at ?? t.posted)),
                     amount: amount, payee: payee,
                     categoryId: isTransfer ? nil
-                        : categorize(payee: payee, amount: amount, rules: data.rules),
+                        : categorize(payee: payee, amount: amount, rules: data.rules,
+                                     bankCategory: t.extra?.bankCategory),
                     isPending: t.pending ?? false,
-                    isTransfer: isTransfer))
+                    isTransfer: isTransfer,
+                    bankCategory: t.extra?.bankCategory))
             }
         }
         data.transactions.sort { $0.date > $1.date }
@@ -197,7 +199,7 @@ enum BankSync {
     }
 
     /// Your rules first, then common stores.
-    static func categorize(payee: String, amount: Cents, rules: [PayeeRule]) -> String? {
+    static func categorize(payee: String, amount: Cents, rules: [PayeeRule], bankCategory: String? = nil) -> String? {
         let key = BudgetStore.payeeKey(payee)
         if let rule = rules.first(where: { $0.payeeKey == key }) {
             return rule.categoryId == transferCategory ? nil : rule.categoryId
@@ -211,7 +213,52 @@ enum BankSync {
         for (category, words) in builtIn where words.contains(where: { p.contains($0) }) {
             return category
         }
-        return nil
+        return bankCategory.flatMap(category(fromBank:))
+    }
+
+    /// The bank's category or merchant code (MCC) mapped to Upside's, for
+    /// stores the lists don't know. Bars (5813) and restaurants (5812) both
+    /// land in Dining & Bars.
+    static func category(fromBank raw: String) -> String? {
+        let text = raw.lowercased()
+        if text.hasPrefix("mcc:"), let code = Int(text.dropFirst(4)) {
+            switch code {
+            case 5811...5814: return "dining"
+            case 5411, 5422, 5441, 5451, 5462, 5499: return "groceries"
+            case 5541, 5542, 5172, 5531...5533, 7523, 7531...7549, 4121, 4784, 4111, 4131: return "gas"
+            case 5912, 8011...8099, 5975, 5976, 8043: return "health"
+            case 7230, 7297, 7298, 7210...7217: return "personal"
+            case 3000...3299, 4511, 3501...3999, 7011, 4722, 7512, 3351...3441, 4411: return "travel"
+            case 7832, 7841, 7922, 7929, 7932, 7933, 7941, 7991...7999: return "entertainment"
+            case 4900: return "utilities"
+            case 4812, 4814, 4816, 4899: return "phone"
+            case 6300, 5960: return "insurance"
+            case 5992, 5947: return "gifts"
+            case 5995, 742: return "kids"
+            case 5300...5399, 5600...5699, 5700...5799, 5200...5261, 5940...5999, 5045, 5732...5735: return "shopping"
+            default: return nil
+            }
+        }
+        // Order matters: "gas & electric" is a utility, "barber" isn't a bar.
+        let map: [(String, [String])] = [
+            ("insurance", ["insurance"]),
+            ("utilities", ["utilit", "gas & electric", "electric company", "power company", "water & sewer"]),
+            ("personal", ["personal care", "hair", "salon", "barber", "beauty", "laundry"]),
+            ("dining", ["restaurant", "dining", "food & drink", "food and drink", "bars", "bar &", "nightlife",
+                        "alcohol", "fast food", "coffee", "brewer"]),
+            ("groceries", ["grocer", "supermarket"]),
+            ("gas", ["gas station", "gasoline", "fuel", "petrol", "automotive", "automobile", "auto ", "parking",
+                     "ride share", "rideshare", "taxi", "tolls", "transit"]),
+            ("phone", ["phone", "internet", "mobile", "cable", "telecom"]),
+            ("health", ["pharmac", "health", "medical", "doctor", "dentist", "vision"]),
+            ("travel", ["travel", "airline", "air travel", "hotel", "lodging", "rental car"]),
+            ("entertainment", ["entertainment", "movie", "music", "sporting event", "amusement"]),
+            ("kids", ["pet supplies", "pets", "veterinar", "child", "toy store"]),
+            ("gifts", ["gift", "florist", "charit"]),
+            ("shopping", ["shopping", "clothing", "apparel", "electronics", "merchandise", "home improvement",
+                          "department store"]),
+        ]
+        return map.first { _, words in words.contains { text.contains($0) } }?.0
     }
 
     /// Common US companies by category. Order matters, since the first

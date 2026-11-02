@@ -21,6 +21,10 @@ struct TransactionSheet: View {
                             Text(t.payee).font(.headline)
                             Text("\(t.date.formatted(date: .abbreviated, time: .omitted)) · \(store.account(t.accountId)?.fullName ?? "")")
                                 .font(.footnote).foregroundStyle(.secondary)
+                            if let bank = t.bankCategory {
+                                Text("Bank category: \(bank.hasPrefix("mcc:") ? "merchant code " + bank.dropFirst(4) : bank)")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
                             if t.isPending {
                                 Text("Pending").font(.caption.bold()).foregroundStyle(Theme.warning)
                             }

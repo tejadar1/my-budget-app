@@ -72,6 +72,41 @@ enum SimpleFIN {
         var payee: String?
         var pending: Bool?
         var transacted_at: Int?
+        /// Bank-specific data. Some feeds put a category or merchant code
+        /// (MCC) here; most send nothing.
+        var extra: Extra?
+    }
+
+    /// Reads any text or number values from `extra`, whatever the keys.
+    struct Extra: Decodable {
+        var values: [String: String] = [:]
+
+        private struct Key: CodingKey {
+            var stringValue: String
+            var intValue: Int? { nil }
+            init(stringValue: String) { self.stringValue = stringValue }
+            init?(intValue: Int) { nil }
+        }
+
+        init(from decoder: Decoder) throws {
+            guard let c = try? decoder.container(keyedBy: Key.self) else { return }
+            for key in c.allKeys {
+                if let s = try? c.decode(String.self, forKey: key) { values[key.stringValue] = s }
+                else if let n = try? c.decode(Int.self, forKey: key) { values[key.stringValue] = String(n) }
+            }
+        }
+
+        /// "mcc:5813" for a merchant code, otherwise the category text.
+        var bankCategory: String? {
+            let lower = Dictionary(values.map { ($0.key.lowercased(), $0.value) }, uniquingKeysWith: { a, _ in a })
+            for key in ["mcc", "merchant_category_code", "category_code"] {
+                if let v = lower[key], Int(v) != nil { return "mcc:\(v)" }
+            }
+            for key in ["category", "merchant_category", "categories", "type"] {
+                if let v = lower[key], !v.isEmpty { return v }
+            }
+            return nil
+        }
     }
 
     /// Accounts and transactions from `since` up to `until` (now if nil).

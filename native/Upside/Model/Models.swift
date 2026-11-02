@@ -117,6 +117,8 @@ struct Transaction: Identifiable, Codable, Hashable {
     /// Moving money between your own accounts (card payments, transfers)
     /// isn't spending.
     var isTransfer: Bool = false
+    /// The bank's own category or merchant code, when the feed sends one.
+    var bankCategory: String? = nil
 }
 
 struct Category: Identifiable, Codable, Hashable {
