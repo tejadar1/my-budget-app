@@ -78,7 +78,7 @@ jobs:
             xcrun simctl ui "$UDID" appearance "$mode"
             xcrun simctl terminate "$UDID" com.tejadar1.upside 2>/dev/null || true
             xcrun simctl launch "$UDID" com.tejadar1.upside "$@" > /dev/null
-            sleep 4
+            sleep 7
             xcrun simctl io "$UDID" screenshot "$OUT/$mode-$name.png" > /dev/null
             echo "saved $mode-$name.png"
           }
