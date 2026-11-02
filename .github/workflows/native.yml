@@ -82,6 +82,8 @@ jobs:
             xcrun simctl io "$UDID" screenshot "$OUT/$mode-$name.png" > /dev/null
             echo "saved $mode-$name.png"
           }
+          # The first launch after installing is slow; warm the app up once.
+          xcrun simctl launch "$UDID" com.tejadar1.upside -demo > /dev/null; sleep 12
           for mode in light dark; do
             shot $mode 1-budget -demo -tab budget
             shot $mode 2-accounts -demo -tab accounts

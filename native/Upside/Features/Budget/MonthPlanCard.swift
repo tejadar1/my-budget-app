@@ -46,7 +46,7 @@ struct MonthPlanCard: View {
     @ViewBuilder private func bar(_ plan: MonthPlan) -> some View {
         if plan.toSpend > 0 {
             let fraction = Double(plan.everydaySpent) / Double(plan.toSpend)
-            let parts = segments(store.spentByOwner(in: month))
+            let parts = segments(store.spentByOwner(in: month, everydayOnly: true))
             SplitBar(fraction: fraction, segments: parts, fill: .white, track: .black.opacity(0.3),
                      height: 10, overflow: Theme.over)
         }
@@ -78,7 +78,7 @@ struct MonthPlanCard: View {
 
     @ViewBuilder private var ownerLegend: some View {
         if store.people.isSetUp {
-            let byOwner = store.spentByOwner(in: month)
+            let byOwner = store.spentByOwner(in: month, everydayOnly: true)
             let owners = legendOwners(byOwner)
             HStack {
                 ForEach(owners) { owner in

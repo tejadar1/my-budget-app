@@ -641,6 +641,9 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(plan.toSpend, 300_000 - 150_000 - 25_000 - 30_000)
         XCTAssertEqual(plan.everydaySpent, 13_000, "groceries; rent is a bill")
         XCTAssertEqual(plan.leftToSpend, 95_000 - 13_000)
+        let everyday = store.spentByOwner(in: store.currentMonth, everydayOnly: true)
+        XCTAssertEqual(everyday.values.reduce(0, +), plan.everydaySpent, "per person matches Spent")
+        XCTAssertFalse(store.topCategories(in: store.currentMonth).contains { $0.id == "housing" })
 
         // Limits bigger than what there is to spend get trimmed to fit.
         store.setLimit("groceries", 60_000); store.setLimit("shopping", 80_000)

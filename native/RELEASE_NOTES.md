@@ -8,6 +8,7 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 - One number to watch: left to spend, with about how much a day.
 - If your everyday limits add up to more than you have, Upside says so and trims them to fit.
 - Tap Bills for what's paid and due, Savings to set or change your goal.
+- Per-person amounts under the plan count everyday spending only, matching Spent; bills stay out of Top categories.
 
 ## 0.28, November 2 (Transactions tab)
 

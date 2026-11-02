@@ -262,10 +262,12 @@ final class BudgetStore {
     }
 
     /// This month's spending split by whose account it came from.
-    func spentByOwner(categoryId: String? = nil, in month: Date) -> [Owner: Cents] {
+    func spentByOwner(categoryId: String? = nil, in month: Date, everydayOnly: Bool = false) -> [Owner: Cents] {
         var result: [Owner: Cents] = [:]
+        let bills = everydayOnly ? billCategoryIds : []
         for t in spendingTransactions where isInMonth(t.date, month) {
             if let categoryId, t.categoryId != categoryId { continue }
+            if let c = t.categoryId, bills.contains(c) { continue }
             if categoryId == nil && isTripSpending(t) { continue }
             if categoryId != nil && categoryId != "travel" && t.tripId != nil { continue }
             let owner = account(t.accountId)?.owner ?? .unassigned
@@ -321,7 +323,8 @@ final class BudgetStore {
     /// expenses rise to the top.
     func topCategories(in month: Date) -> [Category] {
         expenseCategories
-            .filter { $0.group != "Trips" && !$0.aimsForZero }
+            // Bills live in the month plan; top categories are everyday spending.
+            .filter { $0.group != "Trips" && $0.group != "Bills" && !$0.aimsForZero }
             .map { ($0, max(spent($0.id, in: month), averageSpent($0.id, before: month) ?? 0)) }
             .filter { $0.1 > 0 }
             .sorted { $0.1 > $1.1 }
