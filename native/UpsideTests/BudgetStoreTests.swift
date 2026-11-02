@@ -140,9 +140,14 @@ final class BudgetStoreTests: XCTestCase {
         add("Netflix", "subscriptions", 10, 8, 1_799)
         for m in 7...9 { add("Verizon Wireless", "phone", m, 18, 14_000) }
         for m in 8...9 { add("Peacock", "subscriptions", m, 22, 799) }
+        add("Lenny's Bagels", "dining", 7, 6, 1_450); add("Lenny's Bagels", "dining", 8, 9, 1_380)
+        add("Lenny's Bagels", "dining", 9, 7, 1_520); add("Lenny's Bagels", "dining", 10, 5, 1_410)
+        for m in 7...10 { add("Planet Fitness", "personal", m, 3, 2_499) }
 
         let bills = Dictionary(uniqueKeysWithValues: store.recurringCharges().map { ($0.name, $0) })
         XCTAssertNil(bills["Kroger"], "groceries vary too much to be a bill")
+        XCTAssertNil(bills["Lenny's Bagels"], "a monthly breakfast spot isn't a bill")
+        XCTAssertNotNil(bills["Planet Fitness"], "same price every month is")
 
         XCTAssertEqual(bills["Netflix"]?.paidThisMonth, true)
         XCTAssertEqual(bills["Netflix"]?.priceIncrease, 250)

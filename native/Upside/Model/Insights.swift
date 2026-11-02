@@ -54,6 +54,11 @@ extension BudgetStore {
             guard amounts.allSatisfy({ abs($0 - median) * 100 <= median * 35 }) || steadyThenChanged(amounts)
             else { return nil }
 
+            // Bills categories, or the exact same price 3+ times (a gym).
+            // A breakfast spot you visit monthly isn't a bill.
+            let isBillCategory = category(last.categoryId)?.group == "Bills"
+            guard isBillCategory || (amounts.count >= 3 && Set(amounts).count == 1) else { return nil }
+
             let days = sorted.map { calendar.component(.day, from: $0.date) }
             guard (days.max() ?? 0) - (days.min() ?? 0) <= 10 else { return nil }
 
