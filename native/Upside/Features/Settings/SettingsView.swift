@@ -9,6 +9,7 @@ struct SettingsView: View {
     @State private var editingNames = false
     @AppStorage("faceIDLock") private var faceIDLock = false
     @State private var confirmResort = false
+    @State private var confirmResortAgain = false
     @State private var resortResult: String?
     @AppStorage("alertsLimits") private var limitAlerts = true
     @AppStorage("alertsWeekly") private var weeklySummary = true
@@ -73,23 +74,8 @@ struct SettingsView: View {
                             value: store.toCheck.isEmpty ? nil : "\(store.toCheck.count)",
                             chevron: false)
                     }
-                    Button { confirmResort = true } label: {
-                        row("Re-sort all purchases", icon: "arrow.triangle.2.circlepath", color: .indigo,
-                            chevron: false)
-                    }
-                    .confirmationDialog("Re-sort all purchases?", isPresented: $confirmResort, titleVisibility: .visible) {
-                        Button("Re-sort all purchases") {
-                            let unsorted = withAnimation { store.resortAllPurchases() }
-                            resortResult = unsorted == 0 ? "Every purchase was sorted."
-                                : "\(unsorted) purchase\(unsorted == 1 ? "" : "s") need\(unsorted == 1 ? "s" : "") you in Purchases to sort."
-                        }
-                    } message: {
-                        Text("Upside forgets every category you picked and your “use for all” choices, then sorts everything again with its latest store lists. Banks, names, limits and trips stay.")
-                    }
                 } header: {
                     Text("Budget")
-                } footer: {
-                    if let resortResult { Text(resortResult) }
                 }
 
                 Section {
@@ -131,6 +117,33 @@ struct SettingsView: View {
                 Section("Sharing") {
                     row("Share with your partner", icon: "person.2.fill", color: .blue,
                         value: "Coming soon", chevron: false)
+                }
+
+                // Start over: kept apart at the bottom, two confirmations.
+                Section {
+                    Button(role: .destructive) { confirmResort = true } label: {
+                        Label("Re-sort all purchases", systemImage: "arrow.triangle.2.circlepath")
+                            .foregroundStyle(Theme.over)
+                    }
+                    .confirmationDialog("Re-sort all purchases?", isPresented: $confirmResort, titleVisibility: .visible) {
+                        Button("Continue", role: .destructive) { confirmResortAgain = true }
+                    } message: {
+                        Text("Upside forgets every category you picked and every “sort all” choice, then sorts everything again from its store lists. Banks, names, limits and trips stay.")
+                    }
+                    .alert("Are you sure?", isPresented: $confirmResortAgain) {
+                        Button("Cancel", role: .cancel) { }
+                        Button("Re-sort everything", role: .destructive) {
+                            let left = withAnimation { store.resortAllPurchases() }
+                            resortResult = left == 0 ? "Every purchase was sorted."
+                                : "\(left) purchase\(left == 1 ? "" : "s") to check."
+                        }
+                    } message: {
+                        Text("This can’t be undone.")
+                    }
+                } header: {
+                    Text("Start over")
+                } footer: {
+                    Text(resortResult ?? "Only if sorting has gone wrong. Your own choices are lost.")
                 }
 
                 Section {

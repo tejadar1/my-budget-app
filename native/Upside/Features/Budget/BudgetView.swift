@@ -44,7 +44,6 @@ struct BudgetView: View {
                     SummaryCard(month: month, onSave: isCurrentMonth ? { showSave = true } : nil)
 
                     if isCurrentMonth {
-                        CardWarningRow()
                         BillsRow()
                         // Early in a month, last month's recap.
                         if store.calendar.component(.day, from: store.now()) <= 7 {
@@ -62,6 +61,9 @@ struct BudgetView: View {
                     }
 
                     BundlesRow(month: month)
+
+                    // Charged vs paid on each card, same as on Accounts.
+                    if isCurrentMonth { CardsCheck() }
 
                     if !store.toCheck.isEmpty {
                         NavigationLink(value: Route.review) {

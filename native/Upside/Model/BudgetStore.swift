@@ -81,6 +81,16 @@ final class BudgetStore {
                 data.transactions[i].categoryId = sorted.category
                 data.transactions[i].autoSort = sorted.autoSort
             }
+            // Better store lists turn earlier hunches into sure matches.
+            for i in data.transactions.indices where data.transactions[i].isHunch {
+                let t = data.transactions[i]
+                let sorted = BankSync.sortSource(payee: t.payee, amount: t.amount, rules: data.rules,
+                                                 bankCategory: t.bankCategory)
+                if let c = sorted.category, sorted.autoSort != "hunch" {
+                    data.transactions[i].categoryId = c
+                    data.transactions[i].autoSort = sorted.autoSort
+                }
+            }
             BankSync.markTransfers(&data)
             fillHunches(&data)
             return BudgetStore(data: data)

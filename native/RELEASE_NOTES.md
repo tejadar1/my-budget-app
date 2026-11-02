@@ -2,6 +2,14 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## 0.28, November 2 (sorting and cards)
+
+- Many more restaurants recognized (chains and words like pizzeria, taqueria, pho, halal, steakhouse).
+- Parking, garages, tolls, bridges and car repair go to Gas & Auto.
+- Purchases Upside guessed earlier are re-checked against the new lists.
+- Credit card check (charged vs paid, growing balances) is on the Budget page too.
+- Re-sort moved to a "Start over" section at the bottom of Settings and asks twice.
+
 ## 0.28, November 2 (savings bars)
 
 - Save money: each bar shows what you keep in gray and what you save in green.

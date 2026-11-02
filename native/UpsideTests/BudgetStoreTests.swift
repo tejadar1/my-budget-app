@@ -543,6 +543,23 @@ final class BudgetStoreTests: XCTestCase {
         let category = store.data.categories.first { $0.name == "Education" }!
         XCTAssertEqual(store.flexibility(of: category), 0, "never trimmed")
     }
+
+    func testMoreRestaurantsAndCarCosts() {
+        let dining = ["JOE'S PIZZA BROADWAY", "LOS TACOS NO 1", "XI'AN FAMOUS FOODS", "THAI VILLA", "PHO BANG",
+                      "PEKING DUCK HOUSE DIM SUM", "HALAL GUYS", "VAN LEEUWEN ICE CREAM", "RAISING CANES 123",
+                      "KEENS STEAKHOUSE", "OSTERIA MORINI", "BLANK STREET COFFEE", "DOS TOROS TAQUERIA"]
+        for payee in dining {
+            XCTAssertEqual(BankSync.categorize(payee: payee, amount: -2_000, rules: []), "dining", payee)
+        }
+        let auto = ["SP+ PARKING 0412", "ICON PARKING SYSTEMS", "PARKMOBILE", "LAZ PARKING 22", "NYC DOT PARKING METER",
+                    "MTA BRIDGES AND TUNNELS", "NJ TURNPIKE", "MIDTOWN AUTO BODY", "TAKE 5 OIL CHANGE",
+                    "TESLA SERVICE CENTER", "DISCOUNT TIRE 1234", "MAIN ST GARAGE"]
+        for payee in auto {
+            XCTAssertEqual(BankSync.categorize(payee: payee, amount: -2_000, rules: []), "gas", payee)
+        }
+        XCTAssertEqual(BankSync.categorize(payee: "MTA*NYCT PAYGO", amount: -290, rules: []), "commute")
+        XCTAssertNotEqual(BankSync.categorize(payee: "VANGUARD RETIREMENT", amount: -2_000, rules: []), "gas")
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {
