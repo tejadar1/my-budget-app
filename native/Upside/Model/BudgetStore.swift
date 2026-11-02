@@ -43,6 +43,15 @@ final class BudgetStore {
             if let i = data.categories.firstIndex(where: { $0.id == "gas" && $0.name == "Gas & Transport" }) {
                 data.categories[i].name = "Gas & Auto"
             }
+            // Once: card names like "Freedom Unlimited" used to be missed.
+            if !UserDefaults.standard.bool(forKey: "reguessedCards") {
+                for i in data.accounts.indices where data.accounts[i].kind == .other {
+                    data.accounts[i].kind = AccountKind.guess(from: data.accounts[i].name,
+                                                              balance: data.accounts[i].balance)
+                }
+                BankSync.markTransfers(&data)
+                UserDefaults.standard.set(true, forKey: "reguessedCards")
+            }
             // Once: undo categories an older version named after stores.
             if !UserDefaults.standard.bool(forKey: "removedStoreCategories") {
                 removeStoreNamedCategories(&data)

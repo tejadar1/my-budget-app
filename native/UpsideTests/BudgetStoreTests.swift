@@ -243,6 +243,18 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.data.transactions.first { $0.id == "8" }?.isTransfer, true)
         XCTAssertEqual(store.data.transactions.first { $0.id == "9" }?.categoryId, "income")
     }
+
+    func testEveryCardIsRecognized() {
+        for name in ["Freedom Unlimited", "Sapphire Preferred", "Customized Cash Rewards", "Venture X",
+                     "Robinhood Gold Card", "Amazon Prime Visa", "Discover it Cash Back"] {
+            XCTAssertEqual(AccountKind.guess(from: name), .credit, name)
+        }
+        XCTAssertEqual(AccountKind.guess(from: "Account 1234", balance: -45_000), .credit)
+        XCTAssertEqual(AccountKind.guess(from: "Online Savings"), .savings)
+        XCTAssertEqual(AccountKind.guess(from: "Total Checking"), .checking)
+        XCTAssertEqual(AccountKind.guess(from: "Home Mortgage", balance: -30_000_000), .loan)
+        XCTAssertEqual(AccountKind.guess(from: "Account 5678", balance: 12_000), .other)
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {

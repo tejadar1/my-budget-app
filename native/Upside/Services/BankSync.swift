@@ -70,7 +70,7 @@ enum BankSync {
                 data.accounts[i].balance = balance
                 data.accounts[i].lastSynced = Date()
             } else {
-                let kind = AccountKind.guess(from: sf.name)
+                let kind = AccountKind.guess(from: sf.name, balance: balance)
                 data.accounts.append(Account(
                     id: sf.id, name: sf.name, institution: institution, kind: kind,
                     balance: balance,

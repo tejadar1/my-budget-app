@@ -184,6 +184,22 @@ struct AccountSheet: View {
                             .listRowInsets(EdgeInsets())
                             .listRowBackground(Color.clear)
                     }
+                    Section {
+                        Picker("Type", selection: Binding(
+                            get: { account.kind },
+                            set: { kind in
+                                if let i = store.data.accounts.firstIndex(where: { $0.id == account.id }) {
+                                    store.data.accounts[i].kind = kind
+                                    BankSync.markTransfers(&store.data)
+                                }
+                            })) {
+                            ForEach(AccountKind.allCases, id: \.self) { Text($0.label).tag($0) }
+                        }
+                    } footer: {
+                        if account.kind == .credit {
+                            Text("Credit cards show what you charged and paid each month. Payments to them aren’t spending.")
+                        }
+                    }
                     Section("Whose account") {
                         OwnerPicker(owner: Binding(
                             get: { account.owner },

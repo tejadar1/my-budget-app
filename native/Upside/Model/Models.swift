@@ -62,20 +62,33 @@ enum AccountKind: String, Codable, CaseIterable {
         }
     }
 
-    /// Best guess from the bank's account name.
-    static func guess(from name: String) -> AccountKind {
+    /// Best guess from the bank's account name, then the balance: banks
+    /// report what you owe on a card as a negative balance.
+    static func guess(from name: String, balance: Cents? = nil) -> AccountKind {
         let n = name.lowercased()
         if n.contains("credit") || n.contains("card") || n.contains("visa")
             || n.contains("mastercard") || n.contains("amex") || n.contains("gold") {
             return .credit
         }
         if n.contains("saving") || n.contains("money market") { return .savings }
-        if n.contains("mortgage") || n.contains("loan") || n.contains("auto") { return .loan }
+        if n.contains("mortgage") || n.contains("loan") || n.contains("auto") || n.contains("heloc")
+            || n.contains("home equity") || n.contains("student") {
+            return .loan
+        }
         if n.contains("401") || n.contains("ira") || n.contains("brokerage")
             || n.contains("invest") || n.contains("roth") {
             return .investment
         }
         if n.contains("checking") { return .checking }
+        // Card products whose names don't say "card".
+        let cardNames = ["freedom", "sapphire", "slate", "ink ", "amazon prime", "prime visa", "rewards",
+                         "cash back", "cashback", "customized cash", "unlimited", "venture", "quicksilver",
+                         "savor", "double cash", "custom cash", "costco anywhere", "discover it", "platinum",
+                         "blue cash", "everyday", "delta skymiles", "united explorer", "marriott bonvoy",
+                         "hilton honors", "southwest rapid", "bilt", "apple", "active cash", "autograph",
+                         "elite", "signature", "preferred", "world of hyatt", "aadvantage"]
+        if cardNames.contains(where: { n.contains($0) }) { return .credit }
+        if let balance, balance < 0 { return .credit }
         return .other
     }
 }
