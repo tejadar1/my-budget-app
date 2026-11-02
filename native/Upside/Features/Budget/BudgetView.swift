@@ -41,6 +41,13 @@ struct BudgetView: View {
 
                     MonthPlanCard(month: month, onSavings: isCurrentMonth ? { showSave = true } : nil)
 
+                    if isCurrentMonth {
+                        SavingsCard(month: month) { showSave = true }
+                    }
+
+                    SectionTitle(text: "By category")
+                    SpendingSubtotals(month: month)
+
                     if !store.toCheck.isEmpty {
                         NavigationLink(value: Route.review) {
                             ReviewRow(count: store.toCheck.count)
@@ -144,7 +151,8 @@ struct BudgetView: View {
         let others = store.expenseCategories.count - top.count
 
         if hasTop {
-            SectionTitle(text: "Top categories")
+            let topSpent = top.reduce(0) { $0 + store.spent($1.id, in: month) }
+            SectionTitle(text: "Top categories", trailing: "\(Money.short(topSpent)) spent")
             CategoryGrid(categories: top, month: month)
         }
 
@@ -169,7 +177,8 @@ struct BudgetView: View {
         if showAll || !hasTop {
             ForEach(store.groupedCategories) { group in
                 if group.name != "Trips" {
-                    SectionTitle(text: group.name)
+                    let groupSpent = group.categories.reduce(0) { $0 + store.spent($1.id, in: month) }
+                    SectionTitle(text: group.name, trailing: "\(Money.short(groupSpent)) spent")
                     CategoryGrid(categories: group.categories, month: month)
                 }
             }

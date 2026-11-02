@@ -15,7 +15,7 @@ struct BundlesRow: View {
         let hasSavingsAccounts = store.visibleAccounts.contains { $0.kind == .savings || $0.kind == .investment }
 
         HStack(alignment: .top, spacing: 12) {
-            if hasSavingsAccounts || payoff > 0 {
+            if month != store.currentMonth && (hasSavingsAccounts || payoff > 0) {
                 tile(caption: "MAXIMIZE", title: "Saved & invested",
                      value: Money.short(saved),
                      color: saved > 0 && saved >= (usualSaved ?? 0) ? Theme.accent : .primary,

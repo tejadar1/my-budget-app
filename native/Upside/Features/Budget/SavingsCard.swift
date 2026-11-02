@@ -1,0 +1,106 @@
+import SwiftUI
+
+/// Savings, front and center: this month's goal, what's actually been
+/// saved or invested, and whether spending is leaving room for it.
+struct SavingsCard: View {
+    @Environment(BudgetStore.self) private var store
+    let month: Date
+    let onChange: () -> Void
+
+    var body: some View {
+        let plan = store.monthPlan(month)
+        let goal = plan.savings
+        let saved = store.savedAndInvested(in: month)
+        let usual = store.usual({ store.savedAndInvested(in: $0) }, before: month)
+        let payoff = store.extraCardPayoff(in: month)
+
+        Button(action: onChange) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("SAVINGS").font(.footnote.weight(.bold)).foregroundStyle(.secondary)
+                    Spacer()
+                    Text(goal > 0 ? "Change" : "Set a goal")
+                        .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.accent)
+                }
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(goal > 0 ? Money.short(goal) : "No goal yet")
+                        .font(.system(size: 30, weight: .heavy, design: .rounded))
+                        .foregroundStyle(goal > 0 ? Theme.accent : .primary)
+                    if goal > 0 { Text("this month").foregroundStyle(.secondary) }
+                }
+                Text(status(plan, goal: goal))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(plan.leftToSpend >= 0 ? Theme.accent : Theme.over)
+                Divider()
+                HStack {
+                    figure("Saved & invested", saved)
+                    Spacer()
+                    if let usual { figure("Usual", usual) }
+                    Spacer()
+                    if payoff > 0 { figure("Paid down on cards", payoff) }
+                }
+            }
+            .card()
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func status(_ plan: MonthPlan, goal: Cents) -> String {
+        if goal == 0 { return "Pick an amount and Upside shows what to trim." }
+        return plan.leftToSpend >= 0
+            ? "On track: spending is leaving room for it."
+            : "At risk: \(Money.short(-plan.leftToSpend)) over is coming out of it."
+    }
+
+    private func figure(_ label: String, _ value: Cents) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).font(.caption).foregroundStyle(.secondary)
+            Text(Money.short(value)).font(.headline.monospacedDigit())
+        }
+    }
+}
+
+/// Subtotals by kind of spending this month: everyday against its limits,
+/// bills against what's expected, fees, and trips.
+struct SpendingSubtotals: View {
+    @Environment(BudgetStore.self) private var store
+    let month: Date
+
+    var body: some View {
+        let plan = store.monthPlan(month)
+        let fees = store.minimizeSpent(in: month)
+        let trips = store.totalSpent(in: month, includeTrips: true) - store.totalSpent(in: month)
+        VStack(spacing: 12) {
+            row("Everyday", spent: plan.everydaySpent - fees, of: plan.everydayLimits, note: "of limits")
+            NavigationLink(value: Route.bills) {
+                row("Bills", spent: plan.billsPaid, of: plan.bills, note: "of expected", chevron: true)
+            }
+            .buttonStyle(.plain)
+            row("Fees & interest", spent: fees, of: nil, note: fees == 0 ? "none" : "aim for $0", warn: fees > 0)
+            if trips > 0 { row("Trips", spent: trips, of: nil, note: "from the trip budget") }
+        }
+        .card()
+    }
+
+    private func row(_ label: String, spent: Cents, of total: Cents?, note: String,
+                     warn: Bool = false, chevron: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(label).font(.subheadline.weight(.semibold))
+                Spacer()
+                Text(total.map { "\(Money.short(spent)) of \(Money.short($0))" } ?? Money.short(spent))
+                    .font(.subheadline.monospacedDigit())
+                    .foregroundStyle(warn ? Theme.over : .primary)
+                if chevron {
+                    Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+                }
+            }
+            if let total, total > 0 {
+                SplitBar(fraction: Double(spent) / Double(total),
+                         fill: spent > total ? Theme.over : Theme.accent, height: 6, overflow: Theme.over)
+            }
+            Text(note).font(.caption).foregroundStyle(.secondary)
+        }
+        .contentShape(Rectangle())
+    }
+}

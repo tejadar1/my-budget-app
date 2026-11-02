@@ -2,6 +2,12 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## 0.28, November 2 (savings and subtotals)
+
+- Savings card right under the plan: this month's goal, what's actually been saved or invested, and whether spending leaves room for it.
+- "By category" subtotals: everyday against its limits, bills against what's expected, fees, and trips.
+- Category sections show what's been spent in each.
+
 ## 0.28, November 2 (bills)
 
 - Bills in the plan count at least each bill category's usual amount, so bills not paid yet are planned for.
