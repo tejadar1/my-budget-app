@@ -103,6 +103,13 @@ struct Account: Identifiable, Codable, Hashable {
     /// Off-budget accounts (mortgage, 401k…) show in net worth only.
     var isOnBudget: Bool = true
     var lastSynced: Date?
+    /// Hidden accounts keep syncing but leave Accounts, net worth and the
+    /// budget. Optional so budgets saved by older versions still load.
+    var hidden: Bool? = nil
+
+    var isHidden: Bool { hidden == true }
+    /// Counts toward spending, income and Purchases to sort.
+    var countsInBudget: Bool { isOnBudget && !isHidden }
 }
 
 struct Transaction: Identifiable, Codable, Hashable {

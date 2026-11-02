@@ -119,11 +119,18 @@ final class BudgetStore {
     }
 
     var openAccounts: [Account] { data.accounts }
+    var visibleAccounts: [Account] { data.accounts.filter { !$0.isHidden } }
+    var hiddenAccounts: [Account] { data.accounts.filter(\.isHidden) }
+
+    func setHidden(_ accountId: String, _ hidden: Bool) {
+        guard let i = data.accounts.firstIndex(where: { $0.id == accountId }) else { return }
+        data.accounts[i].hidden = hidden ? true : nil
+    }
 
     /// Transactions that count as spending: on-budget accounts, not
     /// transfers, in a spending category.
     var spendingTransactions: [Transaction] {
-        let onBudget = Set(data.accounts.filter(\.isOnBudget).map(\.id))
+        let onBudget = Set(data.accounts.filter(\.countsInBudget).map(\.id))
         let expenseIds = Set(expenseCategories.map(\.id))
         return data.transactions.filter { t in
             guard let categoryId = t.categoryId else { return false }
@@ -146,7 +153,7 @@ final class BudgetStore {
 
     /// Paychecks and other income (positive amounts in Income).
     func income(in month: Date) -> Cents {
-        let onBudget = Set(data.accounts.filter(\.isOnBudget).map(\.id))
+        let onBudget = Set(data.accounts.filter(\.countsInBudget).map(\.id))
         let incomeIds = Set(data.categories.filter(\.isIncome).map(\.id))
         return data.transactions
             .filter { t in
@@ -279,7 +286,7 @@ final class BudgetStore {
 
     /// Bank transactions that still need a category.
     var uncategorized: [Transaction] {
-        let onBudget = Set(data.accounts.filter(\.isOnBudget).map(\.id))
+        let onBudget = Set(data.accounts.filter(\.countsInBudget).map(\.id))
         return data.transactions
             .filter { $0.categoryId == nil && !$0.isTransfer && onBudget.contains($0.accountId) }
             .sorted { $0.date > $1.date }
@@ -380,7 +387,7 @@ final class BudgetStore {
     // categories and payments are "not spending", so nothing here is added
     // to spending. It answers "am I paying off what I charge?"
 
-    var creditCards: [Account] { data.accounts.filter { $0.kind == .credit } }
+    var creditCards: [Account] { visibleAccounts.filter { $0.kind == .credit } }
 
     /// What you owed on a card at the start of `date` (positive = owed),
     /// worked back from today's balance.
@@ -549,7 +556,7 @@ final class BudgetStore {
     func purchasesDuring(_ trip: Trip) -> [Transaction] {
         let end = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: trip.end)) ?? trip.end
         let start = calendar.startOfDay(for: trip.start)
-        let onBudget = Set(data.accounts.filter(\.isOnBudget).map(\.id))
+        let onBudget = Set(data.accounts.filter(\.countsInBudget).map(\.id))
         return data.transactions.filter {
             $0.tripId == nil && !$0.isTransfer && $0.amount < 0 && onBudget.contains($0.accountId)
                 && $0.date >= start && $0.date < end
@@ -774,9 +781,9 @@ final class BudgetStore {
         return .unassigned
     }
 
-    var unclaimedAccounts: [Account] { data.accounts.filter { $0.owner == .unassigned } }
+    var unclaimedAccounts: [Account] { visibleAccounts.filter { $0.owner == .unassigned } }
 
-    var netWorth: Cents { data.accounts.reduce(0) { $0 + $1.balance } }
+    var netWorth: Cents { visibleAccounts.reduce(0) { $0 + $1.balance } }
 }
 
 extension JSONEncoder {

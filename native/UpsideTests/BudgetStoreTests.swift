@@ -328,6 +328,20 @@ final class BudgetStoreTests: XCTestCase {
                                              from: Data(#"{"id":"t2","posted":1,"amount":"-1","description":"Y"}"#.utf8))
         XCTAssertNil(plain.extra)
     }
+
+    func testHiddenAccountLeavesTheBudget() {
+        let store = makeStore()
+        store.data.accounts[1].balance = 50_000 // Ana's checking
+        let netBefore = store.netWorth
+        store.setHidden("a", true)
+        XCTAssertEqual(store.spent("groceries", in: store.currentMonth), 10_000, "Ana's groceries no longer count")
+        XCTAssertFalse(store.uncategorized.contains { $0.accountId == "a" })
+        XCTAssertEqual(store.netWorth, netBefore - 50_000)
+        XCTAssertEqual(store.hiddenAccounts.map(\.id), ["a"])
+        store.setHidden("a", false)
+        XCTAssertEqual(store.spent("groceries", in: store.currentMonth), 13_000)
+        XCTAssertNil(store.data.accounts[1].hidden)
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {

@@ -159,7 +159,7 @@ extension BudgetStore {
     func recommendedCategories() -> [CategorySuggestion] {
         let since = month(-6, from: currentMonth)
         let defaultIds = Set(Category.defaults.map(\.id))
-        let onBudget = Set(data.accounts.filter(\.isOnBudget).map(\.id))
+        let onBudget = Set(data.accounts.filter(\.countsInBudget).map(\.id))
         let existing = Set(data.categories.filter { !$0.isHidden }.map { $0.name.lowercased() })
         let candidates = data.transactions.filter { t in
             t.amount < 0 && !t.isTransfer && t.tripId == nil && t.date >= since && onBudget.contains(t.accountId)

@@ -36,12 +36,16 @@ struct AccountsView: View {
                     CardsCheck()
 
                     VStack(spacing: 12) {
-                        ForEach(store.data.accounts) { account in
+                        ForEach(store.visibleAccounts) { account in
                             Button { selected = account } label: {
                                 WalletCard(account: account)
                             }
                             .buttonStyle(.plain)
                         }
+                    }
+
+                    if !store.hiddenAccounts.isEmpty {
+                        HiddenAccountsSection()
                     }
                 }
                 .padding(.horizontal)
@@ -216,6 +220,15 @@ struct AccountSheet: View {
                     } footer: {
                         Text("Turn off for mortgages, 401(k)s and other accounts that aren’t everyday spending.")
                     }
+                    Section {
+                        Button(account.isHidden ? "Show account" : "Hide account",
+                               role: account.isHidden ? nil : .destructive) {
+                            store.setHidden(account.id, !account.isHidden)
+                            if !account.isHidden { dismiss() }
+                        }
+                    } footer: {
+                        Text("Hidden accounts stay connected but leave Accounts, net worth and your budget. Unhide them at the bottom of Accounts.")
+                    }
                     Section("Recent") {
                         ForEach(store.data.transactions.filter { $0.accountId == account.id }.prefix(30)) { t in
                             TransactionRow(transaction: t)
@@ -246,7 +259,8 @@ struct ReorderAccountsView: View {
                         OwnerBadge(owner: account.owner, people: store.people, size: 28)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(account.name)
-                            Text(account.institution).font(.caption).foregroundStyle(.secondary)
+                            Text(account.isHidden ? "\(account.institution) · Hidden" : account.institution)
+                                .font(.caption).foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -259,5 +273,46 @@ struct ReorderAccountsView: View {
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
         }
+    }
+}
+
+/// Bottom of Accounts: hidden accounts, each with Show.
+private struct HiddenAccountsSection: View {
+    @Environment(BudgetStore.self) private var store
+    @State private var isOpen = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button { withAnimation(.snappy) { isOpen.toggle() } } label: {
+                HStack {
+                    Label("Hidden accounts", systemImage: "eye.slash")
+                    Spacer()
+                    Text("\(store.hiddenAccounts.count)").foregroundStyle(.secondary)
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+                        .rotationEffect(.degrees(isOpen ? 90 : 0))
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint(isOpen ? "Collapses the list" : "Shows hidden accounts")
+
+            if isOpen {
+                ForEach(store.hiddenAccounts) { account in
+                    Divider().padding(.vertical, 10)
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(account.name)
+                            Text(account.institution).font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Button("Show") { withAnimation { store.setHidden(account.id, false) } }
+                            .buttonStyle(.bordered)
+                            .accessibilityLabel("Show \(account.name)")
+                    }
+                }
+            }
+        }
+        .card()
     }
 }
