@@ -45,6 +45,17 @@ struct SplitBar: View {
     var marker: Double? = nil
     var markerColor: Color = .primary
     var markerLabel: String? = nil
+    /// When set and over the limit, the bar keeps its colors up to the
+    /// limit and shows the overspend in this color after it.
+    var overflow: Color? = nil
+
+    /// Share of the bar past the limit (0 when under).
+    private var overShare: Double {
+        guard overflow != nil, fraction > 1 else { return 0 }
+        return (fraction - 1) / fraction
+    }
+    /// Where the limit sits on the bar: the end when under, earlier when over.
+    private var scale: Double { 1 - overShare }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -53,7 +64,7 @@ struct SplitBar: View {
                     Text(markerLabel)
                         .font(.caption2.weight(.semibold))
                         .fixedSize()
-                        .position(x: max(12, min(geo.size.width - 12, geo.size.width * marker)), y: 6)
+                        .position(x: max(12, min(geo.size.width - 12, geo.size.width * min(1, marker * scale))), y: 6)
                 }
                 .frame(height: 12)
             }
@@ -61,13 +72,19 @@ struct SplitBar: View {
                 ZStack(alignment: .leading) {
                     Capsule().fill(track)
                     HStack(spacing: 0) {
+                        let usedWidth = geo.size.width * min(1, max(0, fraction)) * scale
                         if segments.isEmpty {
-                            fill
+                            fill.frame(width: usedWidth)
                         } else {
                             let total = max(0.0001, segments.reduce(0) { $0 + $1.1 })
                             ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
-                                segment.0.frame(width: geo.size.width * min(1, fraction) * segment.1 / total)
+                                segment.0.frame(width: usedWidth * segment.1 / total)
                             }
+                        }
+                        if overShare > 0, let overflow {
+                            // Over the limit: a gap at the limit, then the overspend.
+                            Color.clear.frame(width: 2)
+                            overflow
                         }
                     }
                     .frame(width: geo.size.width * min(1, max(0, fraction)), alignment: .leading)
@@ -76,7 +93,7 @@ struct SplitBar: View {
                         RoundedRectangle(cornerRadius: 1)
                             .fill(markerColor)
                             .frame(width: 2, height: height + 6)
-                            .offset(x: geo.size.width * min(1, max(0, marker)) - 1)
+                            .offset(x: geo.size.width * min(1, max(0, marker * scale)) - 1)
                     }
                 }
             }

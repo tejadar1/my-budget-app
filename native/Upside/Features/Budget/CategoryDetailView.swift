@@ -33,7 +33,8 @@ struct CategoryDetailView: View {
                                  fill: Status(limit: limit, left: left).color,
                                  height: 10,
                                  marker: average.map { Double($0) / Double(limit) },
-                                 markerLabel: average == nil ? nil : "usual")
+                                 markerLabel: average == nil ? nil : "usual",
+                                 overflow: Theme.over)
                     }
                     Grid(alignment: .leading, horizontalSpacing: 16) {
                         GridRow {

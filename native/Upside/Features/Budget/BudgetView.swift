@@ -272,13 +272,14 @@ struct SummaryCard: View {
             if hasLimits {
                 SplitBar(
                     fraction: Double(spent) / Double(max(1, limit)),
-                    segments: isOver ? [] : segments(byOwner),
+                    segments: segments(byOwner),
                     fill: isOver ? Theme.over : .white,
                     track: .black.opacity(0.3),
                     height: 10,
                     marker: average.map { Double($0) / Double(max(1, limit)) },
                     markerColor: .white,
-                    markerLabel: "usual")
+                    markerLabel: "usual",
+                    overflow: Theme.over)
             } else {
                 Button {
                     withAnimation { store.setLimitsFromAverages() }
