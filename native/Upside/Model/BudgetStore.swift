@@ -380,6 +380,12 @@ final class BudgetStore {
         return limits
     }
 
+    /// The most a plan can free up: every flexible category cut as far as
+    /// Upside allows (never bills, never more than 60% of usual).
+    func maxSavings(in month: Date) -> Cents {
+        savings(of: suggestedLimits(toSave: Int.max / 4, in: month), in: month)
+    }
+
     /// What a plan's limits free up compared with usual.
     func savings(of limits: [String: Cents], in month: Date) -> Cents {
         limits.reduce(0) { total, entry in

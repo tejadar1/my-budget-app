@@ -8,6 +8,8 @@ struct SavingsPlanView: View {
     @State private var goal = 0
     /// New limits in whole dollars, by category id.
     @State private var limits: [String: Int] = [:]
+    /// Re-plan on goal changes only after the saved plan has loaded.
+    @State private var isReady = false
 
     private var month: Date { store.currentMonth }
 
@@ -31,17 +33,27 @@ struct SavingsPlanView: View {
                         TextField("Amount", value: $goal, format: .currency(code: "USD").precision(.fractionLength(0)))
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.trailing)
-                            .frame(maxWidth: 140)
+                            .font(.title3.weight(.semibold))
+                            .frame(maxWidth: 160)
                     }
-                    Button("Suggest where it comes from") { suggest() }
-                        .disabled(goal <= 0)
+                    HStack(spacing: 8) {
+                        ForEach([50, 100], id: \.self) { step in
+                            Button("+$\(step)") { goal += step }
+                                .buttonStyle(.bordered)
+                        }
+                        Spacer()
+                        Button("Most I can") { goal = store.maxSavings(in: month) / 100 }
+                            .buttonStyle(.bordered)
+                    }
+                    .font(.subheadline.weight(.semibold))
                 } footer: {
-                    let lastLeft = store.leftOver(in: store.month(-1, from: month))
-                    Text((store.income(in: store.month(-1, from: month)) > 0
+                    let lastMonth = store.month(-1, from: month)
+                    let lastLeft = store.leftOver(in: lastMonth)
+                    Text((store.income(in: lastMonth) > 0
                           ? (lastLeft >= 0 ? "Last month you had \(Money.short(lastLeft)) left over. "
-                             : "Last month you spent \(Money.short(lastLeft)) more than came in. ")
+                             : "Last month you spent \(Money.short(-lastLeft)) more than came in. ")
                           : "")
-                         + "Only flexible spending is cut, never bills. Next month goes back to your normal limits.")
+                         + "Only flexible spending is trimmed, never bills. Next month goes back to your normal limits.")
                 }
 
                 if !limits.isEmpty {
@@ -53,11 +65,14 @@ struct SavingsPlanView: View {
                                                    set: { limits[category.id] = max(0, $0) }))
                         }
                     } header: {
-                        Text("Where the \(Money.short(goal * 100)) comes from")
+                        Text("To save \(Money.short(goal * 100)) in \(month.formatted(.dateTime.month(.wide))), stay under")
                     } footer: {
+                        let most = store.maxSavings(in: month)
                         Text(saved >= goal * 100
                              ? "Saves \(Money.short(saved)), meeting your \(Money.short(goal * 100)) goal."
-                             : "Saves \(Money.short(saved)) of \(Money.short(goal * 100)). Skip a category or lower more to reach it.")
+                             : goal * 100 > most
+                                ? "Saves \(Money.short(saved)). The most Upside can find without touching bills is \(Money.short(most)); skip a category to go further."
+                                : "Saves \(Money.short(saved)) of \(Money.short(goal * 100)). Lower a limit or skip a category to reach it.")
                             .foregroundStyle(saved >= goal * 100 ? Theme.accent : Theme.warning)
                     }
 
@@ -88,10 +103,12 @@ struct SavingsPlanView: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
             }
             .onAppear(perform: load)
+            .onChange(of: goal) { _, _ in if isReady { suggest() } }
         }
     }
 
     private func load() {
+        defer { DispatchQueue.main.async { isReady = true } }
         if let plan = store.plan {
             goal = plan.goal / 100
             limits = plan.limits.mapValues { $0 / 100 }
@@ -120,13 +137,21 @@ private struct PlanRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
-                Text(category.name).font(.headline)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(category.name).font(.headline)
+                    Text(cut > 0 ? "usual \(Money.short(usual)) · saves \(Money.short(cut))" : "usual \(Money.short(usual))")
+                        .font(.footnote).foregroundStyle(.secondary).monospacedDigit()
+                }
                 Spacer()
-                Text(cut > 0 ? "−\(Money.short(cut))" : "No cut")
-                    .font(.title3.weight(.bold).monospacedDigit())
-                    .foregroundStyle(cut > 0 ? Theme.accent : Color.secondary)
+                VStack(alignment: .trailing, spacing: 0) {
+                    Text(limit > 0 ? "stay under" : "")
+                        .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                    Text(limit > 0 ? Money.short(limit * 100) : "Skip")
+                        .font(.title3.weight(.bold).monospacedDigit())
+                        .foregroundStyle(Theme.accent)
+                }
             }
-            // Usual vs new limit, with the part being saved highlighted.
+            // Kept part in gray, the part being saved in green.
             GeometryReader { geo in
                 let keep = usual > 0 ? min(1, Double(limit * 100) / Double(usual)) : 1
                 ZStack(alignment: .leading) {
@@ -137,23 +162,21 @@ private struct PlanRow: View {
             .frame(height: 8)
             .accessibilityHidden(true)
             HStack {
-                Text(limit > 0 ? "Usual \(Money.short(usual)) → \(Money.short(limit * 100))"
-                               : "Usual \(Money.short(usual)) → skip this month")
-                    .font(.footnote).foregroundStyle(.secondary).monospacedDigit()
+                Toggle("Skip this month", isOn: Binding(
+                    get: { limit == 0 },
+                    set: { limit = $0 ? 0 : max(10, usual / 100 / 2 / 10 * 10) }))
+                    .font(.footnote)
+                    .fixedSize()
                 Spacer()
                 if limit > 0 {
                     Stepper("Limit", value: $limit, in: 0...max(limit, usual / 100), step: 10)
                         .labelsHidden()
                 }
             }
-            Toggle("Skip this month", isOn: Binding(
-                get: { limit == 0 },
-                set: { limit = $0 ? 0 : max(10, usual / 100 / 2 / 10 * 10) }))
-                .font(.footnote)
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(category.name): saves \(Money.short(cut)), limit \(Money.short(limit * 100)) of usual \(Money.short(usual))")
+        .accessibilityLabel("\(category.name): stay under \(Money.short(limit * 100)), saves \(Money.short(cut)) from usual \(Money.short(usual))")
     }
 }
 

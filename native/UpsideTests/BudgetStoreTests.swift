@@ -647,6 +647,14 @@ final class CardTests: XCTestCase {
 }
 
 final class SavingsTests: XCTestCase {
+    func testMostYouCanSaveIsTheCapOnFlexibleSpending() {
+        let s = store()
+        let most = s.maxSavings(in: s.currentMonth)
+        XCTAssertGreaterThan(most, 0)
+        let limits = s.suggestedLimits(toSave: most + 100_000, in: s.currentMonth)
+        XCTAssertLessThanOrEqual(s.savings(of: limits, in: s.currentMonth), most)
+    }
+
     private func store() -> BudgetStore {
         var cal = Calendar(identifier: .gregorian)
         cal.timeZone = TimeZone(identifier: "America/New_York")!

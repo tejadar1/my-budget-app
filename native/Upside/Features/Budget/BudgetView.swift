@@ -39,14 +39,13 @@ struct BudgetView: View {
                         PeopleCard(isEditing: $showPeople)
                     }
 
-                    SummaryCard(month: month)
+                    SummaryCard(month: month, onSave: isCurrentMonth ? { showSave = true } : nil)
 
                     CashFlowRow(month: month)
 
                     if isCurrentMonth {
                         CardWarningRow()
                         BillsRow()
-                        SavingsRow { showSave = true }
                         // Early in a month, last month's recap.
                         if store.calendar.component(.day, from: store.now()) <= 7 {
                             let last = store.month(-1, from: month)
@@ -233,6 +232,8 @@ struct MonthSwitcher: View {
 struct SummaryCard: View {
     @Environment(BudgetStore.self) private var store
     let month: Date
+    /// This month only: opens the savings plan.
+    var onSave: (() -> Void)? = nil
 
     var body: some View {
         let limit = store.totalLimit(in: month)
@@ -309,11 +310,41 @@ struct SummaryCard: View {
                     }
                 }
             }
+
+            if let onSave {
+                savingsButton(onSave)
+            }
         }
         .foregroundStyle(.white)
         .padding(22)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.heroGradient, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+    }
+
+    /// "Saving $250 this month · stay under 4 limits", or an invitation.
+    private func savingsButton(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: "banknote.fill").font(.title3)
+                VStack(alignment: .leading, spacing: 1) {
+                    if let plan = store.plan {
+                        Text("Saving \(Money.short(store.savings(of: plan.limits, in: month))) this month")
+                            .font(.headline)
+                        Text("Stay under \(plan.limits.count) lowered limit\(plan.limits.count == 1 ? "" : "s")")
+                            .font(.footnote).opacity(0.86)
+                    } else {
+                        Text("Set a savings goal").font(.headline)
+                        Text("See what to trim to save it").font(.footnote).opacity(0.86)
+                    }
+                }
+                Spacer()
+                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).opacity(0.7)
+            }
+            .padding(12)
+            .background(.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private var daysLeftText: String {
