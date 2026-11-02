@@ -39,4 +39,12 @@ jobs:
               v = versions.get((b["relationships"]["preReleaseVersion"]["data"] or {}).get("id"), "?")
               print(f'{v} ({a["version"]})  uploaded {a["uploadedDate"]}  processing={a["processingState"]}  '
                     f'expired={a["expired"]}  internal={d.get("internalBuildState")}  external={d.get("externalBuildState")}')
+          groups = requests.get(f"{api}/apps/{app_id}/betaGroups", headers=h).json()["data"]
+          for g in groups:
+              ga = g["attributes"]
+              gb = requests.get(f"{api}/betaGroups/{g['id']}/builds", headers=h, params={"limit": 50}).json()["data"]
+              testers = requests.get(f"{api}/betaGroups/{g['id']}/betaTesters", headers=h, params={"limit": 50}).json()["data"]
+              print(f'GROUP {ga["name"]}: internal={ga["isInternalGroup"]} allBuilds={ga.get("hasAccessToAllBuilds")} '
+                    f'builds={sorted(b["attributes"]["version"] for b in gb)[-4:]} testers={len(testers)} '
+                    f'states={[t["attributes"].get("state") for t in testers]}')
           PY
