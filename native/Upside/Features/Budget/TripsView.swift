@@ -93,7 +93,12 @@ extension BudgetStore {
         if let fund = data.tripFund {
             return monthStart(fund.start) <= month ? fund.monthly : 0
         }
-        return data.trips.compactMap(tripSchedule).filter { $0.start <= month && month <= $0.end }
+        return tripScheduleSetAside(in: month)
+    }
+
+    /// Each trip's own monthly share, ignoring any fixed trip fund.
+    func tripScheduleSetAside(in month: Date) -> Cents {
+        data.trips.compactMap(tripSchedule).filter { $0.start <= month && month <= $0.end }
             .reduce(0) { $0 + $1.perMonth }
     }
 

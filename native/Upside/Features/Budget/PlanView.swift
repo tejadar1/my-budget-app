@@ -17,7 +17,9 @@ struct PlanView: View {
     var body: some View {
         let base = store.monthPlan(month)
         let extraSavings = store.plan.map { store.isInMonth($0.month, month) ? $0.goal : 0 } ?? 0
-        let toSpend = base.income - base.bills - (savings * 100 + extraSavings) - paydown * 100 - trips * 100
+        // $0 for trips means each trip saves its own share.
+        let tripCost = trips > 0 ? trips * 100 : store.tripScheduleSetAside(in: month)
+        let toSpend = base.income - base.bills - (savings * 100 + extraSavings) - paydown * 100 - tripCost
         let recommended = store.recommendedLimits(toSpend: toSpend)
         let total = limits.values.reduce(0, +) * 100
         let owed = store.cardsOwed
@@ -94,8 +96,8 @@ struct PlanView: View {
         if owed > 0 && paydown > 0 {
             parts.append("Cards: \(Money.short(owed)) owed, paid off in about \(Int((Double(owed) / Double(paydown * 100)).rounded(.up))) months.")
         }
-        if store.data.tripFund == nil && trips == 0 && store.tripSetAside(in: month) > 0 {
-            parts.append("Trips are saving \(Money.short(store.tripSetAside(in: month))) a month on their own; enter an amount to use a set trip fund instead.")
+        if trips == 0 && store.tripScheduleSetAside(in: month) > 0 {
+            parts.append("Trips are saving \(Money.short(store.tripScheduleSetAside(in: month))) this month on their own; enter an amount to use a set trip fund instead.")
         }
         if extra > 0 { parts.append("Plus \(Money.short(extra)) extra savings this month.") }
         return parts.joined(separator: " ")
