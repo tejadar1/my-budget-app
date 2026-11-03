@@ -7,6 +7,7 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 - Credit cards live in one place: the Card paydown line in the month plan. Tap it for what's owed, this month's payments against your target, and each card.
 - Bills & subscriptions: swipe left on anything that isn't one ("Not a bill" / "Not a subscription"); hidden ones can be shown again.
 - The Adjust plan button is shorter.
+- Lowering limits frees money: Plan shows what's unassigned and adds it to savings or card paydown in one tap; the month card shows "Not in any limit".
 
 ## 0.28, November 2 (one Plan screen)
 

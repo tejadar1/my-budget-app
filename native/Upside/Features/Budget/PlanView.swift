@@ -87,6 +87,26 @@ struct PlanView: View {
                         .foregroundStyle(total <= toSpend ? Color.secondary : Theme.over)
                 }
 
+                // Money your limits don't use: put it toward savings or cards.
+                if toSpend - total >= 1000 {
+                    let spare = (toSpend - total) / 1000 * 10
+                    Section {
+                        Button("Add \(Money.short(spare * 100)) to savings") {
+                            withAnimation { savings += spare }
+                        }
+                        .fontWeight(.semibold)
+                        if owed > 0 {
+                            Button("Add \(Money.short(spare * 100)) to card paydown") {
+                                withAnimation { paydown += spare }
+                            }
+                        }
+                    } header: {
+                        Text("Your limits leave \(Money.short(toSpend - total)) unassigned")
+                    } footer: {
+                        Text("Lowering a limit frees money up. Put it to work here, or it just sits in Left to spend.")
+                    }
+                }
+
                 Section {
                     Button("Save extra just this month…") { showExtra = true }
                 }
