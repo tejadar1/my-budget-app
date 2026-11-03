@@ -228,6 +228,8 @@ struct BudgetData: Codable {
     var tripFund: TripFund?
     /// Paid first every month, before everyday spending.
     var priorities: Priorities?
+    /// Stores you said aren't bills or subscriptions (payee keys).
+    var notRecurring: [String]?
 }
 
 /// "Pay yourself first": standing monthly amounts taken off the top.

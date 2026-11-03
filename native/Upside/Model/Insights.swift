@@ -41,7 +41,9 @@ extension BudgetStore {
         let groups = Dictionary(grouping: charges) { BudgetStore.payeeKey($0.payee) }
         let historyStart = firstMonth
 
+        let dismissed = Set(data.notRecurring ?? [])
         return groups.compactMap { key, list -> Recurring? in
+            guard !dismissed.contains(key) else { return nil }
             let sorted = list.sorted { $0.date < $1.date }
             guard let first = sorted.first, let last = sorted.last else { return nil }
             let months = Set(sorted.map { monthStart($0.date) })
@@ -283,7 +285,8 @@ extension BudgetStore {
         }
         var moved = 0
         var updated = data
-        for (_, list) in Dictionary(grouping: candidates, by: { Self.payeeKey($0.payee) }) {
+        let dismissed = Set(data.notRecurring ?? [])
+        for (key, list) in Dictionary(grouping: candidates, by: { Self.payeeKey($0.payee) }) where !dismissed.contains(key) {
             let sorted = list.sorted { $0.date < $1.date }
             guard let last = sorted.last, sorted.count >= 2 else { continue }
             let months = Set(sorted.map { monthStart($0.date) })
@@ -337,5 +340,35 @@ extension BudgetStore {
         let spent = -all.filter { $0.amount < 0 }.reduce(0) { $0 + $1.amount }
         let back = all.filter { $0.amount > 0 }.reduce(0) { $0 + $1.amount }
         return max(0, spent - back)
+    }
+}
+
+// MARK: - Not a bill
+
+extension BudgetStore {
+    /// "Not a bill / not a subscription": hides the store from Bills &
+    /// subscriptions for good. Purchases Upside had moved to Subscriptions
+    /// by pattern go back to how they'd be sorted otherwise.
+    func dismissRecurring(_ key: String) {
+        var keys = Set(data.notRecurring ?? [])
+        keys.insert(key)
+        data.notRecurring = keys.sorted()
+        var updated = data
+        for i in updated.transactions.indices
+        where Self.payeeKey(updated.transactions[i].payee) == key
+            && updated.transactions[i].categoryId == "subscriptions" && updated.transactions[i].isHunch {
+            let t = updated.transactions[i]
+            let sorted = BankSync.sortSource(payee: t.payee, amount: t.amount, rules: updated.rules, bankCategory: t.bankCategory)
+            let fallback = sorted.category == "subscriptions" ? nil : sorted.category
+            updated.transactions[i].categoryId = fallback
+            updated.transactions[i].autoSort = fallback == nil ? nil : sorted.autoSort
+        }
+        Self.fillHunches(&updated)
+        data = updated
+    }
+
+    func restoreRecurring(_ key: String) {
+        data.notRecurring = (data.notRecurring ?? []).filter { $0 != key }
+        detectSubscriptions()
     }
 }

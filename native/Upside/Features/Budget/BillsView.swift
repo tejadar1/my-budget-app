@@ -99,23 +99,44 @@ struct BillsView: View {
             }
             if !due.isEmpty {
                 Section("Still due") {
-                    ForEach(due) { BillRow(bill: $0, when: $0.dueDate.map { "Due \(day($0))" } ?? "") }
+                    ForEach(due) { b in
+                        BillRow(bill: b, when: b.dueDate.map { "Due \(day($0))" } ?? "").swipeActions { notButton(b) }
+                    }
                 }
             }
             if !paid.isEmpty {
                 Section("Paid in \(monthName)") {
-                    ForEach(paid) { BillRow(bill: $0, when: "Paid \(day($0.lastDate))") }
+                    ForEach(paid) { b in
+                        BillRow(bill: b, when: "Paid \(day(b.lastDate))").swipeActions { notButton(b) }
+                    }
                 }
             }
             if !subscriptions.isEmpty {
                 Section {
                     ForEach(subscriptions) { s in
-                        BillRow(bill: s, when: "\(Money.short(s.amount * 12)) a year")
+                        BillRow(bill: s, when: "\(Money.short(s.amount * 12)) a year").swipeActions { notButton(s) }
                     }
                 } header: {
                     Text("Subscriptions")
                 } footer: {
-                    Text("\(Money.short(subscriptions.reduce(0) { $0 + $1.amount } * 12)) a year in total. Cancel the ones you don’t use with the company or in Settings › Apple Account › Subscriptions.")
+                    Text("\(Money.short(subscriptions.reduce(0) { $0 + $1.amount } * 12)) a year in total. Swipe left on anything that isn’t a subscription. Cancel the ones you don’t use with the company or in Settings › Apple Account › Subscriptions.")
+                }
+            }
+
+            if let hidden = store.data.notRecurring, !hidden.isEmpty {
+                Section {
+                    ForEach(hidden, id: \.self) { key in
+                        HStack {
+                            Text(key.capitalized)
+                            Spacer()
+                            Button("Show again") { withAnimation { store.restoreRecurring(key) } }
+                                .buttonStyle(.borderless)
+                        }
+                    }
+                } header: {
+                    Text("Hidden")
+                } footer: {
+                    Text("Stores you said aren't bills or subscriptions.")
                 }
             }
 
@@ -126,6 +147,13 @@ struct BillsView: View {
         }
         .navigationTitle("Bills & subscriptions")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    /// Swipe: "Not a bill" / "Not a subscription".
+    private func notButton(_ bill: Recurring) -> some View {
+        Button(bill.isSubscription ? "Not a subscription" : "Not a bill", role: .destructive) {
+            withAnimation { store.dismissRecurring(bill.id) }
+        }
     }
 
     private func day(_ date: Date) -> String {

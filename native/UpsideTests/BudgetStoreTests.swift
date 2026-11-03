@@ -743,6 +743,22 @@ final class BudgetStoreTests: XCTestCase {
         let old = #"{"savings":100000,"cardPaydown":50000}"#
         XCTAssertNil(try JSONDecoder().decode(Priorities.self, from: Data(old.utf8)).plannedIncome)
     }
+
+    func testNotABillHidesItAndUndoesAPatternGuess() {
+        let store = makeStore()
+        for (m, d) in [(8, 3), (9, 4), (10, 3)] {
+            store.data.transactions.append(Transaction(id: "z\(m)", accountId: "r", date: date(2026, m, d), amount: -1_299,
+                                                       payee: "ZZQ MEDIA LLC", categoryId: "shopping", autoSort: "hunch"))
+        }
+        store.detectSubscriptions()
+        XCTAssertTrue(store.recurringCharges().contains { $0.id == "zzq media" })
+        store.dismissRecurring("zzq media")
+        XCTAssertFalse(store.recurringCharges().contains { $0.id == "zzq media" })
+        XCTAssertNotEqual(store.data.transactions.first { $0.id == "z9" }?.categoryId, "subscriptions")
+        XCTAssertEqual(store.detectSubscriptions(), 0, "stays dismissed")
+        store.restoreRecurring("zzq media")
+        XCTAssertTrue(store.recurringCharges().contains { $0.id == "zzq media" })
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {
