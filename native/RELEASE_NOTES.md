@@ -8,6 +8,7 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 - Bills & subscriptions: swipe left on anything that isn't one ("Not a bill" / "Not a subscription"); hidden ones can be shown again.
 - The Adjust plan button is shorter.
 - Lowering limits frees money: Plan shows what's unassigned and adds it to savings or card paydown in one tap; the month card shows "Not in any limit".
+- Categories without a limit count their usual spending, so "unassigned" money is real money.
 
 ## 0.28, November 2 (one Plan screen)
 

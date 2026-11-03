@@ -69,9 +69,9 @@ extension BudgetStore {
         let lines = billLines(month)
         let billsPaid = lines.reduce(0) { $0 + $1.paid }
         let billsDue = lines.reduce(0) { $0 + $1.stillToCome }
-        let everydayLimits = expenseCategories
-            .filter { $0.group != "Bills" && $0.group != "Trips" && !$0.aimsForZero }
-            .compactMap { limit($0, in: month) }.reduce(0, +)
+        // A category without a limit still needs its usual spending.
+        let everydayLimits = everydayCategories
+            .map { limit($0, in: month) ?? averageSpent($0.id, before: month) ?? 0 }.reduce(0, +)
         let planned = isCurrent ? data.priorities?.plannedIncome : nil
         let expected = planned ?? usualIncome
         return MonthPlan(
