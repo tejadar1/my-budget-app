@@ -92,7 +92,7 @@ struct PlanView: View {
             return "Leave at $0 to plan around your usual income: every paycheck above added together. A third paycheck is a bonus when it lands; one that stops for 5 weeks stops counting. Paid into an account that isn't connected? Mark that transfer as Income."
         }
         if n.usualIncome > 0 && planned > n.usualIncome {
-            return "Planning on your usual \(Money.short(n.usualIncome)) until more arrives. The other \(Money.short(planned - n.usualIncome)) counts once it's in. \(Money.short(n.base.incomeReceived)) has come in so far."
+            return "\(Money.short(planned - n.usualIncome)) more than your usual \(Money.short(n.usualIncome)). Fine if your usual is missing history or a raise; if less arrives, lower this. \(Money.short(n.base.incomeReceived)) has come in so far."
         }
         return "\(Money.short(n.base.incomeReceived)) has come in so far. If more arrives, the extra counts; finished months use what really came in."
     }

@@ -740,8 +740,7 @@ final class BudgetStoreTests: XCTestCase {
         }
         XCTAssertEqual(store.averageIncome(before: store.currentMonth), 300_000)
         store.data.priorities = Priorities(plannedIncome: 400_000)
-        XCTAssertEqual(store.monthPlan(store.currentMonth).income, 300_000, "above usual only counts once it arrives")
-        XCTAssertEqual(BudgetStore.incomeToPlanOn(planned: 400_000, usual: 0), 400_000, "no history: trust the plan")
+        XCTAssertEqual(store.monthPlan(store.currentMonth).income, 400_000, "the income you entered wins, even above usual")
         store.data.priorities = Priorities(plannedIncome: 250_000)
         let plan = store.monthPlan(store.currentMonth)
         XCTAssertEqual(plan.income, 300_000, "more came in than planned; the extra counts")

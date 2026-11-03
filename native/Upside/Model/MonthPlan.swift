@@ -95,11 +95,11 @@ extension BudgetStore {
     /// Lowers everyday limits so they fit what there is to spend, taking
     /// more from flexible categories (shopping, dining) and never more than
     /// 25% of a limit. Returns how much is still over (0 = fits).
-    /// Plan on what you can count on: a planned figure below your usual is
-    /// used as is; above it, only your usual counts until the rest arrives.
+    /// The income you entered wins; otherwise your usual. Your usual can
+    /// be low when a bank only shares a few weeks of history, so a figure
+    /// you typed is trusted, and the plan says when it's above your usual.
     static func incomeToPlanOn(planned: Cents?, usual: Cents) -> Cents {
-        guard let planned else { return usual }
-        return usual > 0 ? min(planned, usual) : planned
+        planned ?? usual
     }
 
     /// What's owed across visible credit cards right now.
