@@ -42,8 +42,33 @@ extension BudgetStore {
         let historyStart = firstMonth
 
         let dismissed = Set(data.notRecurring ?? [])
-        return groups.compactMap { key, list -> Recurring? in
-            guard !dismissed.contains(key) else { return nil }
+        // One store can bill several things (Apple: iCloud and Apple One;
+        // Tesla: charging and Connectivity). When the store as a whole isn't
+        // monthly, each steady price is checked on its own.
+        return groups.flatMap { key, list -> [Recurring] in
+            guard !dismissed.contains(key) else { return [] }
+            if let whole = recurring(key, list, historyStart: historyStart) { return [whole] }
+            return Self.byPrice(list).compactMap { price, sub in
+                recurring("\(key)|\(price)", sub, historyStart: historyStart)
+            }
+        }
+        .sorted { ($0.dueDate ?? $0.lastDate) < ($1.dueDate ?? $1.lastDate) }
+    }
+
+    /// Charges split by whole-dollar price, for stores that bill several things.
+    static func byPrice(_ list: [Transaction]) -> [(Int, [Transaction])] {
+        Dictionary(grouping: list) { -$0.amount / 100 }.filter { $0.value.count >= 2 }.map { ($0.key, $0.value) }
+    }
+
+    /// The store key a recurring charge (or one of its prices) belongs to.
+    static func storeKey(_ recurringId: String) -> String {
+        String(recurringId.split(separator: "|").first ?? "")
+    }
+
+    private func recurring(_ key: String, _ list: [Transaction], historyStart: Date) -> Recurring? {
+        let thisMonth = currentMonth
+        let today = now()
+        do {
             let sorted = list.sorted { $0.date < $1.date }
             guard let first = sorted.first, let last = sorted.last else { return nil }
             let months = Set(sorted.map { monthStart($0.date) })
@@ -76,16 +101,17 @@ extension BudgetStore {
                 due = calendar.date(byAdding: .day, value: day - 1, to: thisMonth)
             }
             let categoryId = last.categoryId
+            // A fixed price outside Bills (Tesla Connectivity in Gas & Auto) is a subscription too.
+            let fixedPrice = !isBillCategory && Set(amounts).count == 1
             return Recurring(
                 id: key, name: last.payee, categoryId: categoryId,
                 amount: -last.amount, previous: previous,
                 lastDate: last.date, firstDate: first.date,
                 paidThisMonth: paid, dueDate: due,
-                isSubscription: categoryId == "subscriptions",
+                isSubscription: categoryId == "subscriptions" || fixedPrice,
                 isNew: monthStart(first.date) >= month(-2, from: thisMonth)
                     && historyStart < month(-2, from: thisMonth))
         }
-        .sorted { ($0.dueDate ?? $0.lastDate) < ($1.dueDate ?? $1.lastDate) }
     }
 
     /// A steady price with one change at the end (e.g. $15.49 → $22.99).
@@ -269,7 +295,7 @@ extension BudgetStore {
 extension BudgetStore {
     /// Categories a subscription can be hiding in. Groceries, dining and
     /// gas are left alone: a monthly breakfast spot isn't a subscription.
-    private static let subscriptionHideouts: Set<String> = ["shopping", "entertainment", "personal", "kids", "gifts"]
+    private static let subscriptionHideouts: Set<String> = ["shopping", "entertainment", "personal", "kids", "gifts", "gas", "commute"]
 
     /// Same price, about the same day, every month for two months or more,
     /// still active: a subscription, whatever the name. Moves those charges
@@ -286,17 +312,21 @@ extension BudgetStore {
         var moved = 0
         var updated = data
         let dismissed = Set(data.notRecurring ?? [])
-        for (key, list) in Dictionary(grouping: candidates, by: { Self.payeeKey($0.payee) }) where !dismissed.contains(key) {
+        func monthly(_ list: [Transaction]) -> Bool {
             let sorted = list.sorted { $0.date < $1.date }
-            guard let last = sorted.last, sorted.count >= 2 else { continue }
+            guard let last = sorted.last, sorted.count >= 2 else { return false }
             let months = Set(sorted.map { monthStart($0.date) })
             let amounts = sorted.map { -$0.amount }
             let days = sorted.map { calendar.component(.day, from: $0.date) }
-            guard months.count >= 2, sorted.count <= months.count,
-                  (amounts.max() ?? 0) - (amounts.min() ?? 0) <= 100,
-                  (days.max() ?? 0) - (days.min() ?? 0) <= 6,
-                  today.timeIntervalSince(last.date) <= 45 * 86_400 else { continue }
-            for t in sorted {
+            return months.count >= 2 && sorted.count <= months.count
+                && (amounts.max() ?? 0) - (amounts.min() ?? 0) <= 100
+                && (days.max() ?? 0) - (days.min() ?? 0) <= 6
+                && today.timeIntervalSince(last.date) <= 45 * 86_400
+        }
+        for (key, list) in Dictionary(grouping: candidates, by: { Self.payeeKey($0.payee) }) where !dismissed.contains(key) {
+            // A store that bills several things is checked one price at a time.
+            let groups = monthly(list) ? [list] : Self.byPrice(list).map(\.1).filter(monthly)
+            for t in groups.joined() {
                 // Only Upside's own sorting is changed, and only out of shopping-type categories.
                 guard t.categoryId != "subscriptions", t.autoSort != nil || t.categoryId == nil,
                       t.categoryId.map(Self.subscriptionHideouts.contains) ?? true,
@@ -352,7 +382,8 @@ extension BudgetStore {
     /// "Not a bill": the store's purchases leave Bills for an everyday
     /// category (a best guess, shown in Check these), so the bills total
     /// drops and the spending counts against everyday limits.
-    func dismissRecurring(_ key: String) {
+    func dismissRecurring(_ id: String) {
+        let key = Self.storeKey(id)
         var keys = Set(data.notRecurring ?? [])
         keys.insert(key)
         var updated = data

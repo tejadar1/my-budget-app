@@ -885,6 +885,29 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.data.transactions.first { $0.id == "z10" }?.categoryId, "subscriptions")
     }
 
+    func testOneStoreBillingSeveralThingsFindsEachSubscription() {
+        let store = makeStore()
+        for m in 6...9 {
+            // Apple: iCloud $2.99 on the 4th and Apple One $19.95 on the 12th.
+            store.data.transactions.append(Transaction(id: "ic\(m)", accountId: "r", date: date(2026, m, 4), amount: -299,
+                                                       payee: "APPLE.COM/BILL", categoryId: "subscriptions", autoSort: "sure"))
+            store.data.transactions.append(Transaction(id: "a1\(m)", accountId: "r", date: date(2026, m, 12), amount: -1_995,
+                                                       payee: "APPLE.COM/BILL", categoryId: "subscriptions", autoSort: "sure"))
+            // Tesla: Connectivity $9.99 on the 19th, plus charging that varies.
+            store.data.transactions.append(Transaction(id: "tc\(m)", accountId: "r", date: date(2026, m, 19), amount: -999,
+                                                       payee: "TESLA INC", categoryId: "gas", autoSort: "sure"))
+            store.data.transactions.append(Transaction(id: "sc\(m)", accountId: "r", date: date(2026, m, 2 + m), amount: -(1_800 + m * 137),
+                                                       payee: "TESLA INC", categoryId: "gas", autoSort: "sure"))
+        }
+        store.detectSubscriptions()
+        XCTAssertEqual(store.data.transactions.first { $0.id == "tc9" }?.categoryId, "subscriptions", "Connectivity moves")
+        XCTAssertEqual(store.data.transactions.first { $0.id == "sc9" }?.categoryId, "gas", "charging stays in Gas & Auto")
+        let subs = store.recurringCharges().filter(\.isSubscription)
+        XCTAssertEqual(subs.filter { $0.name == "APPLE.COM/BILL" }.count, 2, "iCloud and Apple One both found")
+        XCTAssertTrue(subs.contains { $0.name == "TESLA INC" && $0.amount == 999 })
+        XCTAssertEqual(BankSync.categorize(payee: "TESLA SUBSCRIPTION", amount: -999, rules: []), "subscriptions")
+    }
+
     func testIncomePotAddsEachPersonAndDropsStoppedPay() {
         let store = makeStore()
         store.data.transactions.removeAll { $0.categoryId == "income" }
