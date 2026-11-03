@@ -58,6 +58,8 @@ struct BudgetView: View {
 
                     categories
 
+                    BusinessRow()
+
                     if isCurrentMonth {
                         // Early in a month, last month's recap.
                         if store.calendar.component(.day, from: store.now()) <= 7 {
@@ -115,6 +117,7 @@ struct BudgetView: View {
                 case .trip(let id): TripView(tripId: id)
                 case .bills: BillsView()
                 case .search(let query): SearchView(query: query)
+                case .business: BusinessView()
                 }
             }
             .sheet(isPresented: $showLimits) { LimitsView() }
@@ -195,6 +198,7 @@ enum Route: Hashable {
     case trip(String)
     case bills
     case search(String)
+    case business
 }
 
 // MARK: - Month switcher

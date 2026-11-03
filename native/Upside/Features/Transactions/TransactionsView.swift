@@ -21,6 +21,7 @@ struct TransactionsView: View {
                         Text("All").tag(BudgetStore.TransactionFilter.all)
                         Text("To check").tag(BudgetStore.TransactionFilter.toCheck)
                         Text("Transfers").tag(BudgetStore.TransactionFilter.transfers)
+                        Text("Business").tag(BudgetStore.TransactionFilter.business)
                     }
                     .pickerStyle(.segmented)
                     .listRowBackground(Color.clear)
@@ -128,6 +129,9 @@ struct TransactionsView: View {
         }
         Button { prompt = store.sort(t.id, as: BankSync.transferCategory) } label: {
             Label("Card payment or transfer", systemImage: "arrow.left.arrow.right")
+        }
+        Button { withAnimation { store.setBusiness(t.id, !t.isBusiness) } } label: {
+            Label(t.isBusiness ? "Not business" : "Business expense", systemImage: "briefcase")
         }
         ForEach(store.groupedCategories) { group in
             Menu(group.name) {

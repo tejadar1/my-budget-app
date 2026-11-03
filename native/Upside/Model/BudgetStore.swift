@@ -92,6 +92,9 @@ final class BudgetStore {
                 }
             }
             BankSync.markTransfers(&data)
+            for i in data.transactions.indices where looksLikeReimbursement(data.transactions[i]) {
+                data.transactions[i].business = true
+            }
             fillHunches(&data)
             let store = BudgetStore(data: data)
             store.detectSubscriptions()
@@ -162,7 +165,7 @@ final class BudgetStore {
         let expenseIds = Set(expenseCategories.map(\.id))
         return data.transactions.filter { t in
             guard let categoryId = t.categoryId else { return false }
-            return onBudget.contains(t.accountId) && !t.isTransfer
+            return onBudget.contains(t.accountId) && !t.isTransfer && !t.isBusiness
                 && expenseIds.contains(categoryId)
         }
     }
@@ -351,7 +354,7 @@ final class BudgetStore {
     var toCheck: [Transaction] {
         let onBudget = Set(data.accounts.filter(\.countsInBudget).map(\.id))
         return data.transactions
-            .filter { !$0.isTransfer && $0.amount < 0 && onBudget.contains($0.accountId)
+            .filter { !$0.isTransfer && !$0.isBusiness && $0.amount < 0 && onBudget.contains($0.accountId)
                 && ($0.isHunch || $0.categoryId == nil) }
             .sorted { $0.date > $1.date }
     }

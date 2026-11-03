@@ -139,7 +139,9 @@ struct TransactionRow: View {
     private func detail(_ account: Account?) -> String {
         var parts = [transaction.date.formatted(.dateTime.month(.abbreviated).day())]
         if let account { parts.append(account.institution) }
-        if transaction.isTransfer {
+        if transaction.isBusiness {
+            parts.append(transaction.amount > 0 ? "Business reimbursement" : "Business")
+        } else if transaction.isTransfer {
             parts.append(store.transferLabel(transaction))
         } else if let trip = transaction.tripId.flatMap({ id in store.data.trips.first { $0.id == id } }) {
             parts.append(trip.name)

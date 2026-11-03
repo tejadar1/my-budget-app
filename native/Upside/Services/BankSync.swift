@@ -107,6 +107,9 @@ enum BankSync {
         }
         data.transactions.sort { $0.date > $1.date }
         markTransfers(&data)
+        for i in data.transactions.indices where BudgetStore.looksLikeReimbursement(data.transactions[i]) {
+            data.transactions[i].business = true
+        }
         BudgetStore.fillHunches(&data)
         store.data = data
         store.detectSubscriptions()

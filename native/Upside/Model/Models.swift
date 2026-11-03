@@ -136,7 +136,12 @@ struct Transaction: Identifiable, Codable, Hashable {
     /// (a guess you can check), nil (you chose, or older data).
     var autoSort: String? = nil
 
+    /// A business expense you'll be paid back for (or the reimbursement
+    /// itself): kept out of the budget and income.
+    var business: Bool? = nil
+
     var isHunch: Bool { autoSort == "hunch" }
+    var isBusiness: Bool { business == true }
 }
 
 struct Category: Identifiable, Codable, Hashable {

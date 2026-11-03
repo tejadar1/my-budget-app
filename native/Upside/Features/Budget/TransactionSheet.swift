@@ -46,6 +46,18 @@ struct TransactionSheet: View {
                     }
 
                     if !t.isTransfer {
+                        Section {
+                            Toggle(isOn: Binding(get: { t.isBusiness }, set: { store.setBusiness(t.id, $0) })) {
+                                Label(t.amount > 0 ? "Business reimbursement" : "Business expense", systemImage: "briefcase.fill")
+                            }
+                            .tint(Theme.accent)
+                        } footer: {
+                            Text(t.amount > 0 ? "Money paid back for work costs. It doesn’t count as income."
+                                              : "You’ll be paid back, so it stays out of your budget. Upside tracks what you’re still owed.")
+                        }
+                    }
+
+                    if !t.isTransfer {
                         Section("Category") {
                             Picker("Category", selection: Binding(
                                 get: { t.categoryId ?? "" },

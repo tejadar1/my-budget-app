@@ -708,6 +708,25 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertLessThanOrEqual(store.monthPlan(store.currentMonth).everydayLimits, plan.toSpend)
         XCTAssertGreaterThan(store.category("groceries")!.limit!, 60_000, "groceries trimmed far less than shopping")
     }
+
+    func testBusinessExpensesStayOutOfTheBudgetUntilPaidBack() {
+        let store = makeStore()
+        store.data.transactions += [
+            Transaction(id: "hotel", accountId: "r", date: date(2026, 10, 7), amount: -42_000, payee: "Marriott", categoryId: "travel"),
+            Transaction(id: "lunch", accountId: "r", date: date(2026, 10, 8), amount: -8_000, payee: "Client Lunch", categoryId: "dining"),
+            Transaction(id: "back", accountId: "r", date: date(2026, 10, 12), amount: 42_000, payee: "EXPENSIFY INC REIMB", categoryId: "income"),
+        ]
+        let spentBefore = store.totalSpent(in: store.currentMonth)
+        let incomeBefore = store.income(in: store.currentMonth)
+        store.setBusiness("hotel", true)
+        store.setBusiness("lunch", true)
+        XCTAssertTrue(BudgetStore.looksLikeReimbursement(store.data.transactions.first { $0.id == "back" }!))
+        store.setBusiness("back", true)
+        XCTAssertEqual(store.totalSpent(in: store.currentMonth), spentBefore - 8_000, "lunch leaves Dining")
+        XCTAssertEqual(store.income(in: store.currentMonth), incomeBefore - 42_000, "a reimbursement isn't income")
+        XCTAssertEqual(store.businessOwed, 8_000, "hotel paid back; lunch still owed")
+        XCTAssertEqual(store.transactions(matching: "", filter: .business).count, 3)
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {

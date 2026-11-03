@@ -2,6 +2,12 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## 0.28, November 2 (business expenses)
+
+- Mark a purchase as a business expense (purchase sheet, or long-press in Transactions). It stays out of your budget.
+- Reimbursements (Expensify, Concur, Navan, "reimbursement") are recognized and don't count as income.
+- Budget shows what you're still owed; tap it for business purchases and what's been paid back. Transactions has a Business filter.
+
 ## 0.28, November 2 (pay yourself first)
 
 - Pay yourself first: set savings and card paydown each month (with a suggestion to clear your cards in 6 or 12 months). They come off the top with trips and bills.

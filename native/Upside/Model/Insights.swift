@@ -233,7 +233,7 @@ extension BudgetStore {
 // MARK: - Transactions tab
 
 extension BudgetStore {
-    enum TransactionFilter: Hashable { case all, toCheck, transfers }
+    enum TransactionFilter: Hashable { case all, toCheck, transfers, business }
 
     /// The Transactions tab: visible accounts only, newest first, narrowed
     /// by search text (store or amount), a filter, a category and a person.
@@ -250,8 +250,9 @@ extension BudgetStore {
             }
             switch filter {
             case .all: break
-            case .toCheck: if !(t.isHunch || (t.categoryId == nil && !t.isTransfer && t.amount < 0)) { return false }
+            case .toCheck: if t.isBusiness || !(t.isHunch || (t.categoryId == nil && !t.isTransfer && t.amount < 0)) { return false }
             case .transfers: if !t.isTransfer { return false }
+            case .business: if !t.isBusiness { return false }
             }
             if let categoryId, t.categoryId != categoryId || t.isTransfer { return false }
             if let owner, account.owner != owner { return false }
@@ -304,5 +305,37 @@ extension BudgetStore {
         }
         if moved > 0 { data = updated }
         return moved
+    }
+}
+
+// MARK: - Business expenses
+
+extension BudgetStore {
+    /// Words on a deposit that mean you're being paid back for work costs.
+    static let reimbursementWords = ["expensify", "concur", "navan", "reimb", "expense report", "expense rpt",
+                                     "ramp reimbursement", "brex reimbursement", "emburse", "certify expense"]
+
+    static func looksLikeReimbursement(_ t: Transaction) -> Bool {
+        t.amount > 0 && reimbursementWords.contains { t.payee.lowercased().contains($0) }
+    }
+
+    func setBusiness(_ transactionId: String, _ on: Bool) {
+        guard let i = data.transactions.firstIndex(where: { $0.id == transactionId }) else { return }
+        data.transactions[i].business = on ? true : nil
+        if on { data.transactions[i].autoSort = nil }
+    }
+
+    /// Business purchases and reimbursements, newest first (visible accounts).
+    var businessTransactions: [Transaction] {
+        let visible = Set(visibleAccounts.map(\.id))
+        return data.transactions.filter { $0.isBusiness && visible.contains($0.accountId) }.sorted { $0.date > $1.date }
+    }
+
+    /// Spent on business minus what's been paid back (never below $0).
+    var businessOwed: Cents {
+        let all = businessTransactions
+        let spent = -all.filter { $0.amount < 0 }.reduce(0) { $0 + $1.amount }
+        let back = all.filter { $0.amount > 0 }.reduce(0) { $0 + $1.amount }
+        return max(0, spent - back)
     }
 }

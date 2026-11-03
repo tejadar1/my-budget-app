@@ -16,7 +16,8 @@ extension BudgetStore {
         let onBudget = Set(data.accounts.filter(\.countsInBudget).map(\.id))
         let incomeIds = Set(data.categories.filter(\.isIncome).map(\.id))
         return data.transactions.filter { t in
-            t.categoryId.map(incomeIds.contains) == true && !t.isTransfer && t.amount > 0 && onBudget.contains(t.accountId)
+            t.categoryId.map(incomeIds.contains) == true && !t.isTransfer && !t.isBusiness && t.amount > 0
+                && onBudget.contains(t.accountId)
         }
     }
 
