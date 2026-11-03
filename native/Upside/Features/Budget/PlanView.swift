@@ -24,7 +24,12 @@ struct PlanView: View {
         var extraSavings: Cents
         var toSpend: Cents
         var recommended: [String: Cents]
-        /// Limits plus usual spending for categories without one.
+        /// Recommended limits (cents), but never above a limit you already lowered.
+    private func lowerOf(_ recommended: [String: Cents]) -> [String: Int] {
+        recommended.mapValues { $0 / 100 }.merging(limits) { new, current in current > 0 ? min(new, current) : new }
+    }
+
+    /// Limits plus usual spending for categories without one.
         var total: Cents
         var owed: Cents
     }
@@ -166,7 +171,7 @@ struct PlanView: View {
     /// only as a last resort, since those come first in the plan.
     private func fixForMe(_ n: Numbers) {
         let before = limitsTotal(limits)
-        let deeper = store.recommendedLimits(toSpend: n.toSpend, cap: 0.4).mapValues { $0 / 100 }
+        let deeper = lowerOf(store.recommendedLimits(toSpend: n.toSpend, cap: 0.4))
         var gap = (limitsTotal(deeper) - n.toSpend + 999) / 1000 * 10
         var parts: [String] = []
         let trimmed = (before - limitsTotal(deeper)) / 100
@@ -209,7 +214,7 @@ struct PlanView: View {
                     Button("Save \(Money.short(gap * 100)) less") { withAnimation { savings -= gap } }
                 }
                 Button("Cut limits deeper this month") {
-                    withAnimation { limits = store.recommendedLimits(toSpend: n.toSpend, cap: 0.5).mapValues { $0 / 100 } }
+                    withAnimation { limits = lowerOf(store.recommendedLimits(toSpend: n.toSpend, cap: 0.5)) }
                 }
                 Button { fixForMe(n) } label: {
                     Label("Fix it for me", systemImage: "wand.and.stars")
