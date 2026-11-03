@@ -5,6 +5,7 @@ import SwiftUI
 struct PlanView: View {
     @Environment(BudgetStore.self) private var store
     @Environment(\.dismiss) private var dismiss
+    @State private var plannedIncome = 0
     @State private var savings = 0
     @State private var paydown = 0
     @State private var trips = 0
@@ -16,10 +17,12 @@ struct PlanView: View {
 
     var body: some View {
         let base = store.monthPlan(month)
+        let usualIncome = store.averageIncome(before: month) ?? 0
+        let income = plannedIncome > 0 ? max(plannedIncome * 100, base.incomeReceived) : max(usualIncome, base.incomeReceived)
         let extraSavings = store.plan.map { store.isInMonth($0.month, month) ? $0.goal : 0 } ?? 0
         // $0 for trips means each trip saves its own share.
         let tripCost = trips > 0 ? trips * 100 : store.tripScheduleSetAside(in: month)
-        let toSpend = base.income - base.bills - (savings * 100 + extraSavings) - paydown * 100 - tripCost
+        let toSpend = income - base.bills - (savings * 100 + extraSavings) - paydown * 100 - tripCost
         let recommended = store.recommendedLimits(toSpend: toSpend)
         let total = limits.values.reduce(0, +) * 100
         let owed = store.cardsOwed
@@ -27,10 +30,18 @@ struct PlanView: View {
         NavigationStack {
             Form {
                 Section {
-                    LabeledContent(base.incomeIsUsual ? "Income (usual)" : "Income", value: Money.short(base.income))
+                    amountRow("Income to plan for", $plannedIncome)
+                    if usualIncome > 0 && plannedIncome * 100 != usualIncome {
+                        Button("Use my usual: \(Money.short(usualIncome))") { plannedIncome = (usualIncome + 50) / 100 }
+                            .font(.subheadline)
+                    }
                     LabeledContent("Bills (expected)", value: "–" + Money.short(base.bills))
                 } header: {
                     Text(month.formatted(.dateTime.month(.wide)))
+                } footer: {
+                    Text(plannedIncome > 0
+                         ? "\(Money.short(base.incomeReceived)) has come in so far. If more arrives, the extra counts; finished months use what really came in."
+                         : "Leave at $0 to plan around your usual income.")
                 }
 
                 Section {
@@ -104,6 +115,7 @@ struct PlanView: View {
     }
 
     private func load() {
+        plannedIncome = (store.data.priorities?.plannedIncome ?? 0) / 100
         savings = (store.data.priorities?.savings ?? 0) / 100
         paydown = (store.data.priorities?.cardPaydown ?? 0) / 100
         trips = (store.data.tripFund?.monthly ?? 0) / 100
@@ -111,7 +123,8 @@ struct PlanView: View {
     }
 
     private func save() {
-        store.data.priorities = Priorities(savings: savings * 100, cardPaydown: paydown * 100)
+        store.data.priorities = Priorities(savings: savings * 100, cardPaydown: paydown * 100,
+                                           plannedIncome: plannedIncome > 0 ? plannedIncome * 100 : nil)
         if trips > 0 {
             let fund = store.data.tripFund
             store.data.tripFund = TripFund(monthly: trips * 100, start: fund?.start ?? month,

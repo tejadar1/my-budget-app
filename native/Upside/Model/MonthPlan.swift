@@ -6,6 +6,10 @@ struct MonthPlan: Equatable {
     var income: Cents
     /// Early in the month this is your usual income, not just what's in.
     var incomeIsUsual: Bool
+    /// Set when you plan around your own income figure.
+    var incomePlanned: Cents? = nil
+    /// What's actually arrived this month.
+    var incomeReceived: Cents = 0
     var billsPaid: Cents
     var billsDue: Cents
     var savings: Cents
@@ -22,6 +26,8 @@ struct MonthPlan: Equatable {
     var perDay: Cents? { daysLeft.map { leftToSpend > 0 ? leftToSpend / max(1, $0) : 0 } }
     /// How far everyday limits overshoot what there is to spend (0 = fits).
     var limitsOverBy: Cents { max(0, everydayLimits - toSpend) }
+    /// How much more than planned has come in (0 when not more).
+    var aboveIncomePlan: Cents { incomePlanned.map { max(0, incomeReceived - $0) } ?? 0 }
 }
 
 extension BudgetStore {
@@ -66,9 +72,13 @@ extension BudgetStore {
         let everydayLimits = expenseCategories
             .filter { $0.group != "Bills" && $0.group != "Trips" && !$0.aimsForZero }
             .compactMap { limit($0, in: month) }.reduce(0, +)
+        let planned = isCurrent ? data.priorities?.plannedIncome : nil
+        let expected = planned ?? usualIncome
         return MonthPlan(
-            income: isCurrent ? max(actualIncome, usualIncome) : actualIncome,
-            incomeIsUsual: isCurrent && usualIncome > actualIncome,
+            income: isCurrent ? max(actualIncome, expected) : actualIncome,
+            incomeIsUsual: isCurrent && planned == nil && usualIncome > actualIncome,
+            incomePlanned: planned,
+            incomeReceived: actualIncome,
             billsPaid: billsPaid,
             billsDue: billsDue,
             savings: (data.priorities?.savings ?? 0) + (plan.map { isInMonth($0.month, month) ? $0.goal : 0 } ?? 0),

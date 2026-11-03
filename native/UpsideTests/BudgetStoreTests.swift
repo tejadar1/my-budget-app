@@ -730,6 +730,19 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.businessOwed, 8_000, "hotel paid back; lunch still owed")
         XCTAssertEqual(store.transactions(matching: "", filter: .business).count, 3)
     }
+
+    func testPlannedIncomeAndWhenMoreComesIn() throws {
+        let store = makeStore()  // $3,000 has come in this month
+        store.data.priorities = Priorities(plannedIncome: 400_000)
+        XCTAssertEqual(store.monthPlan(store.currentMonth).income, 400_000, "plan around $4,000 before it arrives")
+        store.data.priorities = Priorities(plannedIncome: 250_000)
+        let plan = store.monthPlan(store.currentMonth)
+        XCTAssertEqual(plan.income, 300_000, "more came in than planned; the extra counts")
+        XCTAssertEqual(plan.aboveIncomePlan, 50_000)
+        // Plans saved before planned income existed still load.
+        let old = #"{"savings":100000,"cardPaydown":50000}"#
+        XCTAssertNil(try JSONDecoder().decode(Priorities.self, from: Data(old.utf8)).plannedIncome)
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {

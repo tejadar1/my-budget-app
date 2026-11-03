@@ -234,6 +234,9 @@ struct BudgetData: Codable {
 struct Priorities: Codable, Hashable {
     var savings: Cents = 0
     var cardPaydown: Cents = 0
+    /// Income you plan around; nil uses your usual. Optional so plans
+    /// saved before this existed still load.
+    var plannedIncome: Cents? = nil
 }
 
 /// A virtual fund: grows by `monthly` each month from `start`, shrinks

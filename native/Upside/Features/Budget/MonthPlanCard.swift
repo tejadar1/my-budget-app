@@ -63,7 +63,9 @@ struct MonthPlanCard: View {
 
     private func lines(_ plan: MonthPlan) -> some View {
         let checks = store.paychecks(in: month)
-        let incomeNote: String? = plan.incomeIsUsual ? "usual"
+        let incomeNote: String? = plan.aboveIncomePlan > 0 ? "+\(Money.short(plan.aboveIncomePlan)) more than planned"
+            : plan.incomePlanned != nil ? (plan.incomeReceived < plan.income ? "planned · \(Money.short(plan.incomeReceived)) in" : "planned")
+            : plan.incomeIsUsual ? "usual"
             : (checks.extra > 0 ? "+\(checks.extra) extra paycheck" : nil)
         let billsNote = plan.billsDue > 0 ? "\(Money.short(plan.billsDue)) still due" : "paid"
         let savingsNote: String? = plan.savings == 0 && onSavings != nil ? "pay yourself first" : nil

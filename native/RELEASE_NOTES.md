@@ -6,6 +6,7 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 
 - One Plan screen (Budget > Plan, or Adjust plan on the month card): savings, card paydown and trips each month, then recommended everyday limits that fit what's left.
 - Recommended limits update as you change savings, cards or trips; "Use recommended limits" applies them.
+- Income to plan for: set the income you plan around. If more comes in, the extra counts; finished months use what really arrived.
 
 Try: Budget > Plan, raise savings, and watch the recommended limits.
 
