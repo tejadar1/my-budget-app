@@ -80,7 +80,12 @@ struct MonthPlanCard: View {
             }
             .buttonStyle(.plain)
             .disabled(onSavings == nil)
-            if plan.cardPaydown > 0 { line("Card paydown", -plan.cardPaydown, note: nil) }
+            if plan.cardPaydown > 0 || !store.creditCards.isEmpty {
+                NavigationLink(value: Route.cards) {
+                    line("Card paydown", -plan.cardPaydown, note: cardsNote(plan), chevron: true)
+                }
+                .buttonStyle(.plain)
+            }
             if plan.trips > 0 { line("Trips", -plan.trips, note: nil) }
             Divider().overlay(Color.white.opacity(0.4))
             line("To spend", plan.toSpend, note: nil, bold: true)
@@ -128,6 +133,15 @@ struct MonthPlanCard: View {
             .background(Color.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
+    }
+
+    /// "paid $420 of $500", or what was charged vs paid; flags a growing balance.
+    private func cardsNote(_ plan: MonthPlan) -> String {
+        let paid = store.creditCards.reduce(0) { $0 + store.cardMonth($1, month).paid }
+        let charged = store.creditCards.reduce(0) { $0 + store.cardMonth($1, month).charged }
+        if !store.growingCards.isEmpty && month == store.currentMonth { return "balance growing" }
+        return plan.cardPaydown > 0 ? "paid \(Money.short(paid)) of \(Money.short(plan.cardPaydown + charged))"
+                                    : "charged \(Money.short(charged)) · paid \(Money.short(paid))"
     }
 
     private func subtitle(_ plan: MonthPlan, isPast: Bool) -> String {

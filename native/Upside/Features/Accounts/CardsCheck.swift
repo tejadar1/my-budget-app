@@ -90,3 +90,47 @@ struct CardWarningRow: View {
         }
     }
 }
+
+/// Cards, in one place: what's owed, this month's payments against your
+/// paydown target, and each card's charged vs paid and balance trend.
+struct CardsView: View {
+    @Environment(BudgetStore.self) private var store
+
+    var body: some View {
+        let month = store.currentMonth
+        let owed = store.cardsOwed
+        let target = store.data.priorities?.cardPaydown ?? 0
+        let charged = store.creditCards.reduce(0) { $0 + store.cardMonth($1, month).charged }
+        let paid = store.creditCards.reduce(0) { $0 + store.cardMonth($1, month).paid }
+        List {
+            Section {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(Money.short(owed)).font(.system(size: 40, weight: .heavy, design: .rounded))
+                    Text("owed across your cards").foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 6)
+                LabeledContent("Charged this month", value: Money.short(charged))
+                LabeledContent("Paid this month", value: Money.short(paid))
+                if target > 0 {
+                    LabeledContent("To pay down this month") {
+                        // Paying down means paying the new charges plus the target.
+                        let goal = charged + target
+                        Text(paid >= goal ? "Done" : "\(Money.short(goal - paid)) to go")
+                            .foregroundStyle(paid >= goal ? Theme.accent : Theme.warning)
+                    }
+                }
+            } footer: {
+                Text(target > 0
+                     ? "Card paydown is \(Money.short(target)) a month on top of new charges; at that pace your cards are paid off in about \(Int((Double(owed) / Double(max(1, target))).rounded(.up))) months. Change it in Plan."
+                     : "Set a card paydown amount in Plan to pay these down on a schedule.")
+            }
+            Section("Each card") {
+                ForEach(store.creditCards) { card in
+                    CardCheckRow(card: card).padding(.vertical, 4)
+                }
+            }
+        }
+        .navigationTitle("Cards")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}

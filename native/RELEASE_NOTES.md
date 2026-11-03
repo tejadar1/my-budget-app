@@ -2,6 +2,10 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## 0.28, November 2 (cards in the plan)
+
+- Credit cards live in one place: the Card paydown line in the month plan. Tap it for what's owed, this month's payments against your target, and each card.
+
 ## 0.28, November 2 (one Plan screen)
 
 - One Plan screen (Budget > Plan, or Adjust plan on the month card): savings, card paydown and trips each month, then recommended everyday limits that fit what's left.

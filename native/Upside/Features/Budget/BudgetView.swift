@@ -78,9 +78,6 @@ struct BudgetView: View {
 
                     BundlesRow(month: month)
 
-                    // Charged vs paid on each card, same as on Accounts.
-                    if isCurrentMonth { CardsCheck() }
-
                     TripsSection()
                 }
                 .padding(.horizontal)
@@ -118,6 +115,7 @@ struct BudgetView: View {
                 case .bills: BillsView()
                 case .search(let query): SearchView(query: query)
                 case .business: BusinessView()
+                case .cards: CardsView()
                 }
             }
             .sheet(isPresented: $showLimits) { LimitsView() }
@@ -199,6 +197,7 @@ enum Route: Hashable {
     case bills
     case search(String)
     case business
+    case cards
 }
 
 // MARK: - Month switcher
