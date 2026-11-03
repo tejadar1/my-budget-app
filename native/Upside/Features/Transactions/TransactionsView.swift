@@ -130,6 +130,13 @@ struct TransactionsView: View {
         Button { prompt = store.sort(t.id, as: BankSync.transferCategory) } label: {
             Label("Card payment or transfer", systemImage: "arrow.left.arrow.right")
         }
+        Menu {
+            ForEach(store.expenseCategories.filter { $0.group == "Bills" }) { c in
+                Button(c.name) { prompt = store.markAsBill(t.id, as: c.id) }
+            }
+        } label: {
+            Label("It's a bill", systemImage: "calendar.badge.clock")
+        }
         Button { withAnimation { store.setBusiness(t.id, !t.isBusiness) } } label: {
             Label(t.isBusiness ? "Not business" : "Business expense", systemImage: "briefcase")
         }

@@ -349,26 +349,45 @@ extension BudgetStore {
     /// "Not a bill / not a subscription": hides the store from Bills &
     /// subscriptions for good. Purchases Upside had moved to Subscriptions
     /// by pattern go back to how they'd be sorted otherwise.
+    /// "Not a bill": the store's purchases leave Bills for an everyday
+    /// category (a best guess, shown in Check these), so the bills total
+    /// drops and the spending counts against everyday limits.
     func dismissRecurring(_ key: String) {
         var keys = Set(data.notRecurring ?? [])
         keys.insert(key)
-        data.notRecurring = keys.sorted()
         var updated = data
-        for i in updated.transactions.indices
-        where Self.payeeKey(updated.transactions[i].payee) == key
-            && updated.transactions[i].categoryId == "subscriptions" && updated.transactions[i].isHunch {
-            let t = updated.transactions[i]
-            let sorted = BankSync.sortSource(payee: t.payee, amount: t.amount, rules: updated.rules, bankCategory: t.bankCategory)
-            let fallback = sorted.category == "subscriptions" ? nil : sorted.category
-            updated.transactions[i].categoryId = fallback
-            updated.transactions[i].autoSort = fallback == nil ? nil : sorted.autoSort
-        }
-        Self.fillHunches(&updated)
+        updated.notRecurring = keys.sorted()
+        Self.keepNotBillsOutOfBills(&updated)
         data = updated
+    }
+
+    /// Stores you said aren't bills stay out of Bills, even after a sync
+    /// or a remembered rule would put them back.
+    static func keepNotBillsOutOfBills(_ data: inout BudgetData) {
+        let keys = Set(data.notRecurring ?? [])
+        guard !keys.isEmpty else { return }
+        let bills = Set(data.categories.filter { $0.group == "Bills" }.map(\.id))
+        data.rules.removeAll { keys.contains($0.payeeKey) && bills.contains($0.categoryId) }
+        for i in data.transactions.indices {
+            let t = data.transactions[i]
+            guard let c = t.categoryId, bills.contains(c), keys.contains(payeeKey(t.payee)) else { continue }
+            let sorted = BankSync.sortSource(payee: t.payee, amount: t.amount, rules: data.rules, bankCategory: t.bankCategory)
+            let guess = sorted.category.flatMap { bills.contains($0) ? nil : $0 }
+            data.transactions[i].categoryId = guess
+            data.transactions[i].autoSort = "hunch"
+        }
+        fillHunches(&data)
     }
 
     func restoreRecurring(_ key: String) {
         data.notRecurring = (data.notRecurring ?? []).filter { $0 != key }
         detectSubscriptions()
+    }
+
+    /// "It's a bill": files the purchase (and the store's others, via the
+    /// usual prompt) under a Bills category, undoing any "Not a bill".
+    func markAsBill(_ id: String, as categoryId: String) -> SortPrompt? {
+        if let t = data.transactions.first(where: { $0.id == id }) { restoreRecurring(Self.payeeKey(t.payee)) }
+        return sort(id, as: categoryId)
     }
 }

@@ -126,18 +126,18 @@ struct BillsView: View {
 
             if let hidden = store.data.notRecurring, !hidden.isEmpty {
                 Section {
-                    ForEach(hidden, id: \.self) { key in
-                        HStack {
-                            Text(key.capitalized)
-                            Spacer()
-                            Button("Show again") { withAnimation { store.restoreRecurring(key) } }
-                                .buttonStyle(.borderless)
+                    DisclosureGroup("Not bills (\(hidden.count))") {
+                        ForEach(hidden, id: \.self) { key in
+                            HStack {
+                                Text(key.capitalized)
+                                Spacer()
+                                Button("Show again") { withAnimation { store.restoreRecurring(key) } }
+                                    .buttonStyle(.borderless)
+                            }
                         }
                     }
-                } header: {
-                    Text("Hidden")
                 } footer: {
-                    Text("Stores you said aren't bills or subscriptions.")
+                    Text("Their purchases count in everyday categories instead. To make something a bill, long-press it in Transactions.")
                 }
             }
 

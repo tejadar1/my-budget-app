@@ -111,6 +111,7 @@ enum BankSync {
             data.transactions[i].business = true
         }
         BudgetStore.fillHunches(&data)
+        BudgetStore.keepNotBillsOutOfBills(&data)
         store.data = data
         store.detectSubscriptions()
     }
