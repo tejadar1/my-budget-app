@@ -52,6 +52,7 @@ struct PlanView: View {
                 incomeSection(n)
                 prioritiesSection(n)
                 limitsSection(n)
+                shortSection(n)
                 spareSection(n)
                 Section {
                     Button("Save extra just this month…") { showExtra = true }
@@ -154,8 +155,35 @@ struct PlanView: View {
     private func limitsFooter(_ n: Numbers) -> String {
         let fits = n.total <= n.toSpend
         let head = fits ? "Limits add up to \(Money.short(n.total)) of \(Money.short(n.toSpend)) to spend."
-                        : "Limits add up to \(Money.short(n.total)), \(Money.short(n.total - n.toSpend)) more than you have. Use the recommended limits or lower some."
+                        : "Limits add up to \(Money.short(n.total)), \(Money.short(n.total - n.toSpend)) more than you have."
         return head + " Categories without a limit count their usual spending."
+    }
+
+    /// Limits still more than there is to spend: a small cut can't close
+    /// it, so offer the trade-offs: give a little from a priority, or cut
+    /// limits deeper than the usual 25% for this month.
+    @ViewBuilder private func shortSection(_ n: Numbers) -> some View {
+        if n.total > n.toSpend {
+            let gap = (n.total - n.toSpend + 999) / 1000 * 10
+            Section {
+                if paydown >= gap {
+                    Button("Pay \(Money.short(gap * 100)) less on cards") { withAnimation { paydown -= gap } }
+                }
+                if trips >= gap {
+                    Button("Put \(Money.short(gap * 100)) less toward trips") { withAnimation { trips -= gap } }
+                }
+                if savings >= gap {
+                    Button("Save \(Money.short(gap * 100)) less") { withAnimation { savings -= gap } }
+                }
+                Button("Cut limits deeper this month") {
+                    withAnimation { limits = store.recommendedLimits(toSpend: n.toSpend, cap: 0.5).mapValues { $0 / 100 } }
+                }
+            } header: {
+                Text("\(Money.short(gap * 100)) short")
+            } footer: {
+                Text("Recommended limits trim at most 25% below usual, so they can't close this alone. Take it from one priority, or cut deeper (up to half on flexible spending like shopping and dining).")
+            }
+        }
     }
 
     /// Money the limits don't use: put it toward savings or cards.

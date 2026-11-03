@@ -710,6 +710,7 @@ final class BudgetStoreTests: XCTestCase {
         let recommended = store.recommendedLimits(toSpend: 170_000)
         XCTAssertLessThanOrEqual(recommended.values.reduce(0, +), 170_000)
         XCTAssertGreaterThanOrEqual(store.recommendedLimits(toSpend: 0)["shopping"]!, 90_000, "never cut more than 25% in a month")
+        XCTAssertLessThan(store.recommendedLimits(toSpend: 0, cap: 0.5)["shopping"]!, 90_000, "cutting deeper goes past 25%")
         XCTAssertEqual(store.recommendedLimits(toSpend: 1_000_000)["shopping"], 120_000, "room to spare: usual stays")
     }
 

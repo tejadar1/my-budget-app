@@ -118,13 +118,13 @@ extension BudgetStore {
     /// category starts at its usual (rounded up to $10), then flexible ones
     /// (shopping first, then dining, entertainment…) are trimmed, never more
     /// than 25%, until the total fits. Doesn't change anything.
-    func recommendedLimits(toSpend: Cents) -> [String: Cents] {
+    func recommendedLimits(toSpend: Cents, cap: Double = maxMonthlyCut) -> [String: Cents] {
         var base: [String: Cents] = [:]
         for c in everydayCategories { if let l = limitFromAverage(c) { base[c.id] = l } }
         let over = base.values.reduce(0, +) - toSpend
         guard over > 0 else { return base }
         let rooms = Dictionary(uniqueKeysWithValues: everydayCategories.compactMap { c -> (String, Double)? in
-            base[c.id].map { (c.id, Double($0) * max(0.1, flexibility(of: c)) * Self.maxMonthlyCut) }
+            base[c.id].map { (c.id, Double($0) * max(0.1, flexibility(of: c)) * cap) }
         })
         let totalRoom = rooms.values.reduce(0, +)
         guard totalRoom > 0 else { return base }
