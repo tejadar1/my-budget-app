@@ -219,7 +219,7 @@ final class BudgetStoreTests: XCTestCase {
         ]
         let recommended = store.recommendedCategories()
         // MTA now has a home (Commuting & Rides), so no Transit suggestion.
-        XCTAssertEqual(Set(recommended.map(\.name)), ["Coffee", "Fitness", "Golf"]) // Blue Bottle → Coffee
+        XCTAssertEqual(Set(recommended.map(\.name)), ["Coffee", "Golf"]) // Blue Bottle → Coffee; Fitness is standard now
         let golfSuggestion = recommended.first { $0.name == "Golf" }!
         XCTAssertEqual(golfSuggestion.transactionIds.count, 3)
         XCTAssertEqual(store.monthlyAverage(of: golfSuggestion), 17_400)
@@ -235,7 +235,7 @@ final class BudgetStoreTests: XCTestCase {
             ("UBER *EATS", "dining"), ("UBER *TRIP", "commute"), ("UBER EATS PENDING", "dining"),
             ("COMEDY CELLAR", "entertainment"), ("STOP & SHOP 0412", "groceries"), ("SHAKE SHACK 1102", "dining"),
             ("METLIFE AUTO", "insurance"), ("DUANE READE #14", "health"), ("GREAT CLIPS", "personal"),
-            ("PETSMART 1234", "kids"), ("HERTZ RENT-A-CAR", "travel"), ("T-MOBILE AUTOPAY", "phone"),
+            ("PETSMART 1234", "pets"), ("HERTZ RENT-A-CAR", "travel"), ("T-MOBILE AUTOPAY", "phone"),
             ("MR. COOPER MORTGAGE", "housing"), ("BOOKING.COM HOTEL", "travel"), ("TICKETMASTER", "entertainment"),
         ]
         for (payee, category) in expected {
@@ -767,6 +767,27 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(BankSync.categorize(payee: "THE PEOPLES WINE BAR", amount: -6_000, rules: []), "dining", "a wine bar is still a bar")
         XCTAssertEqual(Category.defaults.first { $0.id == "groceries" }?.name, "Groceries & Liquor")
     }
+
+    func testHomeFitnessAndPetsForCityOwners() {
+        for (payee, category) in [("THE HOME DEPOT #6177", "home"), ("BROOKLYN PLUMBING CO", "home"), ("TASKRABBIT", "home"),
+                                  ("WEST ELM 112", "home"), ("EQUINOX 74TH ST", "fitness"), ("CLASSPASS", "fitness"),
+                                  ("ROVER.COM DOG WALK", "pets"), ("PARK SLOPE OWNERS CORP", "housing"),
+                                  ("COMMON CHARGES 4B", "housing"), ("CHASE MONTHLY MAINTENANCE FEE", "bankfees")] {
+            XCTAssertEqual(BankSync.categorize(payee: payee, amount: -5_000, rules: []), category, payee)
+        }
+        var data = BudgetData()
+        data.categories = data.categories.map { c in var c = c; if c.id == "kids" { c.name = "Kids & Pets" }; return c }
+        data.categories.append(Category(id: "fitness-1a", name: "Fitness", group: "Everyday"))
+        data.transactions = [
+            Transaction(id: "v", accountId: "x", date: date(2026, 10, 1), amount: -9_000, payee: "BANFIELD PET HOSPITAL", categoryId: "kids"),
+            Transaction(id: "t", accountId: "x", date: date(2026, 10, 1), amount: -3_000, payee: "TOYS R US", categoryId: "kids"),
+            Transaction(id: "g", accountId: "x", date: date(2026, 10, 1), amount: -2_500, payee: "MY GYM", categoryId: "fitness-1a"),
+        ]
+        BudgetStore.splitKidsAndPets(&data)
+        XCTAssertEqual(data.categories.first { $0.id == "kids" }?.name, "Kids")
+        XCTAssertEqual(data.transactions.map { $0.categoryId }, ["pets", "kids", "fitness"])
+        XCTAssertNil(data.categories.first { $0.id == "fitness-1a" })
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {
@@ -913,7 +934,7 @@ final class CategoryTests: XCTestCase {
         ]
         let store = BudgetStore(data: data, isDemo: true)
         let names = Set(store.suggestedCategories.map(\.name))
-        XCTAssertEqual(names, ["Fitness", "Pets"], "a repeated store is not a category")
+        XCTAssertTrue(names.isEmpty, "Fitness and Pets are standard now, and a repeated store is not a category")
 
         // Cleaning up a store-named category from 0.28.
         var old = data
@@ -933,15 +954,8 @@ final class CategoryTests: XCTestCase {
         XCTAssertEqual(old.transactions.first { $0.id == "6" }?.categoryId, "gas", "Tesla charging is gas & auto")
         XCTAssertEqual(old.transactions.first { $0.id == "7" }?.categoryId, "pets-cd34")
 
-        let fitness = store.suggestedCategories.first { $0.name == "Fitness" }!
-        store.accept(fitness)
-        XCTAssertNotNil(store.data.categories.first { $0.name == "Fitness" })
-        XCTAssertEqual(store.uncategorized.count, 4)
-
-        let id = store.addCategory("Pets", group: "Everyday")
-        XCTAssertEqual(store.addCategory("pets", group: "Everyday"), id, "no duplicates")
-        store.hideCategory(id)
-        XCTAssertFalse(store.expenseCategories.contains { $0.id == id })
+        XCTAssertEqual(BankSync.categorize(payee: "PLANET FITNESS #12", amount: -4_000, rules: []), "fitness")
+        XCTAssertEqual(BankSync.categorize(payee: "CHEWY.COM", amount: -2_500, rules: []), "pets")
     }
 }
 

@@ -56,6 +56,10 @@ final class BudgetStore {
                 data.categories[i].name = "Dining & Bars"
             }
             mergeBarsIntoDining(&data)
+            if !UserDefaults.standard.bool(forKey: "splitKidsPets") {
+                splitKidsAndPets(&data)
+                UserDefaults.standard.set(true, forKey: "splitKidsPets")
+            }
             if let i = data.categories.firstIndex(where: { $0.id == "groceries" && $0.name == "Groceries" }) {
                 data.categories[i].name = "Groceries & Liquor"
             }
@@ -442,6 +446,7 @@ final class BudgetStore {
     static let flexibility: [String: Double] = [
         "shopping": 1, "dining": 1, "entertainment": 1, "gifts": 0.8,
         "personal": 0.5, "kids": 0.3, "gas": 0.3, "groceries": 0.3, "commute": 0.5,
+        "fitness": 0.5, "home": 0.6, "pets": 0.2,
     ]
 
     /// The most a plan will cut from a category without you choosing to skip it.
@@ -867,6 +872,35 @@ final class BudgetStore {
         data.categories.removeAll { transitIds.contains($0.id) }
     }
 
+    /// Kids & Pets became two categories, and Fitness and Home & Repairs
+    /// became standard. Pet purchases move to Pets; categories you made
+    /// called Fitness, Pets or Home fold into the standard ones.
+    static func splitKidsAndPets(_ data: inout BudgetData) {
+        if let i = data.categories.firstIndex(where: { $0.id == "kids" && $0.name == "Kids & Pets" }) {
+            data.categories[i].name = "Kids"
+        }
+        let folds = ["fitness": "fitness", "pets": "pets", "home": "home", "home & repairs": "home"]
+        var moved: [String: String] = [:]
+        for c in data.categories where !Category.defaults.contains(where: { $0.id == c.id }) {
+            if let target = folds[c.name.lowercased()] { moved[c.id] = target }
+        }
+        for i in data.transactions.indices {
+            let t = data.transactions[i]
+            if let c = t.categoryId, let target = moved[c] { data.transactions[i].categoryId = target; continue }
+            if t.categoryId == "kids", BankSync.categorize(payee: t.payee, amount: t.amount, rules: []) == "pets" {
+                data.transactions[i].categoryId = "pets"
+            }
+        }
+        for i in data.rules.indices {
+            if let target = moved[data.rules[i].categoryId] { data.rules[i].categoryId = target }
+            else if data.rules[i].categoryId == "kids",
+                    BankSync.categorize(payee: data.rules[i].payeeKey, amount: -100, rules: []) == "pets" {
+                data.rules[i].categoryId = "pets"
+            }
+        }
+        data.categories.removeAll { moved[$0.id] != nil }
+    }
+
     /// Creates the suggested category and sorts its purchases into it.
     func accept(_ suggestion: CategorySuggestion) {
         let id = addCategory(suggestion.name, group: suggestion.group)
@@ -876,8 +910,6 @@ final class BudgetStore {
     }
 
     static let suggestionKinds: [(String, String, [String])] = [
-        ("Fitness", "Everyday", ["gym", "fitness", "peloton", "yoga", "crossfit", "orangetheory", "equinox", "ymca"]),
-        ("Pets", "Everyday", ["petco", "petsmart", "chewy", "vet ", "veterinary", "animal hosp", "rover"]),
         ("Childcare", "Bills", ["daycare", "childcare", "kindercare", "preschool", "babysit", "nanny"]),
         // Tuition is owed, not optional: a bill the savings plan never cuts.
         ("Education", "Bills", ["tuition", "university", "college of", "school", "academy", "montessori",
@@ -886,7 +918,6 @@ final class BudgetStore {
         ("Golf", "Everyday", ["golf", "country club", "golfnow", "teeoff", "tee time", "driving range",
                               "pga tour superstore", "titleist", "callaway", "taylormade", "ping golf",
                               "footjoy", "club champ", "links at", "greens fee"]),
-        ("Home", "Everyday", ["wayfair", "bed bath", "crate & barrel", "pottery barn", "west elm", "furniture"]),
         ("Clothing", "Everyday", ["zara", "h&m", "old navy", "gap ", "uniqlo", "nike", "lululemon", "j.crew"]),
         ("Giving", "Everyday", ["donation", "charity", "church", "red cross", "gofundme", "unicef"]),
         ("Coffee", "Everyday", ["coffee", "blue bottle", "peet", "dutch bros", "tim hortons"]),
