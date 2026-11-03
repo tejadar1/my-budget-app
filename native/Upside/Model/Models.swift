@@ -230,6 +230,9 @@ struct BudgetData: Codable {
     var priorities: Priorities?
     /// Stores you said aren't bills or subscriptions (payee keys).
     var notRecurring: [String]?
+    /// Whose paycheck each income source is (by payer key), for paychecks
+    /// into a joint account.
+    var incomeOwners: [String: Owner]?
 }
 
 /// "Pay yourself first": standing monthly amounts taken off the top.

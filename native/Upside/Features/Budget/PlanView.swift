@@ -75,6 +75,9 @@ struct PlanView: View {
                 Button("Use my usual: \(Money.short(n.usualIncome))") { plannedIncome = (n.usualIncome + 50) / 100 }
                     .font(.subheadline)
             }
+            ForEach(store.incomeSources(before: month)) { source in
+                IncomeSourceRow(source: source)
+            }
             LabeledContent("Bills (expected)", value: "–" + Money.short(n.base.bills))
         } header: {
             Text(month.formatted(.dateTime.month(.wide)))
@@ -86,7 +89,7 @@ struct PlanView: View {
     private func incomeFooter(_ n: Numbers) -> String {
         let planned = plannedIncome * 100
         guard planned > 0 else {
-            return "Leave at $0 to plan around your usual income. Your usual counts a normal month; a third paycheck is a bonus when it lands."
+            return "Leave at $0 to plan around your usual income: every paycheck above added together. A third paycheck is a bonus when it lands; one that stops for 5 weeks stops counting. Paid into an account that isn't connected? Mark that transfer as Income."
         }
         if n.usualIncome > 0 && planned > n.usualIncome {
             return "Planning on your usual \(Money.short(n.usualIncome)) until more arrives. The other \(Money.short(planned - n.usualIncome)) counts once it's in. \(Money.short(n.base.incomeReceived)) has come in so far."
@@ -236,6 +239,41 @@ private struct LimitPlanRow: View {
             Spacer()
             TextField("No limit", value: $dollars, format: .currency(code: "USD").precision(.fractionLength(0)))
                 .keyboardType(.numberPad).multilineTextAlignment(.trailing).frame(maxWidth: 110)
+        }
+    }
+}
+
+/// One paycheck in the pot: whose it is (tap to change), how often it
+/// comes, and what it adds to a normal month.
+private struct IncomeSourceRow: View {
+    @Environment(BudgetStore.self) private var store
+    let source: BudgetStore.IncomeSource
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(source.name).lineLimit(1)
+                Menu {
+                    ForEach(Owner.pickable) { owner in
+                        Button(store.people.name(owner)) { store.setIncomeOwner(source.id, owner) }
+                    }
+                } label: {
+                    Text(detail).font(.caption).foregroundStyle(source.stopped ? Theme.over : Theme.accent)
+                }
+            }
+            Spacer()
+            Text(source.stopped ? "not counted" : Money.short(source.monthly) + "/mo")
+                .font(.subheadline).monospacedDigit().foregroundStyle(.secondary)
+        }
+    }
+
+    private var detail: String {
+        let who = source.owner == .unassigned ? "Whose is this?" : store.people.name(source.owner)
+        if source.stopped { return who + " · stopped" }
+        switch source.cadence {
+        case .weekly: return who + " · weekly"
+        case .biweekly: return who + " · every 2 weeks"
+        case .other: return who
         }
     }
 }

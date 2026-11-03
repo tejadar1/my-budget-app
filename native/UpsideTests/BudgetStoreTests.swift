@@ -1070,4 +1070,39 @@ final class SavingsTests: XCTestCase {
         XCTAssertTrue(s.category("fees")!.aimsForZero)
         XCTAssertFalse(s.topCategories(in: s.currentMonth).contains { $0.id == "fees" })
     }
+
+    func testIncomePotAddsEachPersonAndDropsStoppedPay() {
+        let store = makeStore()
+        store.data.transactions.removeAll { $0.categoryId == "income" }
+        // Ron: $2,000 every two weeks. Ana: $1,500 on the 1st and 15th. Both into the same account.
+        var day = date(2026, 7, 3), n = 0
+        while day < date(2026, 10, 1) {
+            n += 1
+            store.data.transactions.append(Transaction(id: "r\(n)", accountId: "r", date: day, amount: 200_000,
+                                                       payee: "ACME PAYROLL", categoryId: "income"))
+            day = day.addingTimeInterval(14 * 86_400)
+        }
+        for m in 7...9 { for d in [1, 15] {
+            store.data.transactions.append(Transaction(id: "a\(m)-\(d)", accountId: "r", date: date(2026, m, d),
+                                                       amount: 150_000, payee: "CITY HOSPITAL DIR DEP", categoryId: "income"))
+        } }
+        // A side job that paid monthly and stopped in July.
+        for m in 5...7 {
+            store.data.transactions.append(Transaction(id: "x\(m)", accountId: "r", date: date(2026, m, 20),
+                                                       amount: 50_000, payee: "GIG CO", categoryId: "income"))
+        }
+        let sources = store.incomeSources(before: store.currentMonth)
+        XCTAssertEqual(sources.first { $0.name == "ACME PAYROLL" }?.monthly, 400_000)
+        XCTAssertEqual(sources.first { $0.name == "CITY HOSPITAL DIR DEP" }?.monthly, 300_000)
+        XCTAssertEqual(sources.first { $0.name == "GIG CO" }?.stopped, true, "no pay in over 5 weeks")
+        XCTAssertEqual(store.averageIncome(before: store.currentMonth), 700_000, "both paychecks; the stopped one adds nothing")
+
+        let acme = sources.first { $0.name == "ACME PAYROLL" }!.id
+        let hospital = sources.first { $0.name == "CITY HOSPITAL DIR DEP" }!.id
+        store.setIncomeOwner(acme, .p1)
+        store.setIncomeOwner(hospital, .p2)
+        let byOwner = store.usualIncomeByOwner(before: store.currentMonth)
+        XCTAssertEqual(byOwner[.p1], 400_000)
+        XCTAssertEqual(byOwner[.p2], 300_000)
+    }
 }

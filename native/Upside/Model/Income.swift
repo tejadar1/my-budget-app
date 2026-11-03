@@ -66,39 +66,79 @@ extension BudgetStore {
         return (count, extra)
     }
 
-    /// Usual monthly income. Weekly and biweekly pay counts a normal month:
-    /// 4 or 2 average paychecks. The extra paycheck months bring is a bonus
-    /// that shows up when it arrives, not something to plan spending on.
-    /// Other pay is averaged per account over the months it has history.
+    /// One paycheck source: a payer into one account.
+    struct IncomeSource: Identifiable {
+        var id: String
+        var name: String
+        var accountId: String
+        var owner: Owner
+        var cadence: PayCadence
+        /// What it adds to a normal month; 0 once it has stopped.
+        var monthly: Cents
+        var stopped: Bool
+    }
+
+    /// Usual monthly income: the sum of every source still paying.
     func averageIncomeSmoothed(before month: Date) -> Cents? {
+        let sources = incomeSources(before: month)
+        if sources.isEmpty {
+            // Months with history but no paycheck still count as $0 income.
+            let months = (1...Self.averageMonths).map { self.month(-$0, from: month) }
+            return months.contains(where: { $0 >= firstFullMonth }) ? 0 : nil
+        }
+        return sources.reduce(0) { $0 + $1.monthly }
+    }
+
+    /// Each source's usual month. Weekly and biweekly pay counts a normal
+    /// month: 4 or 2 average paychecks; the extra paycheck some months bring
+    /// is a bonus when it arrives. Other pay is averaged over the months the
+    /// account has history. A source that has gone quiet (no pay in 3 weeks
+    /// for weekly, 5 weeks otherwise) has stopped and adds nothing.
+    func incomeSources(before month: Date) -> [IncomeSource] {
         let months = (1...Self.averageMonths).map { self.month(-$0, from: month) }
-        guard let oldest = months.last else { return nil }
+        guard let oldest = months.last else { return [] }
         let all = payers()
         let starts = accountHistoryStart
-        var total = 0
-        var anyData = false
+        let owners = data.incomeOwners ?? [:]
+        let paidCount = Dictionary(grouping: incomeTransactions.filter { $0.date < month }, by: payerKey).mapValues(\.count)
         let window = incomeTransactions.filter { $0.date >= self.month(-1, from: oldest) && $0.date < month }
-        for (key, list) in Dictionary(grouping: window, by: payerKey) {
+        return Dictionary(grouping: window, by: payerKey).compactMap { key, list -> IncomeSource? in
+            guard let latest = list.max(by: { $0.date < $1.date }) else { return nil }
             let payer = all[key] ?? Payer(cadence: .other, paidEarlyInMonth: false)
+            var monthly: Cents
             if payer.cadence != .other {
                 let recent = list.filter { $0.date >= oldest }
-                guard !recent.isEmpty else { continue }
-                let average = recent.reduce(0) { $0 + $1.amount } / recent.count
-                total += average * (payer.cadence == .weekly ? 4 : 2)
-                anyData = true
+                guard !recent.isEmpty else { return nil }
+                monthly = recent.reduce(0) { $0 + $1.amount } / recent.count * (payer.cadence == .weekly ? 4 : 2)
             } else {
-                for (accountId, paid) in Dictionary(grouping: list, by: \.accountId) {
-                    let covered = months.filter { $0 >= (starts[accountId] ?? oldest) }
-                    guard !covered.isEmpty else { continue }
-                    let sum = paid.filter { t in covered.contains { isInMonth(incomeMonth(t, payers: all), $0) } }
-                        .reduce(0) { $0 + $1.amount }
-                    total += sum / covered.count
-                    anyData = true
-                }
+                let covered = months.filter { $0 >= (starts[latest.accountId] ?? oldest) }
+                guard !covered.isEmpty else { return nil }
+                let sum = list.filter { t in covered.contains { isInMonth(incomeMonth(t, payers: all), $0) } }
+                    .reduce(0) { $0 + $1.amount }
+                guard sum > 0 else { return nil }
+                monthly = sum / covered.count
             }
+            let quietDays = month.timeIntervalSince(latest.date) / 86_400
+            let regular = payer.cadence != .other || (paidCount[key] ?? 0) >= 3
+            let stopped = regular && quietDays > (payer.cadence == .weekly ? 21 : 35)
+            if stopped { monthly = 0 }
+            let accountOwner = account(latest.accountId)?.owner ?? .unassigned
+            return IncomeSource(id: key, name: latest.payee, accountId: latest.accountId,
+                                owner: owners[key] ?? (accountOwner == .shared ? .unassigned : accountOwner),
+                                cadence: payer.cadence, monthly: monthly, stopped: stopped)
         }
-        // Months with history but no paycheck still count as $0 income.
-        if !anyData, months.contains(where: { $0 >= firstFullMonth }) { return 0 }
-        return anyData ? total : nil
+        .sorted { $0.monthly > $1.monthly }
+    }
+
+    /// Says whose paycheck a source is, for paychecks into a joint account.
+    func setIncomeOwner(_ sourceId: String, _ owner: Owner) {
+        var owners = data.incomeOwners ?? [:]
+        owners[sourceId] = owner
+        data.incomeOwners = owners
+    }
+
+    /// What each person brings in usually, from the sources still paying.
+    func usualIncomeByOwner(before month: Date) -> [Owner: Cents] {
+        incomeSources(before: month).reduce(into: [:]) { $0[$1.owner, default: 0] += $1.monthly }
     }
 }
