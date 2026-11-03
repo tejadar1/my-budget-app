@@ -87,6 +87,15 @@ struct PlanView: View {
     private func prioritiesSection(_ n: Numbers) -> some View {
         Section {
             amountRow("Savings each month", $savings)
+            if n.extraSavings > 0 {
+                HStack {
+                    Text("Extra just this month")
+                    Spacer()
+                    Text(Money.short(n.extraSavings)).monospacedDigit()
+                    Button("Remove", role: .destructive) { withAnimation { store.data.plan = nil } }
+                        .buttonStyle(.borderless)
+                }
+            }
             amountRow("Card paydown each month", $paydown)
             if n.owed > 0 {
                 HStack(spacing: 8) {
@@ -162,7 +171,7 @@ struct PlanView: View {
         if trips == 0 && store.tripScheduleSetAside(in: month) > 0 {
             parts.append("Trips are saving \(Money.short(store.tripScheduleSetAside(in: month))) this month on their own; enter an amount to use a set trip fund instead.")
         }
-        if extra > 0 { parts.append("Plus \(Money.short(extra)) extra savings this month.") }
+        if extra > 0 { parts.append("The extra comes from Save money this month and ends with the month.") }
         return parts.joined(separator: " ")
     }
 

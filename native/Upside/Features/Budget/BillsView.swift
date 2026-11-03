@@ -64,10 +64,9 @@ struct BillsView: View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(Money.short(due.reduce(0) { $0 + $1.amount }))
+                    Text(Money.short(store.billLines(store.currentMonth).reduce(0) { $0 + $1.stillToCome }))
                         .font(.system(size: 40, weight: .heavy, design: .rounded))
-                    Text(due.isEmpty ? "Nothing left to pay in \(monthName)."
-                         : "still due in \(monthName) across \(due.count) bill\(due.count == 1 ? "" : "s")")
+                    Text("still to come in \(monthName), the same figure as your plan")
                         .foregroundStyle(.secondary)
                 }
                 .padding(.vertical, 6)

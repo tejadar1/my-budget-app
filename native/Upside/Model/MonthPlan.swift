@@ -13,6 +13,8 @@ struct MonthPlan: Equatable {
     var billsPaid: Cents
     var billsDue: Cents
     var savings: Cents
+    /// Of `savings`: the one-month extra from "Save money this month".
+    var savingsExtra: Cents = 0
     var cardPaydown: Cents = 0
     var trips: Cents
     var everydaySpent: Cents
@@ -82,6 +84,7 @@ extension BudgetStore {
             billsPaid: billsPaid,
             billsDue: billsDue,
             savings: (data.priorities?.savings ?? 0) + (plan.map { isInMonth($0.month, month) ? $0.goal : 0 } ?? 0),
+            savingsExtra: plan.map { isInMonth($0.month, month) ? $0.goal : 0 } ?? 0,
             cardPaydown: data.priorities?.cardPaydown ?? 0,
             trips: tripSetAside(in: month),
             everydaySpent: totalSpent(in: month) - billsPaid,

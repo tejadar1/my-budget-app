@@ -28,16 +28,28 @@ struct SavingsCard: View {
                         .foregroundStyle(goal > 0 ? Theme.accent : .primary)
                     if goal > 0 { Text("this month").foregroundStyle(.secondary) }
                 }
+                if goal > 0 {
+                    // Where the number comes from.
+                    VStack(alignment: .leading, spacing: 2) {
+                        if goal - plan.savingsExtra > 0 {
+                            Text("\(Money.short(goal - plan.savingsExtra)) every month (set in Plan)")
+                        }
+                        if plan.savingsExtra > 0 {
+                            Text("\(Money.short(plan.savingsExtra)) extra just this month (from Save money)")
+                        }
+                    }
+                    .font(.footnote).foregroundStyle(.secondary)
+                }
                 Text(status(plan, goal: goal))
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(plan.leftToSpend >= 0 ? Theme.accent : Theme.over)
                 Divider()
-                HStack {
-                    figure("Saved & invested", saved)
+                HStack(alignment: .top) {
+                    figure("Moved to savings so far", saved)
                     Spacer()
-                    if let usual { figure("Usual", usual) }
+                    if let usual { figure("Usually moved", usual) }
                     Spacer()
-                    if payoff > 0 { figure("Paid down on cards", payoff) }
+                    if payoff > 0 { figure("Extra paid on cards", payoff) }
                 }
             }
             .card()

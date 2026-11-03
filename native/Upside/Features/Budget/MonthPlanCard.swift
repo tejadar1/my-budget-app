@@ -68,7 +68,11 @@ struct MonthPlanCard: View {
             : plan.incomeIsUsual ? "usual"
             : (checks.extra > 0 ? "+\(checks.extra) extra paycheck" : nil)
         let billsNote = plan.billsDue > 0 ? "\(Money.short(plan.billsDue)) still due" : "paid"
-        let savingsNote: String? = plan.savings == 0 && onSavings != nil ? "pay yourself first" : nil
+        let monthly = plan.savings - plan.savingsExtra
+        let savingsNote: String? = plan.savings == 0 ? (onSavings != nil ? "pay yourself first" : nil)
+            : plan.savingsExtra == 0 ? "every month"
+            : monthly == 0 ? "this month only"
+            : "\(Money.short(monthly)) monthly + \(Money.short(plan.savingsExtra)) extra"
         return VStack(spacing: 8) {
             line("Income", plan.income, note: incomeNote)
             NavigationLink(value: Route.bills) {

@@ -8,6 +8,9 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 - Groceries is now Groceries & Liquor, and liquor and wine shops (Total Wine, Astor Wines, Drizly…) go there. Wine bars stay in Dining & Bars.
 - New standard categories: Home & Repairs (contractors, Home Depot, cleaning, furniture), Fitness (gyms, classes, Peloton), and Pets, split from Kids.
 - Rent / Mortgage also catches co-op and condo common charges and HOA fees.
+- Savings shows where its amount comes from: every month (set in Plan) and any extra just this month, which you can remove in Plan.
+- Savings card figures are clearer: moved to savings so far, usually moved, extra paid on cards.
+- Bills & subscriptions shows the same "still to come" as the plan.
 
 ## 0.28, November 2 (cards in the plan, not a bill)
 
