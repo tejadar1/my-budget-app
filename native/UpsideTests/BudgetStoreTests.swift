@@ -707,6 +707,9 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertLessThan(shopping, 120_000, "shopping is trimmed")
         XCTAssertLessThanOrEqual(store.monthPlan(store.currentMonth).everydayLimits, plan.toSpend)
         XCTAssertGreaterThan(store.category("groceries")!.limit!, 60_000, "groceries trimmed far less than shopping")
+        let recommended = store.recommendedLimits(toSpend: 150_000)
+        XCTAssertLessThanOrEqual(recommended.values.reduce(0, +), 150_000)
+        XCTAssertEqual(store.recommendedLimits(toSpend: 1_000_000)["shopping"], 120_000, "room to spare: usual stays")
     }
 
     func testBusinessExpensesStayOutOfTheBudgetUntilPaidBack() {

@@ -2,6 +2,13 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## 0.28, November 2 (one Plan screen)
+
+- One Plan screen (Budget > Plan, or Adjust plan on the month card): savings, card paydown and trips each month, then recommended everyday limits that fit what's left.
+- Recommended limits update as you change savings, cards or trips; "Use recommended limits" applies them.
+
+Try: Budget > Plan, raise savings, and watch the recommended limits.
+
 ## 0.28, November 2 (business expenses)
 
 - Mark a purchase as a business expense (purchase sheet, or long-press in Transactions). It stays out of your budget.

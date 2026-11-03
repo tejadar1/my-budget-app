@@ -96,6 +96,7 @@ jobs:
             shot $mode 7h-limit-detail -demo -tab budget -open limit:dining
             shot $mode 7g-recommended -demo -tab budget -open recommended
             shot $mode 7b-save -demo -tab budget -open save
+            shot $mode 7i-plan -demo -tab budget -open priorities
             shot $mode 7c-recap -demo -tab budget -open recap
             shot $mode 7d-purchase -demo -tab budget -open purchase:dining
             shot $mode 7e-bills -demo -tab budget -open bills

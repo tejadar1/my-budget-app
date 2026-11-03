@@ -85,15 +85,38 @@ extension BudgetStore {
     /// What's owed across visible credit cards right now.
     var cardsOwed: Cents { creditCards.reduce(0) { $0 + max(0, -$1.balance) } }
 
-    /// Limits from the plan, not just habit: each everyday category starts
-    /// at its usual, then flexible ones are trimmed (up to 60%) until they
-    /// fit what's left after bills, savings, card paydown and trips.
+    /// Everyday categories: the ones with limits you control day to day.
+    var everydayCategories: [Category] {
+        expenseCategories.filter { $0.group != "Bills" && $0.group != "Trips" && !$0.aimsForZero }
+    }
+
+    /// Recommended limits for a given amount to spend: each everyday
+    /// category starts at its usual (rounded up to $10), then flexible ones
+    /// (shopping first, then dining, entertainment…) are trimmed, never more
+    /// than 60%, until the total fits. Doesn't change anything.
+    func recommendedLimits(toSpend: Cents) -> [String: Cents] {
+        var base: [String: Cents] = [:]
+        for c in everydayCategories { if let l = limitFromAverage(c) { base[c.id] = l } }
+        let over = base.values.reduce(0, +) - toSpend
+        guard over > 0 else { return base }
+        let rooms = Dictionary(uniqueKeysWithValues: everydayCategories.compactMap { c -> (String, Double)? in
+            base[c.id].map { (c.id, Double($0) * max(0.1, flexibility(of: c)) * 0.6) }
+        })
+        let totalRoom = rooms.values.reduce(0, +)
+        guard totalRoom > 0 else { return base }
+        let share = min(1, Double(over) / totalRoom)
+        return base.mapValues { $0 }.reduce(into: [:]) { result, entry in
+            let lowered = Double(entry.value) - (rooms[entry.key] ?? 0) * share
+            result[entry.key] = max(1000, Int(lowered / 1000) * 1000)
+        }
+    }
+
+    /// Sets every everyday limit to its recommendation for this month's plan.
     @discardableResult
     func setLimitsToPlan(_ month: Date) -> Cents {
-        for category in expenseCategories where category.group != "Bills" && category.group != "Trips" && !category.aimsForZero {
-            setLimit(category.id, limitFromAverage(category))
-        }
-        return fitLimitsToPlan(month, cap: 0.6)
+        let recommended = recommendedLimits(toSpend: monthPlan(month).toSpend)
+        for category in everydayCategories { setLimit(category.id, recommended[category.id]) }
+        return monthPlan(month).limitsOverBy
     }
 
     @discardableResult

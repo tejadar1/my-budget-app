@@ -106,7 +106,7 @@ struct BudgetView: View {
                             Image(systemName: "magnifyingglass")
                         }
                         .accessibilityLabel("Search purchases")
-                        Button("Limits") { showLimits = true }
+                        Button("Plan") { showPriorities = true }
                     }
                 }
             }
@@ -122,7 +122,7 @@ struct BudgetView: View {
             }
             .sheet(isPresented: $showLimits) { LimitsView() }
             .sheet(isPresented: $showSave) { SavingsPlanView() }
-            .sheet(isPresented: $showPriorities) { PrioritiesView() }
+            .sheet(isPresented: $showPriorities) { PlanView() }
             .sheet(item: $recapMonth) { RecapView(month: $0.date) }
             .sheet(item: $openPurchase) { TransactionSheet(transactionId: $0.id) }
             .onAppear(perform: openFromLaunchArgs)
