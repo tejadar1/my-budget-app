@@ -63,10 +63,12 @@ struct BillsView: View {
 
         List {
             Section {
+                let lines = store.billLines(store.currentMonth)
+                let paidSoFar = lines.reduce(0) { $0 + $1.paid }
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(Money.short(store.billLines(store.currentMonth).reduce(0) { $0 + $1.stillToCome }))
+                    Text(Money.short(lines.reduce(0) { $0 + $1.stillToCome }))
                         .font(.system(size: 40, weight: .heavy, design: .rounded))
-                    Text("still to come in \(monthName), the same figure as your plan")
+                    Text("left to pay in \(monthName) · \(Money.short(paidSoFar)) paid so far")
                         .foregroundStyle(.secondary)
                 }
                 .padding(.vertical, 6)

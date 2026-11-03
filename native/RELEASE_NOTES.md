@@ -3,6 +3,7 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## 0.28, November 3 (next)
+- Bills: the big number is everything left to pay this month (it matches the plan), with what's paid so far beside it.
 
 - Check these: each purchase shows its guessed category as a button. Tap Right to agree, or tap the category to change it.
 - Groceries is now Groceries & Liquor, and liquor and wine shops (Total Wine, Astor Wines, Drizly…) go there. Wine bars stay in Dining & Bars.
