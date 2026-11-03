@@ -2,8 +2,10 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## 0.28, November 3 (evening)
+## Next build
 - Plan lists each paycheck in the income pot, with whose it is (tap to change) and what it adds to a normal month. Pay that stops for 5 weeks stops counting toward your usual.
+
+## 0.28, November 3 (evening)
 - Plan counts a normal two-paycheck month as your usual income. A third paycheck shows up as a bonus when it lands.
 - Planned income above your usual only counts once it arrives. Until then the plan uses your usual.
 - Recommended limits cut at most 25% below usual in a month. If that isn't enough, the plan shows how far over you are.
