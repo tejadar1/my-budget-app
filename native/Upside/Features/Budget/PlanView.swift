@@ -30,7 +30,8 @@ struct PlanView: View {
     private func numbers() -> Numbers {
         let base = store.monthPlan(month)
         let usualIncome = store.averageIncome(before: month) ?? 0
-        let income = plannedIncome > 0 ? max(plannedIncome * 100, base.incomeReceived) : max(usualIncome, base.incomeReceived)
+        let expected = BudgetStore.incomeToPlanOn(planned: plannedIncome > 0 ? plannedIncome * 100 : nil, usual: usualIncome)
+        let income = max(expected, base.incomeReceived)
         let extraSavings = store.plan.map { store.isInMonth($0.month, month) ? $0.goal : 0 } ?? 0
         // $0 for trips means each trip saves its own share.
         let tripCost = trips > 0 ? trips * 100 : store.tripScheduleSetAside(in: month)
@@ -78,10 +79,19 @@ struct PlanView: View {
         } header: {
             Text(month.formatted(.dateTime.month(.wide)))
         } footer: {
-            Text(plannedIncome > 0
-                 ? "\(Money.short(n.base.incomeReceived)) has come in so far. If more arrives, the extra counts; finished months use what really came in."
-                 : "Leave at $0 to plan around your usual income.")
+            Text(incomeFooter(n))
         }
+    }
+
+    private func incomeFooter(_ n: Numbers) -> String {
+        let planned = plannedIncome * 100
+        guard planned > 0 else {
+            return "Leave at $0 to plan around your usual income. Your usual counts a normal month; a third paycheck is a bonus when it lands."
+        }
+        if n.usualIncome > 0 && planned > n.usualIncome {
+            return "Planning on your usual \(Money.short(n.usualIncome)) until more arrives. The other \(Money.short(planned - n.usualIncome)) counts once it's in. \(Money.short(n.base.incomeReceived)) has come in so far."
+        }
+        return "\(Money.short(n.base.incomeReceived)) has come in so far. If more arrives, the extra counts; finished months use what really came in."
     }
 
     private func prioritiesSection(_ n: Numbers) -> some View {

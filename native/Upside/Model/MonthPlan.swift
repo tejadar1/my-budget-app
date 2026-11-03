@@ -75,7 +75,7 @@ extension BudgetStore {
         let everydayLimits = everydayCategories
             .map { limit($0, in: month) ?? averageSpent($0.id, before: month) ?? 0 }.reduce(0, +)
         let planned = isCurrent ? data.priorities?.plannedIncome : nil
-        let expected = planned ?? usualIncome
+        let expected = Self.incomeToPlanOn(planned: planned, usual: usualIncome)
         return MonthPlan(
             income: isCurrent ? max(actualIncome, expected) : actualIncome,
             incomeIsUsual: isCurrent && planned == nil && usualIncome > actualIncome,
@@ -94,7 +94,14 @@ extension BudgetStore {
 
     /// Lowers everyday limits so they fit what there is to spend, taking
     /// more from flexible categories (shopping, dining) and never more than
-    /// 40% of a limit. Returns how much is still over (0 = fits).
+    /// 25% of a limit. Returns how much is still over (0 = fits).
+    /// Plan on what you can count on: a planned figure below your usual is
+    /// used as is; above it, only your usual counts until the rest arrives.
+    static func incomeToPlanOn(planned: Cents?, usual: Cents) -> Cents {
+        guard let planned else { return usual }
+        return usual > 0 ? min(planned, usual) : planned
+    }
+
     /// What's owed across visible credit cards right now.
     var cardsOwed: Cents { creditCards.reduce(0) { $0 + max(0, -$1.balance) } }
 
@@ -103,17 +110,21 @@ extension BudgetStore {
         expenseCategories.filter { $0.group != "Bills" && $0.group != "Trips" && !$0.aimsForZero }
     }
 
+    /// The most a limit is cut below usual in one month. Small steps stick;
+    /// what's still over shows as over, so you can lower more by hand.
+    static let maxMonthlyCut = 0.25
+
     /// Recommended limits for a given amount to spend: each everyday
     /// category starts at its usual (rounded up to $10), then flexible ones
     /// (shopping first, then dining, entertainment…) are trimmed, never more
-    /// than 60%, until the total fits. Doesn't change anything.
+    /// than 25%, until the total fits. Doesn't change anything.
     func recommendedLimits(toSpend: Cents) -> [String: Cents] {
         var base: [String: Cents] = [:]
         for c in everydayCategories { if let l = limitFromAverage(c) { base[c.id] = l } }
         let over = base.values.reduce(0, +) - toSpend
         guard over > 0 else { return base }
         let rooms = Dictionary(uniqueKeysWithValues: everydayCategories.compactMap { c -> (String, Double)? in
-            base[c.id].map { (c.id, Double($0) * max(0.1, flexibility(of: c)) * 0.6) }
+            base[c.id].map { (c.id, Double($0) * max(0.1, flexibility(of: c)) * Self.maxMonthlyCut) }
         })
         let totalRoom = rooms.values.reduce(0, +)
         guard totalRoom > 0 else { return base }
@@ -133,7 +144,7 @@ extension BudgetStore {
     }
 
     @discardableResult
-    func fitLimitsToPlan(_ month: Date, cap: Double = 0.4) -> Cents {
+    func fitLimitsToPlan(_ month: Date, cap: Double = maxMonthlyCut) -> Cents {
         let over = monthPlan(month).limitsOverBy
         guard over > 0 else { return 0 }
         let candidates = expenseCategories.filter { $0.group != "Bills" && $0.group != "Trips" && !$0.aimsForZero }

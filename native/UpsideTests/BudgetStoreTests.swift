@@ -517,7 +517,7 @@ final class BudgetStoreTests: XCTestCase {
         let july = store.monthStart(date(2026, 7, 1))
         XCTAssertEqual(store.paychecks(in: july).count, 3) // Jul 3, 17, 31
         XCTAssertEqual(store.paychecks(in: july).extra, 1)
-        XCTAssertEqual(store.averageIncome(before: store.currentMonth), 433_333, "$2,000 × 26 ÷ 12")
+        XCTAssertEqual(store.averageIncome(before: store.currentMonth), 400_000, "two $2,000 paychecks; the third is a bonus")
     }
 
     func testTwiceAMonthPayIsNotMistakenForBiweekly() {
@@ -649,7 +649,7 @@ final class BudgetStoreTests: XCTestCase {
         store.setLimit("groceries", 60_000); store.setLimit("shopping", 80_000)
         XCTAssertEqual(store.monthPlan(store.currentMonth).limitsOverBy, 45_000)
         let stillOver = store.fitLimitsToPlan(store.currentMonth)
-        XCTAssertLessThan(stillOver, 45_000, "trimmed, though never more than 40% of a limit")
+        XCTAssertLessThan(stillOver, 45_000, "trimmed, though never more than 25% of a limit")
         XCTAssertLessThan(store.category("shopping")!.limit!, 80_000)
     }
 
@@ -698,17 +698,18 @@ final class BudgetStoreTests: XCTestCase {
             store.data.transactions.append(Transaction(id: "sh\(m)", accountId: "r", date: date(2026, m, 10), amount: -120_000,
                                                        payee: "Target", categoryId: "shopping"))
         }
-        store.data.priorities = Priorities(savings: 100_000, cardPaydown: 50_000)
+        store.data.priorities = Priorities(savings: 100_000, cardPaydown: 30_000)
         let plan = store.monthPlan(store.currentMonth)
-        XCTAssertEqual(plan.toSpend, 300_000 - 100_000 - 50_000, "income − savings − card paydown")
-        // Habit says $1,200 shopping + $700 groceries = $1,900, more than the $1,500 to spend.
+        XCTAssertEqual(plan.toSpend, 300_000 - 100_000 - 30_000, "income − savings − card paydown")
+        // Habit says $1,200 shopping + $700 groceries = $1,900, more than the $1,700 to spend.
         store.setLimitsToPlan(store.currentMonth)
         let shopping = store.category("shopping")!.limit!
         XCTAssertLessThan(shopping, 120_000, "shopping is trimmed")
         XCTAssertLessThanOrEqual(store.monthPlan(store.currentMonth).everydayLimits, plan.toSpend)
         XCTAssertGreaterThan(store.category("groceries")!.limit!, 60_000, "groceries trimmed far less than shopping")
-        let recommended = store.recommendedLimits(toSpend: 150_000)
-        XCTAssertLessThanOrEqual(recommended.values.reduce(0, +), 150_000)
+        let recommended = store.recommendedLimits(toSpend: 170_000)
+        XCTAssertLessThanOrEqual(recommended.values.reduce(0, +), 170_000)
+        XCTAssertGreaterThanOrEqual(store.recommendedLimits(toSpend: 0)["shopping"]!, 90_000, "never cut more than 25% in a month")
         XCTAssertEqual(store.recommendedLimits(toSpend: 1_000_000)["shopping"], 120_000, "room to spare: usual stays")
     }
 
@@ -734,7 +735,8 @@ final class BudgetStoreTests: XCTestCase {
     func testPlannedIncomeAndWhenMoreComesIn() throws {
         let store = makeStore()  // $3,000 has come in this month
         store.data.priorities = Priorities(plannedIncome: 400_000)
-        XCTAssertEqual(store.monthPlan(store.currentMonth).income, 400_000, "plan around $4,000 before it arrives")
+        XCTAssertEqual(store.monthPlan(store.currentMonth).income, 300_000, "above usual only counts once it arrives")
+        XCTAssertEqual(BudgetStore.incomeToPlanOn(planned: 400_000, usual: 0), 400_000, "no history: trust the plan")
         store.data.priorities = Priorities(plannedIncome: 250_000)
         let plan = store.monthPlan(store.currentMonth)
         XCTAssertEqual(plan.income, 300_000, "more came in than planned; the extra counts")

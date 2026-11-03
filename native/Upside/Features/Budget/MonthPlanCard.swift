@@ -63,7 +63,9 @@ struct MonthPlanCard: View {
 
     private func lines(_ plan: MonthPlan) -> some View {
         let checks = store.paychecks(in: month)
+        let waitingOnPlanned: Bool = (plan.incomePlanned ?? 0) > plan.income
         let incomeNote: String? = plan.aboveIncomePlan > 0 ? "+\(Money.short(plan.aboveIncomePlan)) more than planned"
+            : waitingOnPlanned ? "usual until more arrives"
             : plan.incomePlanned != nil ? (plan.incomeReceived < plan.income ? "planned · \(Money.short(plan.incomeReceived)) in" : "planned")
             : plan.incomeIsUsual ? "usual"
             : (checks.extra > 0 ? "+\(checks.extra) extra paycheck" : nil)

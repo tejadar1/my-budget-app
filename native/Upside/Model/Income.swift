@@ -66,8 +66,9 @@ extension BudgetStore {
         return (count, extra)
     }
 
-    /// Usual monthly income. Weekly and biweekly pay is the average
-    /// paycheck × 52 or 26 ÷ 12, so a 3-paycheck month doesn't inflate it.
+    /// Usual monthly income. Weekly and biweekly pay counts a normal month:
+    /// 4 or 2 average paychecks. The extra paycheck months bring is a bonus
+    /// that shows up when it arrives, not something to plan spending on.
     /// Other pay is averaged per account over the months it has history.
     func averageIncomeSmoothed(before month: Date) -> Cents? {
         let months = (1...Self.averageMonths).map { self.month(-$0, from: month) }
@@ -83,7 +84,7 @@ extension BudgetStore {
                 let recent = list.filter { $0.date >= oldest }
                 guard !recent.isEmpty else { continue }
                 let average = recent.reduce(0) { $0 + $1.amount } / recent.count
-                total += average * (payer.cadence == .weekly ? 52 : 26) / 12
+                total += average * (payer.cadence == .weekly ? 4 : 2)
                 anyData = true
             } else {
                 for (accountId, paid) in Dictionary(grouping: list, by: \.accountId) {
