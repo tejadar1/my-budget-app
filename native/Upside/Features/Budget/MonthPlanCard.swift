@@ -18,7 +18,7 @@ struct MonthPlanCard: View {
             if !isPast && plan.limitsOverBy > 0 { fitButton(plan) }
             if !isPast, let onSavings {
                 Button(action: onSavings) {
-                    Label("Adjust plan: savings, cards, trips and limits", systemImage: "slider.horizontal.3")
+                    Label("Adjust plan", systemImage: "slider.horizontal.3")
                         .font(.subheadline.weight(.semibold))
                         .frame(maxWidth: .infinity, minHeight: 40)
                         .background(Color.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
