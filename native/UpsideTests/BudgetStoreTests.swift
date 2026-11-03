@@ -759,6 +759,14 @@ final class BudgetStoreTests: XCTestCase {
         store.restoreRecurring("zzq media")
         XCTAssertTrue(store.recurringCharges().contains { $0.id == "zzq media" })
     }
+
+    func testLiquorStoresAreGroceriesAndLiquor() {
+        for payee in ["TOTAL WINE & MORE 1204", "UPTOWN WINE & SPIRITS", "ASTOR WINES", "JOE'S LIQUOR STORE", "DRIZLY"] {
+            XCTAssertEqual(BankSync.categorize(payee: payee, amount: -4_500, rules: []), "groceries", payee)
+        }
+        XCTAssertEqual(BankSync.categorize(payee: "THE PEOPLES WINE BAR", amount: -6_000, rules: []), "dining", "a wine bar is still a bar")
+        XCTAssertEqual(Category.defaults.first { $0.id == "groceries" }?.name, "Groceries & Liquor")
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {

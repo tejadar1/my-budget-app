@@ -189,48 +189,13 @@ struct ReviewView: View {
             }
             Section {
                 ForEach(store.toCheck) { t in
-                    HStack(spacing: 10) {
-                        TransactionRow(transaction: t)
-                        if t.categoryId != nil {
-                            Button { withAnimation { store.confirm(t.id) } } label: {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.title2)
-                                    .foregroundStyle(Theme.accent)
-                            }
-                            .buttonStyle(.borderless)
-                            .accessibilityLabel("\(store.category(t.categoryId)?.name ?? "Category") is right")
-                        }
-                        Menu {
-                            Button {
-                                withAnimation { prompt = store.sort(t.id, as: BankSync.transferCategory) }
-                            } label: {
-                                Label("Card payment or transfer", systemImage: "arrow.left.arrow.right")
-                            }
-                            ForEach(store.groupedCategories) { group in
-                                Section(group.name) {
-                                    ForEach(group.categories) { c in
-                                        Button(c.name) {
-                                            withAnimation { prompt = store.sort(t.id, as: c.id) }
-                                        }
-                                    }
-                                }
-                            }
-                            Button {
-                                newCategoryName = ""
-                                newCategoryFor = t
-                            } label: {
-                                Label("New category…", systemImage: "plus")
-                            }
-                        } label: {
-                            Image(systemName: "pencil.circle")
-                                .font(.title2)
-                                .foregroundStyle(.secondary)
-                        }
-                        .accessibilityLabel("Pick a different category")
-                    }
+                    CheckRow(transaction: t,
+                             onConfirm: { withAnimation { store.confirm(t.id) } },
+                             onPick: { id in withAnimation { prompt = store.sort(t.id, as: id) } },
+                             onNew: { newCategoryName = ""; newCategoryFor = t })
                 }
             } footer: {
-                Text("Upside sorted these on a hunch, and they already count in that category. Tap ✓ if it’s right or the pencil to change it; either way Upside remembers the store.")
+                Text("Upside sorted these on a hunch, and they already count in that category. Tap Right if it is, or tap the category to change it; either way Upside remembers the store.")
             }
         }
         .overlay {
@@ -588,5 +553,67 @@ struct RecommendedCategoriesView: View {
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
         }
+    }
+}
+
+/// One purchase to check: the guessed category is shown as a button you
+/// can tap to change, with a ✓ to agree.
+private struct CheckRow: View {
+    @Environment(BudgetStore.self) private var store
+    let transaction: Transaction
+    let onConfirm: () -> Void
+    let onPick: (String) -> Void
+    let onNew: () -> Void
+
+    var body: some View {
+        let t = transaction
+        let guess = store.category(t.categoryId)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(t.payee).font(.headline).lineLimit(1)
+                Spacer()
+                Text(Money.exact(t.amount)).font(.body.monospacedDigit())
+            }
+            Text([t.date.formatted(.dateTime.month(.abbreviated).day()), store.account(t.accountId)?.fullName]
+                    .compactMap { $0 }.joined(separator: " · "))
+                .font(.footnote).foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                categoryMenu(guess)
+                Spacer()
+                if guess != nil {
+                    Button(action: onConfirm) {
+                        Label("Right", systemImage: "checkmark")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityLabel("\(guess?.name ?? "") is right")
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func categoryMenu(_ guess: Category?) -> some View {
+        Menu {
+            Button { onPick(BankSync.transferCategory) } label: {
+                Label("Card payment or transfer", systemImage: "arrow.left.arrow.right")
+            }
+            ForEach(store.groupedCategories) { group in
+                Section(group.name) {
+                    ForEach(group.categories) { c in Button(c.name) { onPick(c.id) } }
+                }
+            }
+            Button(action: onNew) { Label("New category…", systemImage: "plus") }
+        } label: {
+            HStack(spacing: 4) {
+                Text(guess.map { "\($0.name)?" } ?? "Choose a category")
+                Image(systemName: "chevron.up.chevron.down").font(.caption2)
+            }
+            .font(.subheadline.weight(.semibold))
+            .padding(.horizontal, 12).padding(.vertical, 7)
+            .background(Theme.accent.opacity(0.14), in: Capsule())
+            .foregroundStyle(Theme.accent)
+        }
+        .accessibilityLabel("Category: \(guess?.name ?? "none"). Tap to change")
     }
 }

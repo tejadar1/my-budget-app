@@ -253,7 +253,7 @@ struct TripFund: Codable, Hashable {
 
 extension Category {
     static let defaults: [Category] = [
-        Category(id: "groceries", name: "Groceries", group: "Everyday"),
+        Category(id: "groceries", name: "Groceries & Liquor", group: "Everyday"),
         Category(id: "dining", name: "Dining & Bars", group: "Everyday"),
         Category(id: "gas", name: "Gas & Auto", group: "Everyday"),
         Category(id: "commute", name: "Commuting & Rides", group: "Everyday"),

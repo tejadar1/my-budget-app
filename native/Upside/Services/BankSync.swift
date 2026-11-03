@@ -362,7 +362,10 @@ enum BankSync {
                        "h mart", "99 ranch", "sprouts", "harris teeter", "meijer", "hy-vee", "winco",
                        "albertsons", "vons", "ralphs", "fred meyer", "market basket", "hannaford",
                        "piggly wiggly", "winn-dixie", "food 4 less", "save a lot", "weis markets",
-                       "gristedes", "d'agostino", "morton williams", "western beef", "supermarket", "grocery"]),
+                       "gristedes", "d'agostino", "morton williams", "western beef", "supermarket", "grocery",
+                       "liquor", "wine & spirits", "wine and spirits", "wines & spirits", "spirits shop", "total wine",
+                       "bevmo", "abc fine wine", "astor wines", "wine shop", "wine merchant", "beer distributor",
+                       "drizly", "minibar delivery", "bottle shop"]),
         // Tolls and bridges before transit: "MTA BRIDGES & TUNNELS" is driving.
         ("gas", ["mta bridges", "bridges and tunnels", "bridges & tunnels", "mta b&t", "e-zpass", "ezpass", "ez pass",
                  "tolls by mail", "toll ", "turnpike", "thruway", "port authority toll"]),

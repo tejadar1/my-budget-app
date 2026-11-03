@@ -56,6 +56,9 @@ final class BudgetStore {
                 data.categories[i].name = "Dining & Bars"
             }
             mergeBarsIntoDining(&data)
+            if let i = data.categories.firstIndex(where: { $0.id == "groceries" && $0.name == "Groceries" }) {
+                data.categories[i].name = "Groceries & Liquor"
+            }
             for i in data.categories.indices
             where ["education", "tuition", "school", "childcare", "daycare"].contains(data.categories[i].name.lowercased())
                 && data.categories[i].group == "Everyday" {

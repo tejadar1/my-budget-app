@@ -2,6 +2,11 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## 0.28, November 3 (next)
+
+- Check these: each purchase shows its guessed category as a button. Tap Right to agree, or tap the category to change it.
+- Groceries is now Groceries & Liquor, and liquor and wine shops (Total Wine, Astor Wines, Drizly…) go there. Wine bars stay in Dining & Bars.
+
 ## 0.28, November 2 (cards in the plan, not a bill)
 
 - Credit cards live in one place: the Card paydown line in the month plan. Tap it for what's owed, this month's payments against your target, and each card.
