@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next build
+## 0.28, November 3 (afternoon)
 - Subscriptions: a store that bills several things is checked one price at a time, so iCloud and Apple One are both found, and Tesla Connectivity is found apart from charging (which stays in Gas & Auto).
 - More subscription names recognized, like Apple Services and Tesla subscriptions.
 
