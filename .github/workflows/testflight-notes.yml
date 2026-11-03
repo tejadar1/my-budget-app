@@ -50,7 +50,7 @@ jobs:
           build = None
           for _ in range(80):  # Apple takes a few minutes to process
               found = requests.get(f"{api}/builds", headers=headers(), params={
-                  "filter[app]": app, "filter[version]": os.environ["BUILD"]}).json()["data"]
+                  "filter[app]": app, "filter[version]": os.environ["BUILD"]}).json().get("data", [])  # a hiccup just retries
               if found and found[0]["attributes"]["processingState"] in ("VALID", "INVALID", "FAILED"):
                   build = found[0]; break
               time.sleep(30)
