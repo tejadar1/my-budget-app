@@ -24,12 +24,7 @@ struct PlanView: View {
         var extraSavings: Cents
         var toSpend: Cents
         var recommended: [String: Cents]
-        /// Recommended limits (cents), but never above a limit you already lowered.
-    private func lowerOf(_ recommended: [String: Cents]) -> [String: Int] {
-        recommended.mapValues { $0 / 100 }.merging(limits) { new, current in current > 0 ? min(new, current) : new }
-    }
-
-    /// Limits plus usual spending for categories without one.
+        /// Limits plus usual spending for categories without one.
         var total: Cents
         var owed: Cents
     }
@@ -156,6 +151,11 @@ struct PlanView: View {
                     .foregroundStyle(n.total <= n.toSpend ? Color.secondary : Theme.over)
             }
         }
+    }
+
+    /// Recommended limits (cents), but never above a limit you already lowered.
+    private func lowerOf(_ recommended: [String: Cents]) -> [String: Int] {
+        recommended.mapValues { $0 / 100 }.merging(limits) { new, current in current > 0 ? min(new, current) : new }
     }
 
     /// Limits plus usual spending for categories without one.
