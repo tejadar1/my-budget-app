@@ -12,6 +12,8 @@ struct PlanView: View {
     /// Everyday limits in whole dollars; 0 means no limit.
     @State private var limits: [String: Int] = [:]
     @State private var showExtra = false
+    /// What "Fix it for me" did, shown until the next change.
+    @State private var fixNote: String?
 
     private var month: Date { store.currentMonth }
 
@@ -36,11 +38,7 @@ struct PlanView: View {
         // $0 for trips means each trip saves its own share.
         let tripCost = trips > 0 ? trips * 100 : store.tripScheduleSetAside(in: month)
         let toSpend = income - base.bills - (savings * 100 + extraSavings) - paydown * 100 - tripCost
-        var total = 0
-        for c in store.everydayCategories {
-            let dollars = limits[c.id] ?? 0
-            total += dollars > 0 ? dollars * 100 : (store.averageSpent(c.id, before: month) ?? 0)
-        }
+        let total = limitsTotal(limits)
         return Numbers(base: base, usualIncome: usualIncome, extraSavings: extraSavings, toSpend: toSpend,
                        recommended: store.recommendedLimits(toSpend: toSpend), total: total, owed: store.cardsOwed)
     }
@@ -147,9 +145,44 @@ struct PlanView: View {
         } header: {
             Text("Everyday limits")
         } footer: {
-            Text(limitsFooter(n))
-                .foregroundStyle(n.total <= n.toSpend ? Color.secondary : Theme.over)
+            VStack(alignment: .leading, spacing: 6) {
+                if let fixNote { Text(fixNote).foregroundStyle(Theme.accent) }
+                Text(limitsFooter(n))
+                    .foregroundStyle(n.total <= n.toSpend ? Color.secondary : Theme.over)
+            }
         }
+    }
+
+    /// Limits plus usual spending for categories without one.
+    private func limitsTotal(_ limits: [String: Int]) -> Cents {
+        store.everydayCategories.reduce(0) { sum, c in
+            let dollars = limits[c.id] ?? 0
+            return sum + (dollars > 0 ? dollars * 100 : (store.averageSpent(c.id, before: month) ?? 0))
+        }
+    }
+
+    /// Closes the gap the least painful way: trim flexible limits further
+    /// (up to 40%), then take from trips, then card paydown, and savings
+    /// only as a last resort, since those come first in the plan.
+    private func fixForMe(_ n: Numbers) {
+        let before = limitsTotal(limits)
+        let deeper = store.recommendedLimits(toSpend: n.toSpend, cap: 0.4).mapValues { $0 / 100 }
+        var gap = (limitsTotal(deeper) - n.toSpend + 999) / 1000 * 10
+        var parts: [String] = []
+        let trimmed = (before - limitsTotal(deeper)) / 100
+        if trimmed > 0 { parts.append("trimmed limits \(Money.short(trimmed * 100))") }
+        // Trips at $0 means each trip saves its own share, so keep $10.
+        func take(_ value: inout Int, _ label: String, keep: Int = 0) {
+            guard gap > 0, value > keep else { return }
+            let amount = min(value - keep, gap)
+            value -= amount; gap -= amount
+            parts.append("\(Money.short(amount * 100)) less \(label)")
+        }
+        take(&trips, "for trips", keep: 10)
+        take(&paydown, "on cards")
+        take(&savings, "saved")
+        withAnimation { limits = deeper }
+        fixNote = parts.isEmpty ? nil : "Fixed: " + parts.joined(separator: ", ") + ". Tap Save to keep it."
     }
 
     private func limitsFooter(_ n: Numbers) -> String {
@@ -169,7 +202,7 @@ struct PlanView: View {
                 if paydown >= gap {
                     Button("Pay \(Money.short(gap * 100)) less on cards") { withAnimation { paydown -= gap } }
                 }
-                if trips >= gap {
+                if trips > gap {
                     Button("Put \(Money.short(gap * 100)) less toward trips") { withAnimation { trips -= gap } }
                 }
                 if savings >= gap {
@@ -178,10 +211,16 @@ struct PlanView: View {
                 Button("Cut limits deeper this month") {
                     withAnimation { limits = store.recommendedLimits(toSpend: n.toSpend, cap: 0.5).mapValues { $0 / 100 } }
                 }
+                Button { fixForMe(n) } label: {
+                    Label("Fix it for me", systemImage: "wand.and.stars")
+                        .fontWeight(.semibold).frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .listRowBackground(Color.clear)
             } header: {
                 Text("\(Money.short(gap * 100)) short")
             } footer: {
-                Text("Recommended limits trim at most 25% below usual, so they can't close this alone. Take it from one priority, or cut deeper (up to half on flexible spending like shopping and dining).")
+                Text("Recommended limits trim at most 25% below usual, so they can't close this alone. Fix it for me trims flexible limits a bit more, then takes from trips, then card paydown, and savings last.")
             }
         }
     }

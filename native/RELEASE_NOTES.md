@@ -4,6 +4,7 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 
 ## Next build
 - Plan: when recommended limits still don't fit, it shows how much you're short and how to close it: pay less on cards, put less toward trips, save less, or cut limits deeper this month.
+- Fix it for me: one button that closes the gap for you. It trims flexible limits a bit more, then takes from trips, then card paydown, and savings last, and says what it changed.
 
 ## 0.28, November 3 (late)
 - Not a bill: the store's purchases move to an everyday category (check it in Check these), so the bills total drops and they count against your limits. They stay out of Bills after syncs.
