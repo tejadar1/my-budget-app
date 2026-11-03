@@ -788,6 +788,17 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(data.transactions.map { $0.categoryId }, ["pets", "kids", "fitness"])
         XCTAssertNil(data.categories.first { $0.id == "fitness-1a" })
     }
+
+    func testEmptyQuietAccountsTuckAway() {
+        let store = makeStore()
+        store.data.accounts.append(Account(id: "old", name: "Old Savings", institution: "Ally", kind: .savings, balance: 0))
+        XCTAssertTrue(store.emptyAccounts.contains { $0.id == "old" })
+        XCTAssertFalse(store.activeAccounts.contains { $0.id == "old" })
+        // Used again: back in the list.
+        store.data.transactions.append(Transaction(id: "o", accountId: "old", date: date(2026, 10, 10), amount: 5_000,
+                                                   payee: "Transfer", isTransfer: true))
+        XCTAssertTrue(store.activeAccounts.contains { $0.id == "old" })
+    }
     // MARK: Income, trips, alerts
 
     func testIncomeAndLeftOver() {

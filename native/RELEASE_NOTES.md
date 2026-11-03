@@ -11,6 +11,7 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 - Savings shows where its amount comes from: every month (set in Plan) and any extra just this month, which you can remove in Plan.
 - Savings card figures are clearer: moved to savings so far, usually moved, extra paid on cards.
 - Bills & subscriptions shows the same "still to come" as the plan.
+- Accounts: long-press a card to hide it. Accounts at $0 with no activity in 90 days move to an "Empty accounts" group at the bottom.
 
 ## 0.28, November 2 (cards in the plan, not a bill)
 

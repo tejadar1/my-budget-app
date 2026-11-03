@@ -160,6 +160,17 @@ final class BudgetStore {
     var visibleAccounts: [Account] { data.accounts.filter { !$0.isHidden } }
     var hiddenAccounts: [Account] { data.accounts.filter(\.isHidden) }
 
+    /// $0 balance and nothing in the last 90 days: tucked out of the main list.
+    func isEmptyAndQuiet(_ account: Account) -> Bool {
+        guard account.balance == 0 else { return false }
+        let since = now().addingTimeInterval(-90 * 86_400)
+        return !data.transactions.contains { $0.accountId == account.id && $0.date >= since }
+    }
+
+    /// Accounts shown as cards on Accounts: not hidden, not empty and quiet.
+    var activeAccounts: [Account] { visibleAccounts.filter { !isEmptyAndQuiet($0) } }
+    var emptyAccounts: [Account] { visibleAccounts.filter(isEmptyAndQuiet) }
+
     func setHidden(_ accountId: String, _ hidden: Bool) {
         guard let i = data.accounts.firstIndex(where: { $0.id == accountId }) else { return }
         data.accounts[i].hidden = hidden ? true : nil

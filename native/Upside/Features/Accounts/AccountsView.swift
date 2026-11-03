@@ -34,16 +34,28 @@ struct AccountsView: View {
                     }
 
                     VStack(spacing: 12) {
-                        ForEach(store.visibleAccounts) { account in
+                        ForEach(store.activeAccounts) { account in
                             Button { selected = account } label: {
                                 WalletCard(account: account)
                             }
                             .buttonStyle(.plain)
+                            // Long-press to hide without opening the account.
+                            .contextMenu {
+                                Button { withAnimation { store.setHidden(account.id, true) } } label: {
+                                    Label("Hide account", systemImage: "eye.slash")
+                                }
+                            }
                         }
                     }
 
+                    if !store.emptyAccounts.isEmpty {
+                        AccountGroupSection(title: "Empty accounts", icon: "tray",
+                                            note: "$0 and no activity in 90 days. They come back when they're used.",
+                                            accounts: store.emptyAccounts, buttonTitle: "Hide") { store.setHidden($0, true) }
+                    }
                     if !store.hiddenAccounts.isEmpty {
-                        HiddenAccountsSection()
+                        AccountGroupSection(title: "Hidden accounts", icon: "eye.slash", note: nil,
+                                            accounts: store.hiddenAccounts, buttonTitle: "Show") { store.setHidden($0, false) }
                     }
                 }
                 .padding(.horizontal)
@@ -274,18 +286,23 @@ struct ReorderAccountsView: View {
     }
 }
 
-/// Bottom of Accounts: hidden accounts, each with Show.
-private struct HiddenAccountsSection: View {
-    @Environment(BudgetStore.self) private var store
+/// Bottom of Accounts: a collapsible group of accounts with one action each.
+private struct AccountGroupSection: View {
+    let title: String
+    let icon: String
+    let note: String?
+    let accounts: [Account]
+    let buttonTitle: String
+    let action: (String) -> Void
     @State private var isOpen = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button { withAnimation(.snappy) { isOpen.toggle() } } label: {
                 HStack {
-                    Label("Hidden accounts", systemImage: "eye.slash")
+                    Label(title, systemImage: icon)
                     Spacer()
-                    Text("\(store.hiddenAccounts.count)").foregroundStyle(.secondary)
+                    Text("\(accounts.count)").foregroundStyle(.secondary)
                     Image(systemName: "chevron.right")
                         .font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
                         .rotationEffect(.degrees(isOpen ? 90 : 0))
@@ -293,10 +310,11 @@ private struct HiddenAccountsSection: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityHint(isOpen ? "Collapses the list" : "Shows hidden accounts")
-
             if isOpen {
-                ForEach(store.hiddenAccounts) { account in
+                if let note {
+                    Text(note).font(.footnote).foregroundStyle(.secondary).padding(.top, 8)
+                }
+                ForEach(accounts) { account in
                     Divider().padding(.vertical, 10)
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
@@ -304,9 +322,9 @@ private struct HiddenAccountsSection: View {
                             Text(account.institution).font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Button("Show") { withAnimation { store.setHidden(account.id, false) } }
+                        Button(buttonTitle) { withAnimation { action(account.id) } }
                             .buttonStyle(.bordered)
-                            .accessibilityLabel("Show \(account.name)")
+                            .accessibilityLabel("\(buttonTitle) \(account.name)")
                     }
                 }
             }
