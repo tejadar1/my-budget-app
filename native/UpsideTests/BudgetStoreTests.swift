@@ -734,6 +734,11 @@ final class BudgetStoreTests: XCTestCase {
 
     func testPlannedIncomeAndWhenMoreComesIn() throws {
         let store = makeStore()  // $3,000 has come in this month
+        for m in 7...9 {
+            store.data.transactions.append(Transaction(id: "pay\(m)", accountId: "r", date: date(2026, m, 15),
+                                                       amount: 300_000, payee: "Payroll", categoryId: "income"))
+        }
+        XCTAssertEqual(store.averageIncome(before: store.currentMonth), 300_000)
         store.data.priorities = Priorities(plannedIncome: 400_000)
         XCTAssertEqual(store.monthPlan(store.currentMonth).income, 300_000, "above usual only counts once it arrives")
         XCTAssertEqual(BudgetStore.incomeToPlanOn(planned: 400_000, usual: 0), 400_000, "no history: trust the plan")
