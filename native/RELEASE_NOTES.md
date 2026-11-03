@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next build
+## 0.28, November 3 (late)
 - Income to plan for is used as you enter it, even above your usual (your usual can be low when a bank only shares a few weeks). Plan says how far above usual you are.
 - Plan lists each paycheck in the income pot, with whose it is (tap to change) and what it adds to a normal month. Pay that stops for 5 weeks stops counting toward your usual.
 
