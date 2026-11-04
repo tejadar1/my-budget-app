@@ -6,7 +6,6 @@ struct BudgetView: View {
     @State private var showAll = false
     @State private var showLimits = false
     @State private var showPeople = false
-    @State private var showSave = false
     @State private var showPriorities = false
     @State private var recapMonth: MonthRef?
     @State private var openPurchase: PurchaseRef?
@@ -125,7 +124,6 @@ struct BudgetView: View {
                 }
             }
             .sheet(isPresented: $showLimits) { LimitsView() }
-            .sheet(isPresented: $showSave) { SavingsPlanView() }
             .sheet(isPresented: $showPriorities) { PlanView() }
             .sheet(item: $recapMonth) { RecapView(month: $0.date) }
             .sheet(item: $openPurchase) { TransactionSheet(transactionId: $0.id) }
@@ -144,7 +142,7 @@ struct BudgetView: View {
         case "business": path.append(Route.business)
         case "search": path.append(Route.search(open.id))
         case "limits", "recommended", "limit": showLimits = true
-        case "save": showSave = true
+        case "save": showPriorities = true
         case "priorities": showPriorities = true
         case "recap": recapMonth = MonthRef(date: store.month(-1, from: store.currentMonth))
         case "purchase":
@@ -250,134 +248,6 @@ struct MonthSwitcher: View {
 }
 
 // MARK: - Summary
-
-struct SummaryCard: View {
-    @Environment(BudgetStore.self) private var store
-    let month: Date
-    /// This month only: opens the savings plan.
-    var onSave: (() -> Void)? = nil
-
-    var body: some View {
-        let limit = store.totalLimit(in: month)
-        let spent = store.totalSpent(in: month)
-        let left = limit - spent
-        let hasLimits = limit > 0
-        let isOver = hasLimits && left < 0
-        let isPast = month < store.currentMonth
-        let average = store.averageTotal(before: month)
-        let byOwner = store.spentByOwner(in: month)
-
-        VStack(alignment: .leading, spacing: 14) {
-            Text(isPast ? month.formatted(.dateTime.month(.wide)).uppercased() : "THIS MONTH")
-                .font(.footnote.weight(.bold))
-                .foregroundStyle(.white.opacity(0.82))
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(!hasLimits ? "\(Money.short(spent)) spent"
-                     : isOver ? "\(Money.short(left)) over"
-                     : isPast ? "\(Money.short(left)) under" : "\(Money.short(left)) left")
-                    .heroNumber(42)
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(1)
-                Text(!hasLimits ? "No monthly limits yet"
-                     : isPast ? "spent \(Money.short(spent)) of \(Money.short(limit))"
-                     : "of \(Money.short(limit)) · \(daysLeftText)")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.86))
-                if let average {
-                    Text("Your usual month: \(Money.short(average))")
-                        .font(.footnote)
-                        .foregroundStyle(.white.opacity(0.86))
-                }
-            }
-
-            if hasLimits {
-                SplitBar(
-                    fraction: Double(spent) / Double(max(1, limit)),
-                    segments: segments(byOwner),
-                    fill: isOver ? Theme.over : .white,
-                    track: .black.opacity(0.3),
-                    height: 10,
-                    marker: average.map { Double($0) / Double(max(1, limit)) },
-                    markerColor: .white,
-                    markerLabel: "usual",
-                    overflow: Theme.over)
-            } else {
-                Button {
-                    withAnimation { store.setLimitsFromAverages() }
-                } label: {
-                    Text("Use my averages as limits")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                        .foregroundStyle(Color(hex: 0x14532D))
-                        .background(.white, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-                .buttonStyle(.plain)
-            }
-
-            // Always shows each person and Shared, $0 included, so the row
-            // doesn't vanish early in a month; "Unassigned" only when used.
-            if store.people.isSetUp {
-                let owners: [Owner] = [.p1] + (store.people.p2.isEmpty ? [] : [.p2]) + [.shared]
-                    + ((byOwner[.unassigned] ?? 0) > 0 ? [.unassigned] : [])
-                HStack {
-                    ForEach(owners) { owner in
-                        HStack(spacing: 6) {
-                            Circle().fill(owner.color).frame(width: 8, height: 8)
-                                .overlay(Circle().stroke(.white.opacity(0.6), lineWidth: 1))
-                            Text(store.people.name(owner))
-                            Text(Money.short(byOwner[owner] ?? 0)).bold()
-                        }
-                        .font(.footnote)
-                        if owner != owners.last { Spacer(minLength: 4) }
-                    }
-                }
-            }
-
-            if let onSave {
-                savingsButton(onSave)
-            }
-        }
-        .foregroundStyle(.white)
-        .padding(22)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.heroGradient, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-    }
-
-    /// "Saving $250 this month · stay under 4 limits", or an invitation.
-    private func savingsButton(_ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: "banknote.fill").font(.title3)
-                VStack(alignment: .leading, spacing: 1) {
-                    if let plan = store.plan {
-                        Text("Saving \(Money.short(store.savings(of: plan.limits, in: month))) this month")
-                            .font(.headline)
-                        Text("Stay under \(plan.limits.count) lowered limit\(plan.limits.count == 1 ? "" : "s")")
-                            .font(.footnote).opacity(0.86)
-                    } else {
-                        Text("Set a savings goal").font(.headline)
-                        Text("See what to trim to save it").font(.footnote).opacity(0.86)
-                    }
-                }
-                Spacer()
-                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).opacity(0.7)
-            }
-            .padding(12)
-            .background(.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var daysLeftText: String {
-        switch store.daysLeftInMonth {
-        case 0: return "last day of the month"
-        case 1: return "1 day to go"
-        case let n: return "\(n) days to go"
-        }
-    }
-}
 
 /// Bar segments in owner order; empty when nothing is assigned yet so the
 /// plain status color shows instead.

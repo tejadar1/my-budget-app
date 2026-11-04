@@ -3,6 +3,11 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next build
+- Budget card leads with one number and bar; tap Details for income, bills, savings and trips.
+- Savings is one number, set in Plan; the Savings card shows how much has moved toward it.
+- Plan shows where your income goes as one bar, with sliders for savings, card paydown and trips, and what each means (a year of savings, months to clear cards).
+- Plan: "Use my usual income" switch, and an "Extra just this month" amount (replaces the separate Save money screen).
+- Limits change only in Plan; Categories in Settings shows how each was set.
 - First run shows only the names card and setup steps; Fees and Trips appear once there's data.
 
 ## 0.28, November 4 (Apple polish)

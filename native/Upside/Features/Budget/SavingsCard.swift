@@ -19,37 +19,34 @@ struct SavingsCard: View {
                 HStack {
                     Text("SAVINGS").font(.footnote.weight(.bold)).foregroundStyle(.secondary)
                     Spacer()
-                    Text(goal > 0 ? "Change" : "Set a goal")
+                    Text(goal > 0 ? "Change in Plan" : "Set in Plan")
                         .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.accent)
                 }
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(goal > 0 ? Money.short(goal) : "No goal yet")
-                        .heroNumber(30)
-                        .foregroundStyle(goal > 0 ? Theme.accent : .primary)
-                    if goal > 0 { Text("this month").foregroundStyle(.secondary) }
+                if goal > 0 {
+                    // One number: what's moved so far against Plan's savings.
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(Money.short(saved)).heroNumber(30).foregroundStyle(Theme.accent)
+                        Text("of \(Money.short(goal)) moved").foregroundStyle(.secondary)
+                    }
+                    SplitBar(fraction: Double(saved) / Double(goal), fill: Theme.accent, height: 6)
+                    Text(breakdown(plan, goal: goal)).font(.footnote).foregroundStyle(.secondary)
+                } else {
+                    Text("Nothing set aside yet").font(.title3.weight(.semibold))
+                    Text("Pay yourself first: pick an amount in Plan and limits fit around it.")
+                        .font(.footnote).foregroundStyle(.secondary)
                 }
                 if goal > 0 {
-                    // Where the number comes from.
-                    VStack(alignment: .leading, spacing: 2) {
-                        if goal - plan.savingsExtra > 0 {
-                            Text("\(Money.short(goal - plan.savingsExtra)) every month (set in Plan)")
-                        }
-                        if plan.savingsExtra > 0 {
-                            Text("\(Money.short(plan.savingsExtra)) extra just this month (from Save money)")
-                        }
-                    }
-                    .font(.footnote).foregroundStyle(.secondary)
+                    Text(status(plan))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(plan.leftToSpend >= 0 ? Theme.accent : Theme.over)
                 }
-                Text(status(plan, goal: goal))
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(plan.leftToSpend >= 0 ? Theme.accent : Theme.over)
-                Divider()
-                HStack(alignment: .top) {
-                    figure("Moved to savings so far", saved)
-                    Spacer()
-                    if let usual { figure("Usually moved", usual) }
-                    Spacer()
-                    if payoff > 0 { figure("Extra paid on cards", payoff) }
+                if usual != nil || payoff > 0 {
+                    Divider()
+                    HStack(alignment: .top) {
+                        if let usual { figure("Usually moved", usual) }
+                        Spacer()
+                        if payoff > 0 { figure("Extra paid on cards", payoff) }
+                    }
                 }
             }
             .card()
@@ -57,9 +54,15 @@ struct SavingsCard: View {
         .buttonStyle(.plain)
     }
 
-    private func status(_ plan: MonthPlan, goal: Cents) -> String {
-        if goal == 0 { return "Pick an amount and Upside shows what to trim." }
-        return plan.leftToSpend >= 0
+    private func breakdown(_ plan: MonthPlan, goal: Cents) -> String {
+        let monthly = goal - plan.savingsExtra
+        if plan.savingsExtra == 0 { return "\(Money.short(monthly)) every month" }
+        if monthly == 0 { return "\(Money.short(plan.savingsExtra)) just this month" }
+        return "\(Money.short(monthly)) every month + \(Money.short(plan.savingsExtra)) extra this month"
+    }
+
+    private func status(_ plan: MonthPlan) -> String {
+        plan.leftToSpend >= 0
             ? "On track: spending is leaving room for it."
             : "At risk: \(Money.short(-plan.leftToSpend)) over is coming out of it."
     }

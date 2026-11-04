@@ -6,6 +6,8 @@ struct MonthPlanCard: View {
     @Environment(BudgetStore.self) private var store
     let month: Date
     var onSavings: (() -> Void)? = nil
+    /// The plan lines fold away so the card leads with one number, like Wallet.
+    @AppStorage("planLinesShown") private var showLines = false
 
     var body: some View {
         let plan = store.monthPlan(month)
@@ -13,9 +15,12 @@ struct MonthPlanCard: View {
         VStack(alignment: .leading, spacing: 14) {
             header(plan, isPast: isPast)
             bar(plan)
-            lines(plan)
             ownerLegend
-            if !isPast && plan.limitsOverBy > 0 { fitButton(plan) }
+            planToggle(plan)
+            if showLines {
+                lines(plan).transition(.opacity.combined(with: .move(edge: .top)))
+            }
+            if !isPast && plan.limitsOverBy > 0 && onSavings != nil { fitButton(plan) }
             if !isPast, let onSavings {
                 Button(action: onSavings) {
                     Label("Adjust plan", systemImage: "slider.horizontal.3")
@@ -59,6 +64,22 @@ struct MonthPlanCard: View {
             SplitBar(fraction: fraction, segments: parts, fill: .white, track: .black.opacity(0.3),
                      height: 10, overflow: Theme.over)
         }
+    }
+
+    private func planToggle(_ plan: MonthPlan) -> some View {
+        Button { withAnimation(.snappy) { showLines.toggle() } } label: {
+            HStack(spacing: 6) {
+                Text("\(Money.short(plan.toSpend)) to spend of \(Money.short(plan.income)) income")
+                    .font(.subheadline)
+                Spacer()
+                Text(showLines ? "Hide" : "Details").font(.subheadline.weight(.semibold))
+                Image(systemName: "chevron.down").font(.caption.weight(.semibold))
+                    .rotationEffect(.degrees(showLines ? 180 : 0))
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint(showLines ? "Hides the plan" : "Shows income, bills, savings and trips")
     }
 
     private func lines(_ plan: MonthPlan) -> some View {
@@ -132,12 +153,13 @@ struct MonthPlanCard: View {
     }
 
     private func fitButton(_ plan: MonthPlan) -> some View {
-        Button { withAnimation { _ = store.fitLimitsToPlan(month) } } label: {
+        // Limits change in Plan only, where the trade-offs are shown.
+        Button { onSavings?() } label: {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Your everyday limits are \(Money.short(plan.limitsOverBy)) more than you have")
                     .font(.subheadline.weight(.semibold))
-                Text("Tap to trim them to fit, mostly from shopping and dining.")
-                    .font(.footnote).opacity(0.86)
+                Text("Open Plan to fix it.")
+                    .font(.footnote).opacity(0.9)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(12)
@@ -166,7 +188,7 @@ struct MonthPlanCard: View {
         HStack(spacing: 6) {
             Text(label).font(bold ? Font.subheadline.weight(.bold) : Font.subheadline)
             if let note {
-                Text(note).font(.caption).opacity(0.75)
+                Text(note).font(.caption).opacity(0.9)
             }
             Spacer()
             Text(amountText(value))

@@ -234,28 +234,17 @@ struct LimitsView: View {
     @Environment(BudgetStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @State private var showRecommended = LaunchArgs.open?.kind == "recommended"
-    @State private var confirmRecalc = false
     @State private var openLimit: String? = LaunchArgs.open?.kind == "limit" ? LaunchArgs.open?.id : nil
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    Button {
-                        confirmRecalc = true
-                    } label: {
-                        Label("Recalculate to fit my plan", systemImage: "arrow.clockwise")
-                    }
-                    .confirmationDialog("Recalculate every limit?", isPresented: $confirmRecalc, titleVisibility: .visible) {
-                        Button("Recalculate") { withAnimation { _ = store.setLimitsToPlan(store.currentMonth) } }
-                    } message: {
-                        Text("Each everyday limit starts from your usual, then shopping, dining and other flexible spending is trimmed so everything fits after bills, savings, card paydown and trips. Limits you typed in are replaced.")
-                    }
                     Button { showRecommended = true } label: {
                         Label("Recommended categories", systemImage: "sparkles")
                     }
                 } footer: {
-                    Text("Tap a category to see how its limit was set.")
+                    Text("Limits are set in Plan. Tap a category to see how its limit was set.")
                 }
                 ForEach(store.groupedCategories) { group in
                     if group.name != "Trips" {
@@ -273,7 +262,7 @@ struct LimitsView: View {
                 }
                 AddCategorySection()
             }
-            .navigationTitle("Categories & limits")
+            .navigationTitle("Categories")
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showRecommended) { RecommendedCategoriesView() }
             .navigationDestination(isPresented: Binding(get: { openLimit != nil }, set: { if !$0 { openLimit = nil } })) {
@@ -345,7 +334,6 @@ private struct LimitRow: View {
 struct LimitDetailView: View {
     @Environment(BudgetStore.self) private var store
     let categoryId: String
-    @State private var dollars = 0
 
     var body: some View {
         if let category = store.category(categoryId) {
@@ -378,25 +366,15 @@ struct LimitDetailView: View {
                 }
 
                 Section {
-                    HStack {
-                        Text("Monthly limit")
-                        Spacer()
-                        TextField("No limit", value: $dollars, format: .currency(code: "USD").precision(.fractionLength(0)))
-                            .keyboardType(.numberPad)
-                            .multilineTextAlignment(.trailing)
-                            .font(.title3.weight(.semibold))
-                            .frame(maxWidth: 140)
-                    }
-                    if let suggested, category.limit != suggested {
-                        Button("Use my usual: \(Money.short(suggested))") { dollars = suggested / 100 }
-                    }
-                    if category.limit != nil {
-                        Button("Remove limit", role: .destructive) { dollars = 0 }
+                    LabeledContent("Monthly limit") {
+                        Text(category.limit.map(Money.short) ?? "No limit")
+                            .font(.title3.weight(.semibold)).monospacedDigit()
                     }
                 } header: {
                     Text("Limit")
                 } footer: {
-                    Text(explanation(category, usual: usual, suggested: suggested))
+                    // Plan is the one place limits change, so they always fit the month.
+                    Text(explanation(category, usual: usual, suggested: suggested) + " Change it in Plan.")
                 }
 
                 Section {
@@ -410,10 +388,6 @@ struct LimitDetailView: View {
             }
             .navigationTitle(category.name)
             .navigationBarTitleDisplayMode(.inline)
-            .onAppear { dollars = (category.limit ?? 0) / 100 }
-            .onChange(of: dollars) { _, newValue in
-                store.setLimit(categoryId, newValue > 0 ? newValue * 100 : nil)
-            }
         }
     }
 

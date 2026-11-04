@@ -65,7 +65,7 @@ struct SettingsView: View {
 
                 Section {
                     Button { showLimits = true } label: {
-                        row("Categories & limits", icon: "chart.bar.fill", color: Theme.accent)
+                        row("Categories", icon: "square.grid.2x2.fill", color: Theme.accent)
                     }
                     NavigationLink {
                         ReviewView()
