@@ -48,10 +48,10 @@ struct BudgetView: View {
                         if isCurrentMonth {
                             SavingsCard(month: month) { showPriorities = true }
                         }
-                    }
 
-                    SectionTitle(text: "By category")
-                    SpendingSubtotals(month: month)
+                        SectionTitle(text: "By category")
+                        SpendingSubtotals(month: month)
+                    }
 
                     if !store.toCheck.isEmpty {
                         NavigationLink(value: Route.review) {
@@ -60,7 +60,7 @@ struct BudgetView: View {
                         .buttonStyle(.plain)
                     }
 
-                    categories
+                    if !store.data.transactions.isEmpty { categories }
 
                     BusinessRow()
 
