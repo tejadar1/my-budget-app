@@ -105,7 +105,7 @@ struct CardsView: View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(Money.short(owed)).font(.system(size: 40, weight: .heavy, design: .rounded))
+                    Text(Money.short(owed)).heroNumber(40)
                     Text("owed across your cards").foregroundStyle(.secondary)
                 }
                 .padding(.vertical, 6)

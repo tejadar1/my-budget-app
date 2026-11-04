@@ -16,7 +16,7 @@ struct AccountsView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Net worth").font(.subheadline).foregroundStyle(.secondary)
                             Text(Money.short(store.netWorth))
-                                .font(.system(size: 40, weight: .heavy, design: .rounded))
+                                .heroNumber(40)
                                 .foregroundStyle(store.netWorth < 0 ? Theme.over : Theme.accent)
                             if let last = store.data.lastBankSync {
                                 Text("Updated \(last.formatted(.relative(presentation: .named)))")
@@ -211,7 +211,7 @@ struct AccountSheet: View {
                         }
                     } footer: {
                         if account.kind == .credit {
-                            Text("Credit cards show what you charged and paid each month. Payments to them aren’t spending.")
+                            Text("Payments to cards aren’t spending.")
                         }
                     }
                     Section("Whose account") {
@@ -228,16 +228,16 @@ struct AccountSheet: View {
                                 }
                             }))
                     } footer: {
-                        Text("Turn off for mortgages, 401(k)s and other accounts that aren’t everyday spending.")
+                        Text("Off for mortgages, 401(k)s and other non-everyday accounts.")
                     }
                     Section {
-                        Button(account.isHidden ? "Show account" : "Hide account",
-                               role: account.isHidden ? nil : .destructive) {
+                        // Hiding can be undone, so it isn't styled as destructive.
+                        Button(account.isHidden ? "Show account" : "Hide account") {
                             store.setHidden(account.id, !account.isHidden)
                             if !account.isHidden { dismiss() }
                         }
                     } footer: {
-                        Text("Hidden accounts stay connected but leave Accounts, net worth and your budget. Unhide them at the bottom of Accounts.")
+                        Text("Leaves Accounts, net worth and your budget. Show it again at the bottom of Accounts.")
                     }
                     Section("Recent") {
                         ForEach(store.data.transactions.filter { $0.accountId == account.id }.prefix(30)) { t in

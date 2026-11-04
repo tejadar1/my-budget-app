@@ -2,6 +2,18 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next build
+- Store names read cleanly: "SQ *BLUE BOTTLE #12" shows as "Blue Bottle". The bank's text is still on the purchase screen.
+- Purchases show a category icon, with a small dot for whose account it was.
+- Spending shows without a minus sign; money in shows with a plus, like Apple Card.
+- Big numbers grow with your iPhone's Text Size setting.
+- Shorter explanations under each section.
+- Same words everywhere: "left to pay" for bills, "Categories & limits" in Settings.
+- Hide account is no longer red, since you can undo it. Month arrows are easier to tap.
+- Business shows a clear empty screen when there's nothing yet.
+- First run asks for your names, then shows the setup steps; the plan appears once there's data.
+- New categories are suggested after 3 purchases, not 1.
+
 ## 0.28, November 3 (afternoon)
 - Subscriptions: a store that bills several things is checked one price at a time, so iCloud and Apple One are both found, and Tesla Connectivity is found apart from charging (which stays in Gas & Auto).
 - More subscription names recognized, like Apple Services and Tesla subscriptions.

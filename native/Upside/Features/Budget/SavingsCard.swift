@@ -24,7 +24,7 @@ struct SavingsCard: View {
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(goal > 0 ? Money.short(goal) : "No goal yet")
-                        .font(.system(size: 30, weight: .heavy, design: .rounded))
+                        .heroNumber(30)
                         .foregroundStyle(goal > 0 ? Theme.accent : .primary)
                     if goal > 0 { Text("this month").foregroundStyle(.secondary) }
                 }

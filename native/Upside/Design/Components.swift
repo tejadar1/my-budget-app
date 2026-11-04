@@ -149,3 +149,83 @@ struct OwnerPicker: View {
         .pickerStyle(.segmented)
     }
 }
+
+/// A category's symbol in a colored rounded square, like Settings rows.
+/// An optional dot in the corner says whose account it was.
+struct CategoryIcon: View {
+    let categoryId: String?
+    var isTransfer = false
+    var isIncome = false
+    var owner: Owner? = nil
+    var size: CGFloat = 32
+
+    var body: some View {
+        let style = isTransfer ? ("arrow.left.arrow.right", Color.gray)
+            : isIncome ? ("arrow.down", Color.green)
+            : Self.style(categoryId)
+        RoundedRectangle(cornerRadius: size * 0.24, style: .continuous)
+            .fill(style.1.gradient)
+            .frame(width: size, height: size)
+            .overlay(Image(systemName: style.0).font(.system(size: size * 0.46, weight: .semibold)).foregroundStyle(.white))
+            .overlay(alignment: .bottomTrailing) {
+                if let owner, owner != .unassigned {
+                    Circle().fill(owner.color)
+                        .frame(width: size * 0.38, height: size * 0.38)
+                        .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 2))
+                        .offset(x: size * 0.12, y: size * 0.12)
+                }
+            }
+            .accessibilityHidden(true)
+    }
+
+    static func style(_ id: String?) -> (String, Color) {
+        // Categories you add get ids like "coffee-1a2b".
+        switch id.map({ String($0.split(separator: "-").first ?? "") }) {
+        case "groceries": return ("cart.fill", .green)
+        case "dining": return ("fork.knife", .orange)
+        case "gas": return ("fuelpump.fill", .blue)
+        case "commute": return ("tram.fill", .indigo)
+        case "shopping": return ("bag.fill", .pink)
+        case "entertainment": return ("ticket.fill", .purple)
+        case "health": return ("cross.case.fill", .red)
+        case "personal": return ("sparkles", .teal)
+        case "kids": return ("figure.and.child.holdinghands", .yellow)
+        case "pets": return ("pawprint.fill", .brown)
+        case "fitness": return ("figure.run", .orange)
+        case "home": return ("hammer.fill", .brown)
+        case "gifts": return ("gift.fill", .red)
+        case "housing": return ("house.fill", .blue)
+        case "carpayment": return ("car.fill", .teal)
+        case "utilities": return ("bolt.fill", .yellow)
+        case "phone": return ("iphone", .gray)
+        case "insurance": return ("shield.fill", .blue)
+        case "subscriptions": return ("arrow.triangle.2.circlepath", .purple)
+        case "taxes": return ("building.columns.fill", .gray)
+        case "fees", "bankfees": return ("exclamationmark.circle.fill", .red)
+        case "travel": return ("airplane", .cyan)
+        case "income": return ("arrow.down", .green)
+        case "childcare": return ("figure.2.and.child.holdinghands", .yellow)
+        case "education": return ("graduationcap.fill", .indigo)
+        case "golf": return ("figure.golf", .green)
+        case "clothing": return ("tshirt.fill", .pink)
+        case "giving": return ("heart.fill", .red)
+        case "coffee": return ("cup.and.saucer.fill", .brown)
+        case nil: return ("questionmark", .gray)
+        default: return ("tag.fill", .gray)
+        }
+    }
+}
+
+/// Big rounded figures ("$524 left") that still grow with the Text Size
+/// setting, the way Apple's own apps scale their large numbers.
+private struct HeroNumber: ViewModifier {
+    @ScaledMetric private var size: CGFloat
+    init(size: CGFloat) { _size = ScaledMetric(wrappedValue: size, relativeTo: .largeTitle) }
+    func body(content: Content) -> some View {
+        content.font(.system(size: size, weight: .heavy, design: .rounded))
+    }
+}
+
+extension View {
+    func heroNumber(_ size: CGFloat) -> some View { modifier(HeroNumber(size: size)) }
+}

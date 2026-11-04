@@ -88,12 +88,12 @@ struct PlanView: View {
     private func incomeFooter(_ n: Numbers) -> String {
         let planned = plannedIncome * 100
         guard planned > 0 else {
-            return "Leave at $0 to plan around your usual income: every paycheck above added together. A third paycheck is a bonus when it lands; one that stops for 5 weeks stops counting. Paid into an account that isn't connected? Mark that transfer as Income."
+            return "Leave at $0 to use your usual: the paychecks above, added together."
         }
         if n.usualIncome > 0 && planned > n.usualIncome {
-            return "\(Money.short(planned - n.usualIncome)) more than your usual \(Money.short(n.usualIncome)). Fine if your usual is missing history or a raise; if less arrives, lower this. \(Money.short(n.base.incomeReceived)) has come in so far."
+            return "\(Money.short(planned - n.usualIncome)) above your usual. \(Money.short(n.base.incomeReceived)) in so far."
         }
-        return "\(Money.short(n.base.incomeReceived)) has come in so far. If more arrives, the extra counts; finished months use what really came in."
+        return "\(Money.short(n.base.incomeReceived)) in so far. Any extra counts when it arrives."
     }
 
     private func prioritiesSection(_ n: Numbers) -> some View {
@@ -194,7 +194,7 @@ struct PlanView: View {
         let fits = n.total <= n.toSpend
         let head = fits ? "Limits add up to \(Money.short(n.total)) of \(Money.short(n.toSpend)) to spend."
                         : "Limits add up to \(Money.short(n.total)), \(Money.short(n.total - n.toSpend)) more than you have."
-        return head + " Categories without a limit count their usual spending."
+        return head + " No limit counts as usual."
     }
 
     /// Limits still more than there is to spend: a small cut can't close
@@ -225,7 +225,7 @@ struct PlanView: View {
             } header: {
                 Text("\(Money.short(gap * 100)) short")
             } footer: {
-                Text("Recommended limits trim at most 25% below usual, so they can't close this alone. Fix it for me trims flexible limits a bit more, then takes from trips, then card paydown, and savings last.")
+                Text("Fix it for me trims limits, then trips, then cards, and savings last.")
             }
         }
     }
@@ -243,20 +243,20 @@ struct PlanView: View {
             } header: {
                 Text("Your limits leave \(Money.short(n.toSpend - n.total)) unassigned")
             } footer: {
-                Text("Lowering a limit frees money up. Put it to work here, or it just sits in Left to spend.")
+                Text("Put money your limits don't use to work.")
             }
         }
     }
 
     private func priorityFooter(owed: Cents, extra: Cents) -> String {
-        var parts = ["Taken off before everyday spending."]
+        var parts: [String] = []
         if owed > 0 && paydown > 0 {
-            parts.append("Cards: \(Money.short(owed)) owed, paid off in about \(Int((Double(owed) / Double(paydown * 100)).rounded(.up))) months.")
+            parts.append("Cards paid off in about \(Int((Double(owed) / Double(paydown * 100)).rounded(.up))) months.")
         }
         if trips == 0 && store.tripScheduleSetAside(in: month) > 0 {
-            parts.append("Trips are saving \(Money.short(store.tripScheduleSetAside(in: month))) this month on their own; enter an amount to use a set trip fund instead.")
+            parts.append("At $0, trips save \(Money.short(store.tripScheduleSetAside(in: month))) this month on their own.")
         }
-        if extra > 0 { parts.append("The extra comes from Save money this month and ends with the month.") }
+        if extra > 0 { parts.append("The extra ends with the month.") }
         return parts.joined(separator: " ")
     }
 
@@ -324,7 +324,7 @@ private struct IncomeSourceRow: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(source.name).lineLimit(1)
+                Text(Merchant.clean(source.name)).lineLimit(1)
                 Menu {
                     ForEach(Owner.pickable) { owner in
                         Button(store.people.name(owner)) { store.setIncomeOwner(source.id, owner) }

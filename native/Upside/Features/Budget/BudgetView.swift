@@ -34,16 +34,20 @@ struct BudgetView: View {
                     }
                     .padding(.top, -8)
 
-                    SetupCard()
-
+                    // First run: names first, then the setup steps; the plan
+                    // shows once there's something to plan with.
                     if !store.people.isSetUp || showPeople {
                         PeopleCard(isEditing: $showPeople)
+                    } else {
+                        SetupCard()
                     }
 
-                    MonthPlanCard(month: month, onSavings: isCurrentMonth ? { showPriorities = true } : nil)
+                    if !store.data.transactions.isEmpty {
+                        MonthPlanCard(month: month, onSavings: isCurrentMonth ? { showPriorities = true } : nil)
 
-                    if isCurrentMonth {
-                        SavingsCard(month: month) { showPriorities = true }
+                        if isCurrentMonth {
+                            SavingsCard(month: month) { showPriorities = true }
+                        }
                     }
 
                     SectionTitle(text: "By category")
@@ -213,9 +217,9 @@ struct MonthSwitcher: View {
     let move: (Int) -> Void
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 0) {
             Button { move(-1) } label: {
-                Image(systemName: "chevron.left").frame(width: 32, height: 32)
+                Image(systemName: "chevron.left").frame(width: 44, height: 44).contentShape(Rectangle())
             }
             .disabled(!canGoBack)
             .accessibilityLabel("Previous month")
@@ -226,7 +230,7 @@ struct MonthSwitcher: View {
                 .contentTransition(.numericText())
 
             Button { move(1) } label: {
-                Image(systemName: "chevron.right").frame(width: 32, height: 32)
+                Image(systemName: "chevron.right").frame(width: 44, height: 44).contentShape(Rectangle())
             }
             .disabled(!canGoForward)
             .accessibilityLabel("Next month")
@@ -270,7 +274,7 @@ struct SummaryCard: View {
                 Text(!hasLimits ? "\(Money.short(spent)) spent"
                      : isOver ? "\(Money.short(left)) over"
                      : isPast ? "\(Money.short(left)) under" : "\(Money.short(left)) left")
-                    .font(.system(size: 42, weight: .heavy, design: .rounded))
+                    .heroNumber(42)
                     .minimumScaleFactor(0.6)
                     .lineLimit(1)
                 Text(!hasLimits ? "No monthly limits yet"

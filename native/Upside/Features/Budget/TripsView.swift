@@ -211,7 +211,7 @@ struct TripView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(dateRange(trip)).foregroundStyle(.secondary)
                         Text(trip.budget.map { "\(Money.short(spent)) of \(Money.short($0))" } ?? "\(Money.short(spent)) spent")
-                            .font(.system(size: 34, weight: .heavy, design: .rounded))
+                            .heroNumber(34)
                         if let budget = trip.budget, budget > 0 {
                             SplitBar(fraction: Double(spent) / Double(budget),
                                      fill: spent > budget ? Theme.over : .orange, height: 10)
@@ -394,7 +394,7 @@ struct TripFundEditor: View {
                             .keyboardType(.numberPad).multilineTextAlignment(.trailing).frame(maxWidth: 140)
                     }
                 } footer: {
-                    Text("Kept before spending on the Budget page. A month only adds what it actually has left over, so overspending means less for trips. Anything tagged to a trip comes out of the fund, flights booked months ahead included.")
+                    Text("Saved before spending each month. Trip purchases come out of it.")
                 }
                 if store.data.tripFund != nil {
                     Section {

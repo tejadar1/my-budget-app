@@ -18,7 +18,7 @@ struct BillsRow: View {
                         .background(Color.blue, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                     VStack(alignment: .leading, spacing: 2) {
                         Text(due.isEmpty ? "All bills paid this month"
-                             : "\(Money.short(due.reduce(0) { $0 + $1.amount })) in bills still due")
+                             : "\(Money.short(due.reduce(0) { $0 + $1.amount })) in bills left to pay")
                             .font(.headline)
                         Text(subtitle(due: due, flagged: flagged))
                             .font(.footnote)
@@ -67,7 +67,7 @@ struct BillsView: View {
                 let paidSoFar = lines.reduce(0) { $0 + $1.paid }
                 VStack(alignment: .leading, spacing: 6) {
                     Text(Money.short(lines.reduce(0) { $0 + $1.stillToCome }))
-                        .font(.system(size: 40, weight: .heavy, design: .rounded))
+                        .heroNumber(40)
                     Text("left to pay in \(monthName) · \(Money.short(paidSoFar)) paid so far")
                         .foregroundStyle(.secondary)
                 }
@@ -87,7 +87,7 @@ struct BillsView: View {
                                     .font(.footnote).foregroundStyle(.secondary)
                             }
                             Spacer()
-                            Text(line.stillToCome > 0 ? "\(Money.short(line.stillToCome)) to come" : "done")
+                            Text(line.stillToCome > 0 ? "\(Money.short(line.stillToCome)) left" : "paid")
                                 .monospacedDigit()
                                 .foregroundStyle(line.stillToCome > 0 ? Color.primary : Theme.accent)
                         }
@@ -95,7 +95,7 @@ struct BillsView: View {
                 } header: {
                     Text("Counted in your plan")
                 } footer: {
-                    Text("Each bill category counts at least its usual amount, so bills that haven't been paid yet are planned for. A bill in another category isn't counted; move it to the right category in Transactions.")
+                    Text("Each bill counts at least its usual, so unpaid bills are planned for.")
                 }
             }
             if !due.isEmpty {
@@ -120,7 +120,7 @@ struct BillsView: View {
                 } header: {
                     Text("Subscriptions")
                 } footer: {
-                    Text("\(Money.short(subscriptions.reduce(0) { $0 + $1.amount } * 12)) a year in total. Swipe left on anything that isn’t a subscription. Cancel the ones you don’t use with the company or in Settings › Apple Account › Subscriptions.")
+                    Text("\(Money.short(subscriptions.reduce(0) { $0 + $1.amount } * 12)) a year. Swipe left on anything that isn’t one.")
                 }
             }
 
@@ -137,7 +137,7 @@ struct BillsView: View {
                         }
                     }
                 } footer: {
-                    Text("Their purchases count in everyday categories instead. To make something a bill, long-press it in Transactions.")
+                    Text("Their purchases count in everyday categories.")
                 }
             }
 
@@ -170,7 +170,7 @@ private struct BillRow: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(bill.name)
+                Text(Merchant.clean(bill.name))
                 Text([when, store.category(bill.categoryId)?.name].compactMap { $0 }.joined(separator: " · "))
                     .font(.footnote).foregroundStyle(.secondary)
                 if let up = bill.priceIncrease, let before = bill.previous {

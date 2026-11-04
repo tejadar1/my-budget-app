@@ -38,15 +38,17 @@ struct BusinessView: View {
         let spent = all.filter { $0.amount < 0 }
         let back = all.filter { $0.amount > 0 }
         List {
-            Section {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(Money.short(store.businessOwed))
-                        .font(.system(size: 40, weight: .heavy, design: .rounded))
-                    Text("still owed to you").foregroundStyle(.secondary)
+            if !all.isEmpty {
+                Section {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(Money.short(store.businessOwed))
+                            .heroNumber(40)
+                        Text("still owed to you").foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 6)
+                } footer: {
+                    Text("Spent \(Money.short(-spent.reduce(0) { $0 + $1.amount })), paid back \(Money.short(back.reduce(0) { $0 + $1.amount })). Not in your budget.")
                 }
-                .padding(.vertical, 6)
-            } footer: {
-                Text("Spent \(Money.short(-spent.reduce(0) { $0 + $1.amount })), paid back \(Money.short(back.reduce(0) { $0 + $1.amount })). None of it counts in your budget or income.")
             }
             if !spent.isEmpty {
                 Section("Business purchases") {
@@ -57,6 +59,12 @@ struct BusinessView: View {
                 Section("Paid back") {
                     ForEach(back) { TransactionRow(transaction: $0) }
                 }
+            }
+        }
+        .overlay {
+            if all.isEmpty {
+                ContentUnavailableView("No business expenses", systemImage: "briefcase",
+                                       description: Text("Long-press a purchase in Transactions and choose Business expense."))
             }
         }
         .navigationTitle("Business")

@@ -45,7 +45,7 @@ struct MonthPlanCard: View {
             Text(caption).font(.footnote.weight(.bold)).foregroundStyle(.white.opacity(0.82))
                 .padding(.bottom, 10)
             Text(headline)
-                .font(.system(size: 38, weight: .heavy, design: .rounded))
+                .heroNumber(38)
                 .minimumScaleFactor(0.6).lineLimit(1)
             Text(subtitle(plan, isPast: isPast))
                 .font(.subheadline).foregroundStyle(.white.opacity(0.86))
@@ -67,7 +67,7 @@ struct MonthPlanCard: View {
             : plan.incomePlanned != nil ? (plan.incomeReceived < plan.income ? "planned · \(Money.short(plan.incomeReceived)) in" : "planned")
             : plan.incomeIsUsual ? "usual"
             : (checks.extra > 0 ? "+\(checks.extra) extra paycheck" : nil)
-        let billsNote = plan.billsDue > 0 ? "\(Money.short(plan.billsDue)) still due" : "paid"
+        let billsNote = plan.billsDue > 0 ? "\(Money.short(plan.billsDue)) left to pay" : "paid"
         let monthly = plan.savings - plan.savingsExtra
         let savingsNote: String? = plan.savings == 0 ? (onSavings != nil ? "pay yourself first" : nil)
             : plan.savingsExtra == 0 ? "every month"

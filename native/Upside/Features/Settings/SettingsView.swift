@@ -60,12 +60,12 @@ struct SettingsView: View {
                 } header: {
                     Text("Banks")
                 } footer: {
-                    Text("Accounts sync when you open Upside. Pull down on Accounts to sync right away.")
+                    Text("Syncs when you open Upside. Pull down on Accounts to sync now.")
                 }
 
                 Section {
                     Button { showLimits = true } label: {
-                        row("Monthly limits", icon: "chart.bar.fill", color: Theme.accent)
+                        row("Categories & limits", icon: "chart.bar.fill", color: Theme.accent)
                     }
                     NavigationLink {
                         ReviewView()

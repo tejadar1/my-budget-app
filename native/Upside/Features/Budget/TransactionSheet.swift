@@ -15,12 +15,15 @@ struct TransactionSheet: View {
                 Form {
                     Section {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text(Money.exact(t.amount))
-                                .font(.system(size: 36, weight: .heavy, design: .rounded))
+                            Text(Money.signed(t.amount))
+                                .heroNumber(36)
                                 .foregroundStyle(t.amount > 0 ? Theme.accent : Color.primary)
-                            Text(t.payee).font(.headline)
+                            Text(Merchant.clean(t.payee)).font(.headline)
                             Text("\(t.date.formatted(date: .abbreviated, time: .omitted)) · \(store.account(t.accountId)?.fullName ?? "")")
                                 .font(.footnote).foregroundStyle(.secondary)
+                            if Merchant.clean(t.payee) != t.payee {
+                                Text("On your statement: \(t.payee)").font(.caption).foregroundStyle(.secondary)
+                            }
                             if let bank = t.bankCategory {
                                 Text("Bank category: \(bank.hasPrefix("mcc:") ? "merchant code " + bank.dropFirst(4) : bank)")
                                     .font(.caption).foregroundStyle(.secondary)
@@ -42,7 +45,7 @@ struct TransactionSheet: View {
                                   systemImage: "arrow.left.arrow.right")
                         }
                     } footer: {
-                        Text("Paying a credit card or moving money between your own accounts. The purchases on the card already count, so this doesn’t.")
+                        Text("Card payments and moves between your accounts aren’t spending.")
                     }
 
                     if !t.isTransfer {

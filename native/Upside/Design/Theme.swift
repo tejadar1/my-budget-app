@@ -78,6 +78,11 @@ enum Money {
     static func exact(_ cents: Cents) -> String {
         exactFormatter.string(from: NSNumber(value: Double(cents) / 100)) ?? "$0.00"
     }
+
+    /// Like Apple Card: spending without a minus, money in with a plus.
+    static func signed(_ cents: Cents) -> String {
+        cents > 0 ? "+" + exact(cents) : exact(-cents)
+    }
 }
 
 // MARK: - Colors from hex

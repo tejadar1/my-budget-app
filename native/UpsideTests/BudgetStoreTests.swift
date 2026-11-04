@@ -219,7 +219,7 @@ final class BudgetStoreTests: XCTestCase {
         ]
         let recommended = store.recommendedCategories()
         // MTA now has a home (Commuting & Rides), so no Transit suggestion.
-        XCTAssertEqual(Set(recommended.map(\.name)), ["Coffee", "Golf"]) // Blue Bottle → Coffee; Fitness is standard now
+        XCTAssertEqual(Set(recommended.map(\.name)), ["Golf"]) // two Blue Bottles aren't enough for Coffee; Fitness is standard now
         let golfSuggestion = recommended.first { $0.name == "Golf" }!
         XCTAssertEqual(golfSuggestion.transactionIds.count, 3)
         XCTAssertEqual(store.monthlyAverage(of: golfSuggestion), 17_400)
@@ -906,6 +906,25 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(subs.filter { $0.name == "APPLE.COM/BILL" }.count, 2, "iCloud and Apple One both found")
         XCTAssertTrue(subs.contains { $0.name == "TESLA INC" && $0.amount == 999 })
         XCTAssertEqual(BankSync.categorize(payee: "TESLA SUBSCRIPTION", amount: -999, rules: []), "subscriptions")
+    }
+
+    func testStoreNamesReadLikeApplesApps() {
+        let cases = [
+            ("SQ *BLUE BOTTLE #12", "Blue Bottle"),
+            ("TST* HARBOR GRILL", "Harbor Grill"),
+            ("PAYPAL *ETSY", "Etsy"),
+            ("APPLE.COM/BILL 866-712-7753 CA", "Apple"),
+            ("WALGREENS #1234", "Walgreens"),
+            ("SHELL OIL 57444 NY", "Shell Oil"),
+            ("MTA*NYCT PAYGO", "MTA"),
+            ("TRADER JOE'S #552", "Trader Joe's"),
+            ("THE HOME DEPOT", "The Home Depot"),
+            ("AMC THEATRES", "AMC Theatres"),
+            ("Online Transfer to SAV 1234", "Online Transfer to SAV 1234"),
+        ]
+        for (bank, shown) in cases { XCTAssertEqual(Merchant.clean(bank), shown, bank) }
+        XCTAssertEqual(Money.signed(-725), "$7.25", "spending has no minus")
+        XCTAssertEqual(Money.signed(2_000), "+$20.00", "money in has a plus")
     }
 
     func testIncomePotAddsEachPersonAndDropsStoppedPay() {

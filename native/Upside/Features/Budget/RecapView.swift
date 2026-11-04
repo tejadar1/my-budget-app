@@ -21,7 +21,7 @@ struct IncomeCard: View {
                 Text("INCOME").font(.footnote.weight(.bold)).foregroundStyle(.secondary)
                 HStack(alignment: .firstTextBaseline) {
                     Text(Money.short(income))
-                        .font(.system(size: 30, weight: .heavy, design: .rounded))
+                        .heroNumber(30)
                         .monospacedDigit()
                     Spacer()
                     if let usual, usual > 0 {
@@ -48,9 +48,9 @@ struct IncomeCard: View {
                         let expecting = (usual ?? 0) > income
                         Text((expecting ? "Counts your usual \(Money.short(usual ?? 0)) income. " : "")
                              + (keep > 0
-                                ? (safe >= 0 ? "Keeps \(Money.short(keep)) for savings and trips, after bills still due."
+                                ? (safe >= 0 ? "Keeps \(Money.short(keep)) for savings and trips, after bills left to pay."
                                              : "This comes out of the \(Money.short(keep)) for savings and trips.")
-                                : "After bills still due this month."))
+                                : "After bills left to pay this month."))
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                 }
@@ -168,7 +168,7 @@ struct RecapView: View {
                         Text(limit > 0
                              ? (spent <= limit ? "\(Money.short(limit - spent)) under" : "\(Money.short(spent - limit)) over")
                              : "\(Money.short(spent)) spent")
-                            .font(.system(size: 40, weight: .heavy, design: .rounded))
+                            .heroNumber(40)
                             .foregroundStyle(limit > 0 && spent > limit ? Theme.over : Theme.accent)
                         if limit > 0 {
                             Text("Everyday spending: \(Money.short(spent)) of \(Money.short(limit))")

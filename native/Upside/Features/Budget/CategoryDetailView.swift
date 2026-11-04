@@ -27,7 +27,7 @@ struct CategoryDetailView: View {
                 VStack(alignment: .leading, spacing: 14) {
                     Text(limit == 0 ? Money.short(spent)
                          : left < 0 ? "\(Money.short(left)) over" : "\(Money.short(left)) left")
-                        .font(.system(size: 44, weight: .heavy, design: .rounded))
+                        .heroNumber(44)
                         .foregroundStyle(limit == 0 ? Color.primary : Status(limit: limit, left: left).color)
                     if limit > 0 {
                         SplitBar(fraction: Double(spent) / Double(limit),
@@ -114,18 +114,19 @@ struct TransactionRow: View {
         let account = store.account(transaction.accountId)
         Button { isEditing = true } label: {
             HStack(spacing: 12) {
-                if let account {
-                    OwnerBadge(owner: account.owner, people: store.people, size: 30)
-                }
+                CategoryIcon(categoryId: transaction.tripId != nil ? "travel" : transaction.categoryId,
+                             isTransfer: transaction.isTransfer,
+                             isIncome: transaction.amount > 0 && !transaction.isTransfer,
+                             owner: account?.owner)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(transaction.payee).lineLimit(1)
+                    Text(Merchant.clean(transaction.payee)).lineLimit(1)
                     Text(detail(account))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
                 Spacer()
-                Text(Money.exact(transaction.amount))
+                Text(Money.signed(transaction.amount))
                     .font(.body.monospacedDigit())
                     .foregroundStyle(transaction.isTransfer ? Color.secondary
                                      : transaction.amount > 0 ? Theme.accent : Color.primary)
@@ -137,8 +138,9 @@ struct TransactionRow: View {
     }
 
     private func detail(_ account: Account?) -> String {
+        // Who: the dot on the icon. The account only matters for transfers.
         var parts = [transaction.date.formatted(.dateTime.month(.abbreviated).day())]
-        if let account { parts.append(account.institution) }
+        if transaction.isTransfer, let account { parts.append(account.institution) }
         if transaction.isBusiness {
             parts.append(transaction.amount > 0 ? "Business reimbursement" : "Business")
         } else if transaction.isTransfer {
@@ -174,7 +176,7 @@ struct ReviewView: View {
                                 .background(Color.purple, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("New category: \(suggestion.name)").font(.headline)
-                                Text("\(suggestion.transactionIds.count) purchase\(suggestion.transactionIds.count == 1 ? "" : "s"), like \(suggestion.example)")
+                                Text("\(suggestion.transactionIds.count) purchase\(suggestion.transactionIds.count == 1 ? "" : "s"), like \(Merchant.clean(suggestion.example))")
                                     .font(.footnote).foregroundStyle(.secondary).lineLimit(1)
                             }
                             Spacer()
@@ -195,7 +197,7 @@ struct ReviewView: View {
                              onNew: { newCategoryName = ""; newCategoryFor = t })
                 }
             } footer: {
-                Text("Upside sorted these on a hunch, and they already count in that category. Tap Right if it is, or tap the category to change it; either way Upside remembers the store.")
+                Text("Tap Right, or tap the category to change it. Upside remembers the store.")
             }
         }
         .overlay {
@@ -220,7 +222,7 @@ struct ReviewView: View {
             }
         } message: {
             if let t = newCategoryFor {
-                Text("For \(t.payee) and future purchases there.")
+                Text("For \(Merchant.clean(t.payee)) and future purchases there.")
             }
         }
     }
@@ -253,7 +255,7 @@ struct LimitsView: View {
                         Label("Recommended categories", systemImage: "sparkles")
                     }
                 } footer: {
-                    Text("Use it after adding a bank or account. Tap a category to see its last 3 months and how its limit was set.")
+                    Text("Tap a category to see how its limit was set.")
                 }
                 ForEach(store.groupedCategories) { group in
                     if group.name != "Trips" {
@@ -532,7 +534,7 @@ struct RecommendedCategoriesView: View {
                             HStack(spacing: 12) {
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(suggestion.name).font(.headline)
-                                    Text("About \(Money.short(store.monthlyAverage(of: suggestion))) a month · \(suggestion.transactionIds.count) purchase\(suggestion.transactionIds.count == 1 ? "" : "s"), like \(suggestion.example)")
+                                    Text("About \(Money.short(store.monthlyAverage(of: suggestion))) a month · \(suggestion.transactionIds.count) purchase\(suggestion.transactionIds.count == 1 ? "" : "s"), like \(Merchant.clean(suggestion.example))")
                                         .font(.footnote).foregroundStyle(.secondary)
                                         .lineLimit(2)
                                 }
@@ -543,7 +545,7 @@ struct RecommendedCategoriesView: View {
                             }
                         }
                     } footer: {
-                        Text("Adding one moves those purchases into it, and new ones from the same stores follow.")
+                        Text("New purchases from these stores follow.")
                     }
                 }
             }
@@ -570,9 +572,9 @@ private struct CheckRow: View {
         let guess = store.category(t.categoryId)
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
-                Text(t.payee).font(.headline).lineLimit(1)
+                Text(Merchant.clean(t.payee)).font(.headline).lineLimit(1)
                 Spacer()
-                Text(Money.exact(t.amount)).font(.body.monospacedDigit())
+                Text(Money.signed(t.amount)).font(.body.monospacedDigit())
             }
             Text([t.date.formatted(.dateTime.month(.abbreviated).day()), store.account(t.accountId)?.fullName]
                     .compactMap { $0 }.joined(separator: " · "))

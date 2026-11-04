@@ -801,7 +801,9 @@ final class BudgetStore {
                 let p = t.payee.lowercased()
                 return !used.contains(t.id) && words.contains(where: { p.contains($0) })
             }
-            if !hits.isEmpty {
+            // A new category needs a habit (3+ purchases); one coffee isn't one.
+            // Bills like tuition are big enough to suggest from one.
+            if hits.count >= 3 || (group == "Bills" && !hits.isEmpty) {
                 hits.forEach { used.insert($0.id) }
                 result.append(CategorySuggestion(name: name, group: group,
                                                  transactionIds: hits.map(\.id),
