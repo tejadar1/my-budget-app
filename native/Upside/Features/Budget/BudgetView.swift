@@ -80,9 +80,11 @@ struct BudgetView: View {
                         RecapRow(month: month) { recapMonth = MonthRef(date: month) }
                     }
 
-                    BundlesRow(month: month)
+                    if !store.data.transactions.isEmpty {
+                        BundlesRow(month: month)
 
-                    TripsSection()
+                        TripsSection()
+                    }
                 }
                 .padding(.horizontal)
                 .padding(.bottom, 24)

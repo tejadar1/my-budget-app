@@ -2,6 +2,9 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next build
+- First run shows only the names card and setup steps; Fees and Trips appear once there's data.
+
 ## 0.28, November 4 (Apple polish)
 - Store names read cleanly: "SQ *BLUE BOTTLE #12" shows as "Blue Bottle". The bank's text is still on the purchase screen.
 - Purchases show a category icon, with a small dot for whose account it was.
