@@ -69,7 +69,7 @@ struct MonthPlanCard: View {
     private func planToggle(_ plan: MonthPlan) -> some View {
         Button { withAnimation(.snappy) { showLines.toggle() } } label: {
             HStack(spacing: 6) {
-                Text("\(Money.short(plan.toSpend)) to spend of \(Money.short(plan.income)) income")
+                Text("\(Money.short(plan.toSpend)) to spend this month")
                     .font(.subheadline)
                 Spacer()
                 Text(showLines ? "Hide" : "Details").font(.subheadline.weight(.semibold))
