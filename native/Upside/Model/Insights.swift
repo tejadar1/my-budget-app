@@ -200,7 +200,8 @@ extension BudgetStore {
                 let p = t.payee.lowercased()
                 return words.contains { p.contains($0) }
             }
-            guard let first = hits.first else { return nil }
+            // A habit (3+ purchases), or a bill like tuition, which is big enough from one.
+            guard let first = hits.first, hits.count >= 3 || group == "Bills" else { return nil }
             return CategorySuggestion(name: name, group: group, transactionIds: hits.map(\.id), example: first.payee)
         }
         .sorted { $0.transactionIds.count > $1.transactionIds.count }
