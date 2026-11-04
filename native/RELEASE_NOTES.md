@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next build
+## 0.28, November 4 (simpler Budget and Plan)
 - Budget card leads with one number and bar; tap Details for income, bills, savings and trips.
 - Savings is one number, set in Plan; the Savings card shows how much has moved toward it.
 - Plan shows where your income goes as one bar, with sliders for savings, card paydown and trips, and what each means (a year of savings, months to clear cards).
