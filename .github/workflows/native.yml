@@ -78,9 +78,18 @@ jobs:
             xcrun simctl ui "$UDID" appearance "$mode"
             xcrun simctl terminate "$UDID" com.tejadar1.upside 2>/dev/null || true
             xcrun simctl launch "$UDID" com.tejadar1.upside "$@" > /dev/null
-            sleep 7
-            xcrun simctl io "$UDID" screenshot "$OUT/$mode-$name.png" > /dev/null
-            echo "saved $mode-$name.png"
+            # Wait until the app has drawn and settled: the splash is a small
+            # flat image, so keep shooting until the file is big and stops changing.
+            local file="$OUT/$mode-$name.png" last=0 size=0
+            sleep 4
+            for i in $(seq 1 20); do
+              xcrun simctl io "$UDID" screenshot "$file" > /dev/null
+              size=$(stat -f%z "$file")
+              if [ "$size" -gt 130000 ] && [ "$size" = "$last" ]; then break; fi
+              last=$size
+              sleep 2
+            done
+            echo "saved $mode-$name.png ($size bytes after $i tries)"
           }
           # The first launch after installing is slow; warm the app up once.
           xcrun simctl launch "$UDID" com.tejadar1.upside -demo > /dev/null; sleep 12
@@ -103,6 +112,8 @@ jobs:
             shot $mode 7f-search -demo -tab budget -open search:amazon
             shot $mode 8-account -demo -tab accounts -open account:ron-card
             shot $mode 8b-reorder -demo -tab accounts -open reorder
+            shot $mode 7j-cards -demo -tab budget -open cards
+            shot $mode 7k-business -demo -tab budget -open business
             shot $mode 9-first-run -tab budget
           done
           echo "Built from ${GITHUB_SHA}" > "$OUT/COMMIT.txt"

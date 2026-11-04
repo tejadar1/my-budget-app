@@ -134,6 +134,8 @@ struct BudgetView: View {
         case "review": path.append(Route.review)
         case "trip": path.append(Route.trip(open.id))
         case "bills": path.append(Route.bills)
+        case "cards": path.append(Route.cards)
+        case "business": path.append(Route.business)
         case "search": path.append(Route.search(open.id))
         case "limits", "recommended", "limit": showLimits = true
         case "save": showSave = true
