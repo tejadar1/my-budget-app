@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next build
+## 0.28, November 4 (Apple polish)
 - Store names read cleanly: "SQ *BLUE BOTTLE #12" shows as "Blue Bottle". The bank's text is still on the purchase screen.
 - Purchases show a category icon, with a small dot for whose account it was.
 - Spending shows without a minus sign; money in shows with a plus, like Apple Card.
