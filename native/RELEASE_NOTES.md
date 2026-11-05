@@ -3,6 +3,7 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next build
+- Savings card says "$X saved of $Y", what counts as saved, and how much is left to move this month.
 - Accounts warns when a bank stops sending new activity (3+ days) or SimpleFIN reports a connection problem, with a link to SimpleFIN Bridge to fix it. Each account shows when the bank last updated it.
 - Income: paychecks into a bank that only shared a few weeks of history now count. Upside estimates the usual month from the paychecks it can see (two checks two weeks apart = two a month) and marks them "estimated from recent pay".
 

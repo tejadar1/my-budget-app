@@ -26,17 +26,18 @@ struct SavingsCard: View {
                     // One number: what's moved so far against Plan's savings.
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         Text(Money.short(saved)).heroNumber(30).foregroundStyle(Theme.accent)
-                        Text("of \(Money.short(goal)) moved").foregroundStyle(.secondary)
+                        Text("saved of \(Money.short(goal))").foregroundStyle(.secondary)
                     }
                     SplitBar(fraction: Double(saved) / Double(goal), fill: Theme.accent, height: 6)
-                    Text(breakdown(plan, goal: goal)).font(.footnote).foregroundStyle(.secondary)
+                    Text(breakdown(plan, goal: goal) + ". Counts money moved into savings and investment accounts.")
+                        .font(.footnote).foregroundStyle(.secondary)
                 } else {
                     Text("Nothing set aside yet").font(.title3.weight(.semibold))
                     Text("Pay yourself first: pick an amount in Plan and limits fit around it.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 if goal > 0 {
-                    Text(status(plan))
+                    Text(status(plan, left: max(0, goal - saved)))
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(plan.leftToSpend >= 0 ? Theme.accent : Theme.over)
                 }
@@ -61,9 +62,10 @@ struct SavingsCard: View {
         return "\(Money.short(monthly)) every month + \(Money.short(plan.savingsExtra)) extra this month"
     }
 
-    private func status(_ plan: MonthPlan) -> String {
-        plan.leftToSpend >= 0
-            ? "On track: spending is leaving room for it."
+    private func status(_ plan: MonthPlan, left: Cents) -> String {
+        if left == 0 { return "Done for this month." }
+        return plan.leftToSpend >= 0
+            ? "On track: spending leaves room to move the other \(Money.short(left))."
             : "At risk: \(Money.short(-plan.leftToSpend)) over is coming out of it."
     }
 
