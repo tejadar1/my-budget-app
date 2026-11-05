@@ -381,6 +381,6 @@ private struct BankHealthCard: View {
     private func staleText(_ stale: [Account]) -> String {
         let oldest = stale.compactMap(\.bankUpdated).min()
         let since = oldest.map { "since \($0.formatted(.dateTime.month(.abbreviated).day()))" } ?? "lately"
-        return "Nothing new \(since). Banks sometimes need you to sign in again at SimpleFIN Bridge; purchases fill in on the next sync."
+        return "Nothing new \(since). Open SimpleFIN Bridge and tap Adjust (or sign in again) on that bank; purchases fill in on the next sync."
     }
 }
