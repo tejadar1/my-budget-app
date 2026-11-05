@@ -20,7 +20,8 @@ enum DemoData {
             Account(id: "joint", name: "Joint Checking", institution: "Chase",
                     kind: .checking, balance: 214_020, owner: .shared),
             Account(id: "ally", name: "Online Savings", institution: "Ally Bank",
-                    kind: .savings, balance: 1_390_000, owner: .shared),
+                    kind: .savings, balance: 1_390_000, owner: .shared,
+                    bankUpdated: now.addingTimeInterval(-5 * 86_400)),
         ]
 
         let limits: [String: Cents] = [

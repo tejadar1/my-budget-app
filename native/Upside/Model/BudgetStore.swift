@@ -174,7 +174,10 @@ final class BudgetStore {
         return now().timeIntervalSince(updated) > 3 * 86_400
     }
 
-    var staleAccounts: [Account] { visibleAccounts.filter(isStale) }
+    /// Only everyday accounts: loans and investments update less often.
+    var staleAccounts: [Account] {
+        visibleAccounts.filter { $0.countsInBudget && $0.kind != .loan && $0.kind != .investment && isStale($0) }
+    }
 
     var activeAccounts: [Account] { visibleAccounts.filter { !isEmptyAndQuiet($0) } }
     var emptyAccounts: [Account] { visibleAccounts.filter(isEmptyAndQuiet) }
