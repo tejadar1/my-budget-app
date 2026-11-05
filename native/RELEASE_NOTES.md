@@ -3,6 +3,8 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next build
+- Cards: "Balance up since…" can no longer be more than what's owed, and needs a few months of card history first.
+- Recap hides "Usual income" when it matches income. Trips say "On the trip" instead of "During and after".
 - The bank warning only watches everyday accounts; mortgages and investments update less often.
 - Manage banks without leaving Upside: Settings → Manage banks (and Fix in SimpleFIN on the bank warning) opens SimpleFIN Bridge inside the app. Add a bank, sign in again or tap Adjust; Upside syncs when you close it.
 

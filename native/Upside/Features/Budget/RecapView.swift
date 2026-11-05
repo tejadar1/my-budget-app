@@ -188,7 +188,7 @@ struct RecapView: View {
                 if income > 0 {
                     Section("Money in and out") {
                         LabeledContent("Income", value: Money.short(income))
-                        if let usualIncome = store.averageIncome(before: month), usualIncome > 0 {
+                        if let usualIncome = store.averageIncome(before: month), usualIncome > 0, usualIncome != income {
                             LabeledContent("Usual income", value: Money.short(usualIncome))
                         }
                         LabeledContent("Spent, including bills and trips", value: Money.short(allSpent))

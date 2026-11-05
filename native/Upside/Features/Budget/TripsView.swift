@@ -219,7 +219,7 @@ struct TripView: View {
                         HStack {
                             Text("Prepaid \(Money.short(prepaid))")
                             Spacer()
-                            Text("During and after \(Money.short(spent - prepaid))")
+                            Text("On the trip \(Money.short(spent - prepaid))")
                         }
                         .font(.footnote)
                         .foregroundStyle(.secondary)

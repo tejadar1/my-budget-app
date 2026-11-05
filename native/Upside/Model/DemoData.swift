@@ -26,7 +26,7 @@ enum DemoData {
 
         let limits: [String: Cents] = [
             "groceries": 60_000, "dining": 30_000, "gas": 20_000, "commute": 12_000, "shopping": 40_000,
-            "entertainment": 15_000, "health": 10_000, "housing": 220_000,
+            "entertainment": 2_000, "health": 10_000, "housing": 220_000,
             "utilities": 18_000, "phone": 22_000, "subscriptions": 6_000,
         ]
         for i in data.categories.indices {

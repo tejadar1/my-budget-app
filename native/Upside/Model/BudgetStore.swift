@@ -555,7 +555,9 @@ final class BudgetStore {
         let lastMonth = month(-1, from: thisMonth)
         let threeAgo = month(-3, from: thisMonth)
         let owedNow = -card.balance
-        let owedThen = owed(card, at: threeAgo)
+        // Worked back from today's balance; a balance can't have been below $0
+        // owed, and a card without history back that far can't say it grew.
+        let owedThen = max(0, owed(card, at: threeAgo))
         let last = cardMonth(card, lastMonth)
         let now = cardMonth(card, thisMonth)
         let twoAgo = cardMonth(card, month(-2, from: thisMonth))
@@ -566,7 +568,8 @@ final class BudgetStore {
         let paysInFull = (last.charged == 0 || now.paid >= last.charged)
             || (twoAgo.charged > 0 && last.paid >= twoAgo.charged)
         let growth = owedNow - owedThen
-        let hasHistory = data.transactions.contains { $0.accountId == card.id && $0.date < thisMonth }
+        let earliest = data.transactions.filter { $0.accountId == card.id }.map(\.date).min()
+        let hasHistory = earliest.map { $0 < month(-2, from: thisMonth) } ?? false
         return CardHealth(owedNow: owedNow, growthSinceThreeMonths: hasHistory ? growth : 0,
                           since: threeAgo, thisMonth: now, lastMonth: last, paysInFull: paysInFull)
     }
