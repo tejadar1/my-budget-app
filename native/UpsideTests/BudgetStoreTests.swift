@@ -955,6 +955,26 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.staleAccounts.map(\.id), ["r"], "5 days quiet is stale; 1 day isn't")
     }
 
+    func testCoveringOverspendingMovesRoomForThisMonthOnly() {
+        let store = makeStore()
+        store.setLimit("shopping", 24_000)
+        store.setLimit("dining", 50_000)
+        store.data.transactions.append(Transaction(id: "s", accountId: "r", date: date(2026, 10, 9), amount: -26_000,
+                                                   payee: "Target", categoryId: "shopping"))
+        let month = store.currentMonth
+        XCTAssertEqual(store.overruns(in: month).first { $0.id == "shopping" }?.over, 2_000)
+        let source = store.coverSources(for: "shopping", in: month).first { $0.id == "dining" }
+        XCTAssertEqual(source?.room, 50_000)
+
+        store.cover("shopping", amount: 2_000, from: "dining", in: month)
+        XCTAssertNil(store.overruns(in: month).first { $0.id == "shopping" }, "covered")
+        XCTAssertEqual(store.limit(store.category("shopping")!, in: month), 26_000)
+        XCTAssertEqual(store.limit(store.category("dining")!, in: month), 48_000)
+        XCTAssertEqual(store.category("shopping")?.limit, 24_000, "the standing limit is unchanged")
+        let next = store.month(1, from: month)
+        XCTAssertEqual(store.limit(store.category("shopping")!, in: next), 24_000, "next month goes back")
+    }
+
     func testIncomePotAddsEachPersonAndDropsStoppedPay() {
         let store = makeStore()
         store.data.transactions.removeAll { $0.categoryId == "income" }

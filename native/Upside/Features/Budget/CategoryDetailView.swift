@@ -380,7 +380,7 @@ struct LimitDetailView: View {
                 Section {
                     LabeledContent("Spent so far", value: Money.short(store.spent(categoryId, in: thisMonth)))
                     if let lowered = store.plan?.limits[categoryId] {
-                        LabeledContent("Savings plan lowers it to", value: Money.short(lowered))
+                        LabeledContent("This month only", value: Money.short(lowered))
                     }
                 } header: {
                     Text(thisMonth.formatted(.dateTime.month(.wide)))

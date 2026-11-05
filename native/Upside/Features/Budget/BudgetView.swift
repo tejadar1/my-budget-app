@@ -46,6 +46,7 @@ struct BudgetView: View {
 
                         if isCurrentMonth {
                             SavingsCard(month: month) { showPriorities = true }
+                            OverrunsCard(month: month) { showPriorities = true }
                         }
 
                         SectionTitle(text: "By category")
@@ -383,3 +384,60 @@ struct MonthRef: Identifiable, Hashable {
 
 /// Sheet identity for opening a purchase from a launch argument.
 struct PurchaseRef: Identifiable { let id: String }
+
+/// Categories past their limit, each with a way to cover it from another
+/// category's room (or unassigned money) for this month, so the month
+/// still adds up instead of quietly eating into savings.
+struct OverrunsCard: View {
+    @Environment(BudgetStore.self) private var store
+    let month: Date
+    let openPlan: () -> Void
+
+    var body: some View {
+        let overruns = store.overruns(in: month)
+        if !overruns.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("OVER THIS MONTH").font(.footnote.weight(.bold)).foregroundStyle(.secondary)
+                ForEach(overruns) { overrun in
+                    row(overrun)
+                    if overrun.id != overruns.last?.id { Divider() }
+                }
+                Text("Covering moves room from another category for this month only.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            .card()
+        }
+    }
+
+    private func row(_ overrun: BudgetStore.Overrun) -> some View {
+        // Round up to whole dollars so the category ends at $0 left, not -$0.40.
+        let amount = (overrun.over + 99) / 100 * 100
+        let sources = store.coverSources(for: overrun.id, in: month).filter { $0.room >= amount }
+        return HStack {
+            CategoryIcon(categoryId: overrun.category.id, size: 28)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(overrun.category.name)
+                Text("\(Money.short(amount)) over").font(.footnote.weight(.semibold)).foregroundStyle(Theme.over)
+            }
+            Spacer()
+            Menu {
+                if sources.isEmpty {
+                    Button("Change the plan…", action: openPlan)
+                } else {
+                    Section("Cover \(Money.short(amount)) from") {
+                        ForEach(sources) { source in
+                            Button("\(source.name) (\(Money.short(source.room)) left)") {
+                                withAnimation { store.cover(overrun.id, amount: amount, from: source.id, in: month) }
+                            }
+                        }
+                    }
+                }
+            } label: {
+                Text("Cover").font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 14).padding(.vertical, 6)
+                    .background(Theme.accent.opacity(0.14), in: Capsule())
+                    .foregroundStyle(Theme.accent)
+            }
+        }
+    }
+}

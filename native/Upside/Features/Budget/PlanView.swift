@@ -286,6 +286,9 @@ struct PlanView: View {
         if extra > 0 {
             let kept = store.plan.flatMap { store.isInMonth($0.month, month) ? $0.limits : nil } ?? [:]
             store.data.plan = SavingsPlan(month: month, goal: extra * 100, limits: kept)
+        } else if let kept = store.plan, !kept.limits.isEmpty {
+            // Covered overspending stays for the month even with no extra.
+            store.data.plan = SavingsPlan(month: month, goal: 0, limits: kept.limits)
         } else {
             store.data.plan = nil
         }
