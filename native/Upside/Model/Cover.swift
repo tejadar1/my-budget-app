@@ -21,10 +21,10 @@ extension BudgetStore {
     /// Everyday categories past their limit this month. One without a limit
     /// is over once it passes its usual, since that's what the plan counted.
     func overruns(in month: Date) -> [Overrun] {
-        everydayCategories.compactMap { c in
-            let spent = spent(c.id, in: month)
+        everydayCategories.compactMap { c -> Overrun? in
+            let used = spent(c.id, in: month)
             let allowed = limit(c, in: month) ?? averageSpent(c.id, before: month) ?? 0
-            return spent > allowed ? Overrun(category: c, over: spent - allowed) : nil
+            return used > allowed ? Overrun(category: c, over: used - allowed) : nil
         }
         .sorted { $0.over > $1.over }
     }
