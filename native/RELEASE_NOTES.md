@@ -3,6 +3,7 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next build
+- The bank warning only watches everyday accounts; mortgages and investments update less often.
 - Manage banks without leaving Upside: Settings → Manage banks (and Fix in SimpleFIN on the bank warning) opens SimpleFIN Bridge inside the app. Add a bank, sign in again or tap Adjust; Upside syncs when you close it.
 
 ## 0.28, November 4 (cover overspending)
