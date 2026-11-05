@@ -927,6 +927,22 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(Money.signed(2_000), "+$20.00", "money in has a plus")
     }
 
+    func testShortBankHistoryStillCountsPartnersPay() {
+        let store = makeStore()
+        // A bank that only shared from September 12: two paychecks, two weeks apart.
+        store.data.accounts.append(Account(id: "b", name: "Adv Plus Banking", institution: "Bank of America",
+                                           kind: .checking, balance: 0, owner: .p2))
+        for (id, day) in [("j1", 12), ("j2", 26)] {
+            store.data.transactions.append(Transaction(id: id, accountId: "b", date: date(2026, 9, day), amount: 250_000,
+                                                       payee: "HOSPITAL PAYROLL", categoryId: "income"))
+        }
+        let source = store.incomeSources(before: store.currentMonth).first { $0.accountId == "b" }
+        XCTAssertEqual(source?.monthly, 500_000, "two $2,500 paychecks two weeks apart: $5,000 a month")
+        XCTAssertEqual(source?.estimated, true)
+        XCTAssertEqual(source?.owner, .p2)
+        XCTAssertNil(BudgetStore.projectedMonthly([store.data.transactions.first { $0.id == "j1" }!]), "one paycheck: can't tell")
+    }
+
     func testIncomePotAddsEachPersonAndDropsStoppedPay() {
         let store = makeStore()
         store.data.transactions.removeAll { $0.categoryId == "income" }

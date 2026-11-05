@@ -2,6 +2,9 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next build
+- Income: paychecks into a bank that only shared a few weeks of history now count. Upside estimates the usual month from the paychecks it can see (two checks two weeks apart = two a month) and marks them "estimated from recent pay".
+
 ## 0.28, November 4 (simpler Budget and Plan)
 - Budget card leads with one number and bar; tap Details for income, bills, savings and trips.
 - Savings is one number, set in Plan; the Savings card shows how much has moved toward it.

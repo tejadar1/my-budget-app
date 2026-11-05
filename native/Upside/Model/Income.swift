@@ -76,6 +76,8 @@ extension BudgetStore {
         /// What it adds to a normal month; 0 once it has stopped.
         var monthly: Cents
         var stopped: Bool
+        /// Judged from only a few paychecks, because the bank shared little history.
+        var estimated = false
     }
 
     /// Usual monthly income: the sum of every source still paying.
@@ -106,17 +108,25 @@ extension BudgetStore {
             guard let latest = list.max(by: { $0.date < $1.date }) else { return nil }
             let payer = all[key] ?? Payer(cadence: .other, paidEarlyInMonth: false)
             var monthly: Cents
+            var estimated = false
             if payer.cadence != .other {
                 let recent = list.filter { $0.date >= oldest }
                 guard !recent.isEmpty else { return nil }
                 monthly = recent.reduce(0) { $0 + $1.amount } / recent.count * (payer.cadence == .weekly ? 4 : 2)
             } else {
                 let covered = months.filter { $0 >= (starts[latest.accountId] ?? oldest) }
-                guard !covered.isEmpty else { return nil }
-                let sum = list.filter { t in covered.contains { isInMonth(incomeMonth(t, payers: all), $0) } }
-                    .reduce(0) { $0 + $1.amount }
-                guard sum > 0 else { return nil }
-                monthly = sum / covered.count
+                if covered.isEmpty {
+                    // A bank that shared only a few weeks: judge the pattern from
+                    // the paychecks it did send instead of dropping them.
+                    guard let projected = Self.projectedMonthly(list) else { return nil }
+                    monthly = projected
+                    estimated = true
+                } else {
+                    let sum = list.filter { t in covered.contains { isInMonth(incomeMonth(t, payers: all), $0) } }
+                        .reduce(0) { $0 + $1.amount }
+                    guard sum > 0 else { return nil }
+                    monthly = sum / covered.count
+                }
             }
             let quietDays = month.timeIntervalSince(latest.date) / 86_400
             let regular = payer.cadence != .other || (paidCount[key] ?? 0) >= 3
@@ -125,9 +135,27 @@ extension BudgetStore {
             let accountOwner = account(latest.accountId)?.owner ?? .unassigned
             return IncomeSource(id: key, name: latest.payee, accountId: latest.accountId,
                                 owner: owners[key] ?? (accountOwner == .shared ? .unassigned : accountOwner),
-                                cadence: payer.cadence, monthly: monthly, stopped: stopped)
+                                cadence: payer.cadence, monthly: monthly, stopped: stopped, estimated: estimated)
         }
         .sorted { $0.monthly > $1.monthly }
+    }
+
+    /// A usual month from as few as two paychecks: a week apart is weekly,
+    /// about two weeks apart is every two weeks (or the 1st and 15th), about
+    /// a month apart is monthly. Nil when there's too little to tell.
+    static func projectedMonthly(_ paychecks: [Transaction]) -> Cents? {
+        let sorted = paychecks.sorted { $0.date < $1.date }
+        guard sorted.count >= 2 else { return nil }
+        let gaps = zip(sorted, sorted.dropFirst()).map { ($1.date.timeIntervalSince($0.date) / 86_400).rounded() }
+        let gap = gaps.sorted()[gaps.count / 2]
+        let perMonth: Int
+        switch gap {
+        case 6...8: perMonth = 4
+        case 12...17: perMonth = 2
+        case 27...33: perMonth = 1
+        default: return nil
+        }
+        return sorted.reduce(0) { $0 + $1.amount } / sorted.count * perMonth
     }
 
     /// Says whose paycheck a source is, for paychecks into a joint account.

@@ -360,6 +360,7 @@ private struct IncomeSourceRow: View {
     private var detail: String {
         let who = source.owner == .unassigned ? "Whose is this?" : store.people.name(source.owner)
         if source.stopped { return who + " · stopped" }
+        if source.estimated { return who + " · estimated from recent pay" }
         switch source.cadence {
         case .weekly: return who + " · weekly"
         case .biweekly: return who + " · every 2 weeks"
