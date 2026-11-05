@@ -2,6 +2,9 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next build
+- Manage banks without leaving Upside: Settings → Manage banks (and Fix in SimpleFIN on the bank warning) opens SimpleFIN Bridge inside the app. Add a bank, sign in again or tap Adjust; Upside syncs when you close it.
+
 ## 0.28, November 4 (cover overspending)
 - Over this month: categories past their limit show on Budget with Cover. Pick another category with room (or money not in a limit) and it moves for this month only, so overspending doesn't quietly eat into savings.
 - Savings card says "$X saved of $Y", what counts as saved, and how much is left to move this month.

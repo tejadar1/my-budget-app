@@ -1,4 +1,5 @@
 import SwiftUI
+import SafariServices
 
 /// A rounded card on the grouped background, like Wallet and Health.
 struct CardBackground: ViewModifier {
@@ -228,4 +229,17 @@ private struct HeroNumber: ViewModifier {
 
 extension View {
     func heroNumber(_ size: CGFloat) -> some View { modifier(HeroNumber(size: size)) }
+}
+
+/// A web page inside Upside (Safari's in-app browser), for SimpleFIN
+/// Bridge: managing banks without leaving the app.
+struct SafariSheet: UIViewControllerRepresentable {
+    let url: URL
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        let controller = SFSafariViewController(url: url)
+        controller.preferredControlTintColor = UIColor(Theme.accent)
+        controller.dismissButtonStyle = .done
+        return controller
+    }
+    func updateUIViewController(_ controller: SFSafariViewController, context: Context) {}
 }

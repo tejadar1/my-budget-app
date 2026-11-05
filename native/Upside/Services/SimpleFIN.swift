@@ -8,7 +8,9 @@ import Security
 ///    an access URL with credentials: https://user:pass@host/simplefin
 /// 2. GET {access}/accounts?start-date=… returns accounts + transactions.
 enum SimpleFIN {
-    static let signUpURL = URL(string: "https://beta-bridge.simplefin.org/")!
+    static let signUpURL = URL(string: "https://bridge.simplefin.org/")!
+    /// Where banks are added, re-signed-in or adjusted.
+    static let manageURL = URL(string: "https://bridge.simplefin.org/")!
 
     enum Failure: LocalizedError {
         case badToken, claimFailed(Int), notConnected, server(String)

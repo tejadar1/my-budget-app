@@ -6,6 +6,7 @@ struct SettingsView: View {
     @AppStorage("appearance") private var appearance: Appearance = .automatic
     @State private var showConnect = false
     @State private var showLimits = false
+    @State private var showBridge = false
     @State private var editingNames = false
     @AppStorage("faceIDLock") private var faceIDLock = false
     @State private var confirmResort = false
@@ -54,13 +55,18 @@ struct SettingsView: View {
                         row("Bank connection", icon: "building.columns.fill", color: .teal,
                             value: store.data.bankConnected ? "Connected" : "Not connected")
                     }
+                    if store.data.bankConnected {
+                        Button { showBridge = true } label: {
+                            row("Manage banks", icon: "slider.horizontal.3", color: .blue)
+                        }
+                    }
                     row("Last synced", icon: "arrow.triangle.2.circlepath", color: .green,
                         value: store.data.lastBankSync?.formatted(.relative(presentation: .named)) ?? "Never",
                         chevron: false)
                 } header: {
                     Text("Banks")
                 } footer: {
-                    Text("Syncs when you open Upside. Pull down on Accounts to sync now.")
+                    Text("Manage banks opens SimpleFIN: add a bank, sign in again, or tap Adjust. Upside syncs when you close it.")
                 }
 
                 Section {
@@ -157,6 +163,9 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .sheet(isPresented: $showConnect) { ConnectBanksView() }
             .sheet(isPresented: $showLimits) { LimitsView() }
+            .sheet(isPresented: $showBridge, onDismiss: { Task { try? await BankSync.sync(store: store) } }) {
+                SafariSheet(url: SimpleFIN.manageURL).ignoresSafeArea()
+            }
         }
     }
 

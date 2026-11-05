@@ -208,7 +208,7 @@ struct AccountSheet: View {
                                            value: updated.formatted(.relative(presentation: .named)))
                         } footer: {
                             if store.isStale(account) {
-                                Text("\(account.institution) hasn’t sent anything new in a while. Check the connection at SimpleFIN Bridge.")
+                                Text("\(account.institution) hasn’t sent anything new in a while. Fix it from the warning on Accounts or Settings → Manage banks.")
                                     .foregroundStyle(Theme.over)
                             }
                         }
@@ -352,6 +352,7 @@ private struct AccountGroupSection: View {
 /// problem, so a missing purchase has an explanation and a fix.
 private struct BankHealthCard: View {
     @Environment(BudgetStore.self) private var store
+    @State private var showBridge = false
 
     var body: some View {
         let stale = store.staleAccounts
@@ -365,11 +366,14 @@ private struct BankHealthCard: View {
                 if !stale.isEmpty {
                     Text(staleText(stale)).font(.footnote).foregroundStyle(.secondary)
                 }
-                Link("Open SimpleFIN Bridge", destination: URL(string: "https://bridge.simplefin.org")!)
+                Button("Fix in SimpleFIN") { showBridge = true }
                     .font(.subheadline.weight(.semibold))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .card()
+            .sheet(isPresented: $showBridge, onDismiss: { Task { try? await BankSync.sync(store: store) } }) {
+                SafariSheet(url: SimpleFIN.manageURL).ignoresSafeArea()
+            }
         }
     }
 
@@ -381,6 +385,6 @@ private struct BankHealthCard: View {
     private func staleText(_ stale: [Account]) -> String {
         let oldest = stale.compactMap(\.bankUpdated).min()
         let since = oldest.map { "since \($0.formatted(.dateTime.month(.abbreviated).day()))" } ?? "lately"
-        return "Nothing new \(since). Open SimpleFIN Bridge and tap Adjust (or sign in again) on that bank; purchases fill in on the next sync."
+        return "Nothing new \(since). Tap Fix in SimpleFIN, then Adjust (or sign in again) on that bank. Upside syncs when you close it."
     }
 }

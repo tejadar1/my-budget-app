@@ -123,7 +123,7 @@ struct PeopleCard: View {
 struct ConnectBanksView: View {
     @Environment(BudgetStore.self) private var store
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.openURL) private var openURL
+    @State private var showBridge = false
     @State private var token = ""
     @State private var isWorking = false
     @State private var error: String?
@@ -140,9 +140,9 @@ struct ConnectBanksView: View {
                 }
                 Section("1. Link your banks") {
                     Button {
-                        openURL(SimpleFIN.signUpURL)
+                        showBridge = true
                     } label: {
-                        Label("Open SimpleFIN", systemImage: "arrow.up.right.square")
+                        Label("Open SimpleFIN", systemImage: "building.columns")
                     }
                     Text("Sign up, connect each bank and card, then choose “New Connection” → “Setup token” and copy it.")
                         .font(.footnote).foregroundStyle(.secondary)
@@ -176,6 +176,7 @@ struct ConnectBanksView: View {
                     .disabled(token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isWorking)
                 }
             }
+            .sheet(isPresented: $showBridge) { SafariSheet(url: SimpleFIN.signUpURL).ignoresSafeArea() }
             .navigationTitle("Connect your banks")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
