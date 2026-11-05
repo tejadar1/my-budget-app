@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next build
+## 0.28, November 5 (SimpleFIN in the app)
 - Cards: "Balance up since…" can no longer be more than what's owed, and needs a few months of card history first.
 - Recap hides "Usual income" when it matches income. Trips say "On the trip" instead of "During and after".
 - The bank warning only watches everyday accounts; mortgages and investments update less often.
