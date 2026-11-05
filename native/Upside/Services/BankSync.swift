@@ -34,16 +34,23 @@ enum BankSync {
         let now = Date()
         let needsHistory = initial || store.data.lastBankSync == nil
             || UserDefaults.standard.integer(forKey: historyKey) < historyDays
+        var errors: [String] = []
         if needsHistory {
             for window in windows(from: now.addingTimeInterval(-Double(historyDays) * 86_400), to: now) {
                 let set = try await SimpleFIN.fetch(accessURL: access, since: window.start, until: window.end)
                 apply(set, to: store)
+                errors += set.errors ?? []
             }
             UserDefaults.standard.set(historyDays, forKey: historyKey)
         } else {
             let set = try await SimpleFIN.fetch(accessURL: access, since: now.addingTimeInterval(-14 * 86_400))
             apply(set, to: store)
+            errors = set.errors ?? []
         }
+        // SimpleFIN says when a bank connection needs attention; keep it to show.
+        var seen = Set<String>()
+        let unique = errors.filter { seen.insert($0).inserted }
+        store.data.syncErrors = unique.isEmpty ? nil : unique
         store.data.lastBankSync = now
     }
 
@@ -60,6 +67,12 @@ enum BankSync {
         return result
     }
 
+    /// When the bank last updated an account: its balance date, else its newest transaction.
+    static func bankDate(_ sf: SimpleFIN.SFAccount) -> Date? {
+        let newest = sf.transactions?.map(\.posted).max()
+        return (sf.balanceDate ?? newest).map { Date(timeIntervalSince1970: TimeInterval($0)) }
+    }
+
     @MainActor
     static func apply(_ set: SimpleFIN.AccountSet, to store: BudgetStore) {
         var data = store.data
@@ -69,13 +82,14 @@ enum BankSync {
             if let i = data.accounts.firstIndex(where: { $0.id == sf.id }) {
                 data.accounts[i].balance = balance
                 data.accounts[i].lastSynced = Date()
+                data.accounts[i].bankUpdated = bankDate(sf)
             } else {
                 let kind = AccountKind.guess(from: sf.name, balance: balance)
                 data.accounts.append(Account(
                     id: sf.id, name: sf.name, institution: institution, kind: kind,
                     balance: balance,
                     owner: BudgetStore.guessOwner(sf.name, people: data.people),
-                    isOnBudget: kind.isOnBudgetByDefault, lastSynced: Date()))
+                    isOnBudget: kind.isOnBudgetByDefault, lastSynced: Date(), bankUpdated: bankDate(sf)))
             }
 
             let known = Set(data.transactions.map(\.id))

@@ -60,8 +60,15 @@ enum SimpleFIN {
         var name: String
         var currency: String?
         var balance: String
+        /// When the bank last sent this balance (seconds since 1970).
+        var balanceDate: Int?
         var org: Org
         var transactions: [SFTransaction]?
+
+        enum CodingKeys: String, CodingKey {
+            case id, name, currency, balance, org, transactions
+            case balanceDate = "balance-date"
+        }
     }
 
     struct SFTransaction: Decodable {

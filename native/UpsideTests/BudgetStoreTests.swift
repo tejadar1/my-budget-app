@@ -943,6 +943,18 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertNil(BudgetStore.projectedMonthly([store.data.transactions.first { $0.id == "j1" }!]), "one paycheck: can't tell")
     }
 
+    func testBankThatStopsSendingIsFlagged() throws {
+        let json = #"{"errors":["Connection to Bank of America may need attention"],"accounts":[{"id":"x","name":"Visa","balance":"-10.00","balance-date":1792800000,"org":{"name":"Bank of America"},"transactions":[]}]}"#
+        let set = try JSONDecoder().decode(SimpleFIN.AccountSet.self, from: Data(json.utf8))
+        XCTAssertEqual(set.errors?.first, "Connection to Bank of America may need attention")
+        XCTAssertEqual(BankSync.bankDate(set.accounts[0]), Date(timeIntervalSince1970: 1_792_800_000))
+
+        let store = makeStore()
+        store.data.accounts[0].bankUpdated = date(2026, 10, 10)
+        store.data.accounts[1].bankUpdated = date(2026, 10, 14)
+        XCTAssertEqual(store.staleAccounts.map(\.id), ["r"], "5 days quiet is stale; 1 day isn't")
+    }
+
     func testIncomePotAddsEachPersonAndDropsStoppedPay() {
         let store = makeStore()
         store.data.transactions.removeAll { $0.categoryId == "income" }

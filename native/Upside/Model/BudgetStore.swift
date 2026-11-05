@@ -168,6 +168,14 @@ final class BudgetStore {
     }
 
     /// Accounts shown as cards on Accounts: not hidden, not empty and quiet.
+    /// The bank hasn't sent anything new for this account in over 3 days.
+    func isStale(_ account: Account) -> Bool {
+        guard let updated = account.bankUpdated else { return false }
+        return now().timeIntervalSince(updated) > 3 * 86_400
+    }
+
+    var staleAccounts: [Account] { visibleAccounts.filter(isStale) }
+
     var activeAccounts: [Account] { visibleAccounts.filter { !isEmptyAndQuiet($0) } }
     var emptyAccounts: [Account] { visibleAccounts.filter(isEmptyAndQuiet) }
 

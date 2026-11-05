@@ -29,6 +29,10 @@ struct AccountsView: View {
                         connectCard
                     }
 
+                    if store.data.bankConnected {
+                        BankHealthCard()
+                    }
+
                     if store.people.isSetUp && !store.unclaimedAccounts.isEmpty {
                         WhoseCard()
                     }
@@ -198,6 +202,17 @@ struct AccountSheet: View {
                             .listRowInsets(EdgeInsets())
                             .listRowBackground(Color.clear)
                     }
+                    if let updated = account.bankUpdated {
+                        Section {
+                            LabeledContent("Bank last updated",
+                                           value: updated.formatted(.relative(presentation: .named)))
+                        } footer: {
+                            if store.isStale(account) {
+                                Text("\(account.institution) hasn’t sent anything new in a while. Check the connection at SimpleFIN Bridge.")
+                                    .foregroundStyle(Theme.over)
+                            }
+                        }
+                    }
                     Section {
                         Picker("Type", selection: Binding(
                             get: { account.kind },
@@ -330,5 +345,42 @@ private struct AccountGroupSection: View {
             }
         }
         .card()
+    }
+}
+
+/// Shown when a bank stops sending new activity or SimpleFIN reports a
+/// problem, so a missing purchase has an explanation and a fix.
+private struct BankHealthCard: View {
+    @Environment(BudgetStore.self) private var store
+
+    var body: some View {
+        let stale = store.staleAccounts
+        let errors = store.data.syncErrors ?? []
+        if !stale.isEmpty || !errors.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Label(title, systemImage: "exclamationmark.triangle.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.warning)
+                ForEach(errors, id: \.self) { Text($0).font(.footnote) }
+                if !stale.isEmpty {
+                    Text(staleText(stale)).font(.footnote).foregroundStyle(.secondary)
+                }
+                Link("Open SimpleFIN Bridge", destination: URL(string: "https://bridge.simplefin.org")!)
+                    .font(.subheadline.weight(.semibold))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .card()
+        }
+    }
+
+    private var title: String {
+        let banks = Set(store.staleAccounts.map(\.institution))
+        return banks.count == 1 ? "\(banks.first!) isn’t sending new activity" : "A bank connection needs attention"
+    }
+
+    private func staleText(_ stale: [Account]) -> String {
+        let oldest = stale.compactMap(\.bankUpdated).min()
+        let since = oldest.map { "since \($0.formatted(.dateTime.month(.abbreviated).day()))" } ?? "lately"
+        return "Nothing new \(since). Banks sometimes need you to sign in again at SimpleFIN Bridge; purchases fill in on the next sync."
     }
 }

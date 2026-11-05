@@ -112,6 +112,9 @@ struct Account: Identifiable, Codable, Hashable {
     /// Hidden accounts keep syncing but leave Accounts, net worth and the
     /// budget. Optional so budgets saved by older versions still load.
     var hidden: Bool? = nil
+    /// When the bank itself last updated this account, which can lag
+    /// days behind our own sync when a connection needs attention.
+    var bankUpdated: Date? = nil
 
     var isHidden: Bool { hidden == true }
     /// Counts toward spending, income and Purchases to sort.
@@ -233,6 +236,8 @@ struct BudgetData: Codable {
     /// Whose paycheck each income source is (by payer key), for paychecks
     /// into a joint account.
     var incomeOwners: [String: Owner]?
+    /// Problems SimpleFIN reported on the last sync ("reconnect Bank of America").
+    var syncErrors: [String]?
 }
 
 /// "Pay yourself first": standing monthly amounts taken off the top.
