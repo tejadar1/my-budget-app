@@ -987,6 +987,41 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertFalse(BudgetStore.isFineName("Fitness"))
     }
 
+    func testSavingThePlanKeepsCoversAndOnlyChangesEditedLimits() {
+        let store = makeStore()
+        store.setLimit("shopping", 24_000)
+        store.setLimit("dining", 50_000)
+        store.setLimit("groceries", 60_000)
+        let month = store.currentMonth
+        store.cover("shopping", amount: 2_000, from: "dining", in: month)
+
+        // What Plan loads: this month's limits, covers included.
+        let loaded = Dictionary(uniqueKeysWithValues: store.everydayCategories.map {
+            ($0.id, (store.limit($0, in: month) ?? 0) / 100)
+        })
+        XCTAssertEqual(loaded["shopping"], 260, "Plan shows the covered limit")
+        XCTAssertEqual(loaded["dining"], 480)
+
+        // Saving untouched keeps the cover.
+        store.savePlanLimits(loaded, loaded: loaded, extra: 0, in: month)
+        XCTAssertEqual(store.limit(store.category("shopping")!, in: month), 26_000)
+        XCTAssertEqual(store.category("shopping")?.limit, 24_000)
+
+        // Editing groceries changes only groceries; editing dining replaces its cover.
+        var edited = loaded
+        edited["groceries"] = 550
+        edited["dining"] = 450
+        store.savePlanLimits(edited, loaded: loaded, extra: 0, in: month)
+        XCTAssertEqual(store.category("groceries")?.limit, 55_000)
+        XCTAssertEqual(store.category("dining")?.limit, 45_000)
+        XCTAssertEqual(store.limit(store.category("dining")!, in: month), 45_000, "what you typed applies now")
+        XCTAssertEqual(store.limit(store.category("shopping")!, in: month), 26_000, "shopping's cover stays")
+
+        // An extra-savings month with no covers left still saves the extra.
+        store.savePlanLimits(edited, loaded: edited, extra: 30_000, in: month)
+        XCTAssertEqual(store.plan?.goal, 30_000)
+    }
+
     func testIncomePotAddsEachPersonAndDropsStoppedPay() {
         let store = makeStore()
         store.data.transactions.removeAll { $0.categoryId == "income" }

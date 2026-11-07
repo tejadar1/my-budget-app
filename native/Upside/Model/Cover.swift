@@ -58,4 +58,18 @@ extension BudgetStore {
         }
         data.plan = plan
     }
+
+    /// Saves the Plan's limits (whole dollars). A limit you changed becomes
+    /// the standing limit and replaces any this-month cover on it; untouched
+    /// limits keep their cover. The one-month extra savings rides along.
+    func savePlanLimits(_ limits: [String: Int], loaded: [String: Int], extra: Cents, in month: Date) {
+        let changed = everydayCategories.map(\.id).filter { limits[$0] != loaded[$0] }
+        var kept = data.plan.flatMap { isInMonth($0.month, month) ? $0.limits : nil } ?? [:]
+        for id in changed {
+            kept[id] = nil
+            let dollars = limits[id] ?? 0
+            setLimit(id, dollars > 0 ? dollars * 100 : nil)
+        }
+        data.plan = extra > 0 || !kept.isEmpty ? SavingsPlan(month: month, goal: extra, limits: kept) : nil
+    }
 }

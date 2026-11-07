@@ -290,26 +290,13 @@ struct PlanView: View {
     private func save() {
         store.data.priorities = Priorities(savings: savings * 100, cardPaydown: paydown * 100,
                                            plannedIncome: !useUsual && plannedIncome > 0 ? plannedIncome * 100 : nil)
-        // A limit you changed here becomes the standing limit, and any
-        // this-month cover on it is replaced; untouched ones keep their cover.
-        let changed = store.everydayCategories.map(\.id).filter { limits[$0] != loadedLimits[$0] }
-        var kept = store.plan.flatMap { store.isInMonth($0.month, month) ? $0.limits : nil } ?? [:]
-        for id in changed { kept[id] = nil }
-        if extra > 0 || !kept.isEmpty {
-            store.data.plan = SavingsPlan(month: month, goal: extra * 100, limits: kept)
-        } else {
-            store.data.plan = nil
-        }
+        store.savePlanLimits(limits, loaded: loadedLimits, extra: extra * 100, in: month)
         if trips > 0 {
             let fund = store.data.tripFund
             store.data.tripFund = TripFund(monthly: trips * 100, start: fund?.start ?? month,
                                            startingBalance: fund?.startingBalance ?? 0)
         } else {
             store.data.tripFund = nil
-        }
-        for id in changed {
-            let dollars = limits[id] ?? 0
-            store.setLimit(id, dollars > 0 ? dollars * 100 : nil)
         }
     }
 
