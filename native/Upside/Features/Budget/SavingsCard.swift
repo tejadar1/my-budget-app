@@ -93,7 +93,7 @@ struct SpendingSubtotals: View {
                 row("Bills", spent: plan.billsPaid, of: plan.bills, note: "of expected", chevron: true)
             }
             .buttonStyle(.plain)
-            row("Fees & interest", spent: fees, of: nil, note: fees == 0 ? "none" : "aim for $0", warn: fees > 0)
+            row("Fees & fines", spent: fees, of: nil, note: fees == 0 ? "none" : "aim for $0", warn: fees > 0)
             if trips > 0 { row("Trips", spent: trips, of: nil, note: "from the trip budget") }
         }
         .card()

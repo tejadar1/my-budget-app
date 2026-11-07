@@ -3,6 +3,7 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next build
+- Tickets and fines go in Minimize with fees (aim for $0); a Tickets category you made moves there once. Any category's detail in Settings → Categories now has a Group picker: Everyday, Bills or Minimize. The tile is now "Fees & fines".
 - Plan shows this month's limits including anything you covered, marked "Adjusted for this month". Saving the plan keeps those covers; a limit you change in Plan becomes your usual limit.
 
 ## 0.28, November 5 (SimpleFIN in the app)

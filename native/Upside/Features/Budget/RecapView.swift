@@ -234,7 +234,7 @@ struct RecapView: View {
                 }
 
                 Section("Cards") {
-                    LabeledContent("Fees & interest (minimize)") {
+                    LabeledContent("Fees & fines (minimize)") {
                         Text(Money.short(fees)).foregroundStyle(fees > 0 ? Theme.over : Theme.accent)
                     }
                     ForEach(store.creditCards) { card in

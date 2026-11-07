@@ -377,6 +377,19 @@ struct LimitDetailView: View {
                     Text(explanation(category, usual: usual, suggested: suggested) + " Change it in Plan.")
                 }
 
+                if !category.isIncome && category.group != "Trips" {
+                    Section {
+                        Picker("Group", selection: Binding(get: { category.group },
+                                                           set: { g in withAnimation { store.setGroup(categoryId, g) } })) {
+                            Text("Everyday").tag("Everyday")
+                            Text("Bills").tag("Bills")
+                            Text("Minimize").tag(Category.avoidGroup)
+                        }
+                    } footer: {
+                        Text("Minimize is for fees, fines and tickets: aim for $0.")
+                    }
+                }
+
                 Section {
                     LabeledContent("Spent so far", value: Money.short(store.spent(categoryId, in: thisMonth)))
                     if let lowered = store.plan?.limits[categoryId] {

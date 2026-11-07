@@ -23,7 +23,7 @@ struct BundlesRow: View {
                              payoff > 0 ? "+\(Money.short(payoff)) paid down on cards" : nil].compactMap { $0 })
             }
             NavigationLink(value: Route.category(feesCategory(in: month), month)) {
-                tile(caption: "MINIMIZE", title: "Fees & interest",
+                tile(caption: "MINIMIZE", title: "Fees & fines",
                      value: Money.short(fees),
                      color: fees > 0 ? Theme.over : Theme.accent,
                      notes: [fees == 0 ? "none this month" : usualFees.map { "usual \(Money.short($0))" }].compactMap { $0 },

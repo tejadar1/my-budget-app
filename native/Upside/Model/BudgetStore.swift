@@ -68,6 +68,15 @@ final class BudgetStore {
                 && data.categories[i].group == "Everyday" {
                 data.categories[i].group = "Bills"
             }
+            // Fines are something to keep at $0, like fees: once, move a
+            // Tickets/Fines category you made in Everyday to Minimize.
+            if !UserDefaults.standard.bool(forKey: "minimizeFines") {
+                for i in data.categories.indices
+                where Self.isFineName(data.categories[i].name) && data.categories[i].group == "Everyday" {
+                    data.categories[i].group = Category.avoidGroup
+                }
+                UserDefaults.standard.set(true, forKey: "minimizeFines")
+            }
             if !UserDefaults.standard.bool(forKey: "splitCommute") {
                 splitCommuteFromGas(&data)
                 UserDefaults.standard.set(true, forKey: "splitCommute")
@@ -767,8 +776,22 @@ final class BudgetStore {
 
     /// Adds a category and returns its id.
     @discardableResult
+    /// Tickets, fines, penalties and late fees: money to keep at $0.
+    static func isFineName(_ name: String) -> Bool {
+        let n = name.lowercased()
+        return ["ticket", "fine", "penalt", "violation", "late fee"].contains { n.contains($0) }
+    }
+
+    /// Moves a category to another group (Everyday, Bills or Minimize).
+    func setGroup(_ categoryId: String, _ group: String) {
+        guard let i = data.categories.firstIndex(where: { $0.id == categoryId }) else { return }
+        data.categories[i].group = group
+    }
+
     func addCategory(_ name: String, group: String) -> String {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
+        // A new "Parking tickets" starts in Minimize, next to fees.
+        let placed = group == "Everyday" && Self.isFineName(trimmed) ? Category.avoidGroup : group
         if let existing = data.categories.first(where: { $0.name.caseInsensitiveCompare(trimmed) == .orderedSame }) {
             if existing.isHidden, let i = data.categories.firstIndex(where: { $0.id == existing.id }) {
                 data.categories[i].isHidden = false
@@ -778,7 +801,7 @@ final class BudgetStore {
         let slug = trimmed.lowercased().components(separatedBy: CharacterSet.alphanumerics.inverted)
             .filter { !$0.isEmpty }.joined(separator: "-")
         let id = "\(slug.isEmpty ? "category" : slug)-\(UUID().uuidString.prefix(4).lowercased())"
-        data.categories.append(Category(id: id, name: trimmed, group: group))
+        data.categories.append(Category(id: id, name: trimmed, group: placed))
         return id
     }
 

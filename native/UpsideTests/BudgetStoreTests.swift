@@ -975,6 +975,18 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.limit(store.category("shopping")!, in: next), 24_000, "next month goes back")
     }
 
+    func testTicketsAndFinesAreMinimized() {
+        let store = makeStore()
+        let id = store.addCategory("Parking Tickets", group: "Everyday")
+        XCTAssertEqual(store.category(id)?.group, Category.avoidGroup, "fines start in Minimize")
+        store.data.transactions.append(Transaction(id: "t", accountId: "r", date: date(2026, 10, 3), amount: -6_500,
+                                                   payee: "NYC FINANCE PARKING", categoryId: id))
+        XCTAssertEqual(store.minimizeSpent(in: store.currentMonth), 6_500)
+        store.setGroup(id, "Everyday")
+        XCTAssertEqual(store.minimizeSpent(in: store.currentMonth), 0, "you can move it back")
+        XCTAssertFalse(BudgetStore.isFineName("Fitness"))
+    }
+
     func testIncomePotAddsEachPersonAndDropsStoppedPay() {
         let store = makeStore()
         store.data.transactions.removeAll { $0.categoryId == "income" }
