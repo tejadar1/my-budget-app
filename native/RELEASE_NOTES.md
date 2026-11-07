@@ -2,6 +2,9 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next build
+- Plan shows this month's limits including anything you covered, marked "Adjusted for this month". Saving the plan keeps those covers; a limit you change in Plan becomes your usual limit.
+
 ## 0.28, November 5 (SimpleFIN in the app)
 - Cards: "Balance up since…" can no longer be more than what's owed, and needs a few months of card history first.
 - Recap hides "Usual income" when it matches income. Trips say "On the trip" instead of "During and after".

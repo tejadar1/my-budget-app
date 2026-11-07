@@ -9,8 +9,11 @@ struct PlanView: View {
     @State private var savings = 0
     @State private var paydown = 0
     @State private var trips = 0
-    /// Everyday limits in whole dollars; 0 means no limit.
+    /// This month's everyday limits in whole dollars, covered amounts
+    /// included; 0 means no limit.
     @State private var limits: [String: Int] = [:]
+    /// The limits as loaded, so Save only touches the ones you changed.
+    @State private var loadedLimits: [String: Int] = [:]
     @State private var useUsual = true
     /// Extra savings just this month, in dollars.
     @State private var extra = 0
@@ -161,6 +164,7 @@ struct PlanView: View {
                 LimitPlanRow(name: c.name,
                              usual: store.averageSpent(c.id, before: month) ?? 0,
                              recommended: n.recommended[c.id],
+                             covered: limits[c.id] == loadedLimits[c.id] && store.limit(c, in: month) != c.limit,
                              dollars: Binding(get: { limits[c.id] ?? 0 }, set: { limits[c.id] = max(0, $0) }))
             }
         } header: {
@@ -276,19 +280,23 @@ struct PlanView: View {
         savings = (store.data.priorities?.savings ?? 0) / 100
         paydown = (store.data.priorities?.cardPaydown ?? 0) / 100
         trips = (store.data.tripFund?.monthly ?? 0) / 100
-        limits = Dictionary(uniqueKeysWithValues: store.everydayCategories.map { ($0.id, ($0.limit ?? 0) / 100) })
+        // Show this month as it stands, including anything covered.
+        limits = Dictionary(uniqueKeysWithValues: store.everydayCategories.map {
+            ($0.id, (store.limit($0, in: month) ?? 0) / 100)
+        })
+        loadedLimits = limits
     }
 
     private func save() {
         store.data.priorities = Priorities(savings: savings * 100, cardPaydown: paydown * 100,
                                            plannedIncome: !useUsual && plannedIncome > 0 ? plannedIncome * 100 : nil)
-        // The one-month extra; any lowered limits from that month are kept.
-        if extra > 0 {
-            let kept = store.plan.flatMap { store.isInMonth($0.month, month) ? $0.limits : nil } ?? [:]
+        // A limit you changed here becomes the standing limit, and any
+        // this-month cover on it is replaced; untouched ones keep their cover.
+        let changed = store.everydayCategories.map(\.id).filter { limits[$0] != loadedLimits[$0] }
+        var kept = store.plan.flatMap { store.isInMonth($0.month, month) ? $0.limits : nil } ?? [:]
+        for id in changed { kept[id] = nil }
+        if extra > 0 || !kept.isEmpty {
             store.data.plan = SavingsPlan(month: month, goal: extra * 100, limits: kept)
-        } else if let kept = store.plan, !kept.limits.isEmpty {
-            // Covered overspending stays for the month even with no extra.
-            store.data.plan = SavingsPlan(month: month, goal: 0, limits: kept.limits)
         } else {
             store.data.plan = nil
         }
@@ -299,9 +307,9 @@ struct PlanView: View {
         } else {
             store.data.tripFund = nil
         }
-        for c in store.everydayCategories {
-            let dollars = limits[c.id] ?? 0
-            store.setLimit(c.id, dollars > 0 ? dollars * 100 : nil)
+        for id in changed {
+            let dollars = limits[id] ?? 0
+            store.setLimit(id, dollars > 0 ? dollars * 100 : nil)
         }
     }
 
@@ -320,6 +328,8 @@ private struct LimitPlanRow: View {
     let name: String
     let usual: Cents
     let recommended: Cents?
+    /// Changed for this month by Cover or Save extra.
+    var covered = false
     @Binding var dollars: Int
 
     var body: some View {
@@ -328,6 +338,9 @@ private struct LimitPlanRow: View {
                 Text(name)
                 Text(recommended.map { "usual \(Money.short(usual)) → \(Money.short($0))" } ?? "usual \(Money.short(usual))")
                     .font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                if covered {
+                    Text("Adjusted for this month").font(.caption).foregroundStyle(Theme.accent)
+                }
             }
             Spacer()
             TextField("No limit", value: $dollars, format: .currency(code: "USD").precision(.fractionLength(0)))
