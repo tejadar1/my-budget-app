@@ -155,6 +155,8 @@ struct Category: Identifiable, Codable, Hashable {
     var limit: Cents?
     var isIncome: Bool = false
     var isHidden: Bool = false
+    /// Unspent money carries into next month's limit, from this month on.
+    var rolloverSince: Date? = nil
 
     /// The Minimize bundle: spending you want at $0 (fees, interest).
     var aimsForZero: Bool { group == Category.avoidGroup }
@@ -168,6 +170,8 @@ struct SavingsPlan: Codable, Equatable {
     var goal: Cents
     /// Lowered limits for this month, by category id (0 = skip).
     var limits: [String: Cents]
+    /// Last month's unspent money put toward cards this month.
+    var cardExtra: Cents? = nil
 }
 
 struct CategoryGroup: Identifiable {
@@ -238,6 +242,8 @@ struct BudgetData: Codable {
     var incomeOwners: [String: Owner]?
     /// Problems SimpleFIN reported on the last sync ("reconnect Bank of America").
     var syncErrors: [String]?
+    /// Months whose unspent money you already decided about ("2026-10").
+    var leftoverDone: [String]?
 }
 
 /// "Pay yourself first": standing monthly amounts taken off the top.

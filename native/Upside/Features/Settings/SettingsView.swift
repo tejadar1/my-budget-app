@@ -14,6 +14,11 @@ struct SettingsView: View {
     @State private var resortResult: String?
     @AppStorage("alertsLimits") private var limitAlerts = true
     @AppStorage("alertsWeekly") private var weeklySummary = true
+    @AppStorage("alertsBills") private var billAlerts = true
+    @AppStorage("alertsLowBalance") private var lowBalanceAlerts = true
+    @AppStorage("alertsLowBalanceAt") private var lowBalanceAt = 500
+    @AppStorage("alertsLarge") private var largeAlerts = true
+    @AppStorage("alertsLargeAt") private var largeAt = 300
 
     var body: some View {
         NavigationStack {
@@ -94,6 +99,28 @@ struct SettingsView: View {
                         row("Nearing a limit", icon: "bell.badge.fill", color: .red, chevron: false)
                     }
                     .tint(Theme.accent)
+                    Toggle(isOn: $billAlerts) {
+                        row("Bills due soon", icon: "calendar.badge.clock", color: .orange, chevron: false)
+                    }
+                    .tint(Theme.accent)
+                    Toggle(isOn: $lowBalanceAlerts) {
+                        row("Low checking balance", icon: "exclamationmark.triangle.fill", color: .yellow, chevron: false)
+                    }
+                    .tint(Theme.accent)
+                    if lowBalanceAlerts {
+                        Picker("Warn under", selection: $lowBalanceAt) {
+                            ForEach([250, 500, 1_000, 2_000], id: \.self) { Text(Money.short($0 * 100)).tag($0) }
+                        }
+                    }
+                    Toggle(isOn: $largeAlerts) {
+                        row("Large purchases", icon: "creditcard.fill", color: .purple, chevron: false)
+                    }
+                    .tint(Theme.accent)
+                    if largeAlerts {
+                        Picker("Over", selection: $largeAt) {
+                            ForEach([100, 200, 300, 500, 1_000], id: \.self) { Text(Money.short($0 * 100)).tag($0) }
+                        }
+                    }
                     Toggle(isOn: $weeklySummary) {
                         row("Weekly summary", icon: "calendar", color: .blue, chevron: false)
                     }
@@ -101,10 +128,13 @@ struct SettingsView: View {
                 } header: {
                     Text("Alerts")
                 } footer: {
-                    Text("A heads-up at 80% and 100% of a limit, and a Sunday-evening summary.")
+                    Text("Bills: 9am two days before they’re due. Low balance: when checking dips under your amount or under bills still due.")
                 }
                 .onChange(of: limitAlerts) { _, on in if on { Task { _ = await Alerts.requestPermission() } } }
                 .onChange(of: weeklySummary) { _, on in if on { Task { _ = await Alerts.requestPermission() } } }
+                .onChange(of: billAlerts) { _, on in
+                    Task { if on { _ = await Alerts.requestPermission() }; await Alerts.scheduleBillReminders(store) }
+                }
 
                 Section {
                     Toggle(isOn: $faceIDLock) {

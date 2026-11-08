@@ -51,9 +51,9 @@ extension BudgetStore {
         guard amount > 0, let target = category(categoryId) else { return }
         var plan = data.plan.flatMap { isInMonth($0.month, month) ? $0 : nil }
             ?? SavingsPlan(month: month, goal: 0, limits: [:])
-        let current = limit(target, in: month) ?? averageSpent(categoryId, before: month) ?? 0
+        let current = plannedLimit(target, in: month) ?? averageSpent(categoryId, before: month) ?? 0
         plan.limits[categoryId] = current + amount
-        if source != Self.unassigned, let from = category(source), let fromLimit = limit(from, in: month) {
+        if source != Self.unassigned, let from = category(source), let fromLimit = plannedLimit(from, in: month) {
             plan.limits[source] = max(0, fromLimit - amount)
         }
         data.plan = plan

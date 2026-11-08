@@ -13,6 +13,12 @@ enum Alerts {
 
     static var limitAlertsOn: Bool { UserDefaults.standard.object(forKey: limitsKey) as? Bool ?? true }
     static var weeklyOn: Bool { UserDefaults.standard.object(forKey: weeklyKey) as? Bool ?? true }
+    static var billsOn: Bool { UserDefaults.standard.object(forKey: "alertsBills") as? Bool ?? true }
+    static var lowBalanceOn: Bool { UserDefaults.standard.object(forKey: "alertsLowBalance") as? Bool ?? true }
+    static var largeOn: Bool { UserDefaults.standard.object(forKey: "alertsLarge") as? Bool ?? true }
+    /// Dollars; picked in Settings.
+    static var lowBalanceThreshold: Cents { (UserDefaults.standard.object(forKey: "alertsLowBalanceAt") as? Int ?? 500) * 100 }
+    static var largeThreshold: Cents { (UserDefaults.standard.object(forKey: "alertsLargeAt") as? Int ?? 300) * 100 }
 
     /// Ask once; iOS remembers the answer.
     static func requestPermission() async -> Bool {
@@ -39,6 +45,23 @@ enum Alerts {
             store.markAlertsSent(pending.map(\.key))
         }
 
+        await scheduleBillReminders(store)
+
+        if lowBalanceOn, let low = store.lowBalanceAlert(threshold: lowBalanceThreshold) {
+            await post(id: low.key, title: low.title, body: low.body)
+            store.markAlertsSent([low.key])
+        }
+
+        if largeOn {
+            let large = store.largePurchases(threshold: largeThreshold)
+            for t in large {
+                let category = store.category(t.categoryId ?? "")?.name ?? "Uncategorized"
+                await post(id: "large-\(t.id)", title: "\(Money.short(-t.amount)) at \(Merchant.clean(t.payee))",
+                           body: "A bigger purchase than usual, in \(category).")
+            }
+            store.markAlertsSent(large.map { "large-\($0.id)" })
+        }
+
         if weeklyOn, isSummaryDue(now: now, calendar: store.calendar) {
             let month = store.currentMonth
             let limit = store.totalLimit(in: month)
@@ -58,6 +81,25 @@ enum Alerts {
         guard weekday == 1, hour >= 17 else { return false }
         guard let last else { return true }
         return now.timeIntervalSince(last) > 5 * 86_400
+    }
+
+    /// Bill reminders are scheduled ahead (9am two days before), so they
+    /// arrive even if Upside isn't opened. Re-planned after every sync.
+    @MainActor
+    static func scheduleBillReminders(_ store: BudgetStore) async {
+        let center = UNUserNotificationCenter.current()
+        let pending = await center.pendingNotificationRequests().map(\.identifier).filter { $0.hasPrefix("bill-") }
+        center.removePendingNotificationRequests(withIdentifiers: pending)
+        guard billsOn else { return }
+        for reminder in store.billReminders() {
+            let content = UNMutableNotificationContent()
+            content.title = reminder.title
+            content.body = reminder.body
+            content.sound = .default
+            let parts = store.calendar.dateComponents([.year, .month, .day, .hour, .minute], from: reminder.fireDate)
+            try? await center.add(UNNotificationRequest(identifier: reminder.id, content: content,
+                                                        trigger: UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)))
+        }
     }
 
     private static func post(id: String, title: String, body: String) async {

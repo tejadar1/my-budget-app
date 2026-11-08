@@ -370,11 +370,21 @@ struct LimitDetailView: View {
                         Text(category.limit.map(Money.short) ?? "No limit")
                             .font(.title3.weight(.semibold)).monospacedDigit()
                     }
+                    let rolled = store.rolledIn(category, to: thisMonth)
+                    if rolled > 0 {
+                        LabeledContent("Rolled over from last month", value: "+" + Money.short(rolled))
+                    }
+                    if category.limit != nil {
+                        Toggle("Roll over what’s left", isOn: Binding(
+                            get: { category.rolloverSince != nil },
+                            set: { on in withAnimation { store.setRollover(categoryId, on) } }))
+                    }
                 } header: {
                     Text("Limit")
                 } footer: {
                     // Plan is the one place limits change, so they always fit the month.
-                    Text(explanation(category, usual: usual, suggested: suggested) + " Change it in Plan.")
+                    Text(explanation(category, usual: usual, suggested: suggested) + " Change it in Plan."
+                         + (category.rolloverSince != nil ? " What you don’t spend adds to next month’s limit." : ""))
                 }
 
                 if !category.isIncome && category.group != "Trips" {

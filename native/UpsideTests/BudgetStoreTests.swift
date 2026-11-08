@@ -1052,6 +1052,60 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(restored.transactions.count, merged.transactions.count)
     }
 
+    func testRolloverCarriesUnspentIntoNextMonth() {
+        let store = makeStore()
+        store.setLimit("dining", 30_000)
+        let october = store.currentMonth, november = store.month(1, from: october)
+        store.setRollover("dining", true)  // from October on
+        let spentOct = store.spent("dining", in: october)
+        XCTAssertEqual(store.rolledIn(store.category("dining")!, to: november), max(0, 30_000 - spentOct))
+        XCTAssertEqual(store.limit(store.category("dining")!, in: november), 30_000 + max(0, 30_000 - spentOct))
+        XCTAssertEqual(store.plannedLimit(store.category("dining")!, in: november), 30_000, "plan edits the base")
+        XCTAssertEqual(store.rolledIn(store.category("dining")!, to: october), 0, "nothing before it was turned on")
+        store.setRollover("dining", false)
+        XCTAssertEqual(store.limit(store.category("dining")!, in: november), 30_000)
+    }
+
+    func testLastMonthsLeftoverCanGoToSavingsOrCards() {
+        let store = makeStore()
+        store.now = { self.date(2026, 11, 3) }  // early November; October is finished
+        guard let left = store.unspentLastMonth() else { return XCTFail("October left money unspent") }
+        let before = store.monthPlan(store.currentMonth)
+        store.useUnspent(left.amount, for: left.month, as: .cards)
+        let after = store.monthPlan(store.currentMonth)
+        XCTAssertEqual(after.cardPaydown, before.cardPaydown + left.amount)
+        XCTAssertNil(store.unspentLastMonth(), "asked once")
+    }
+
+    func testAlertsForBillsLowBalanceAndLargePurchases() {
+        let store = makeStore()  // today is Oct 15
+        // A $90 phone bill on the 20th for three months; October's isn't paid yet.
+        for m in 7...9 {
+            store.data.transactions.append(Transaction(id: "v\(m)", accountId: "r", date: date(2026, m, 20), amount: -9_000,
+                                                       payee: "VERIZON WIRELESS", categoryId: "phone"))
+        }
+        let reminder = store.billReminders().first { $0.title.contains("Verizon") }
+        XCTAssertNotNil(reminder)
+        XCTAssertEqual(store.calendar.component(.day, from: reminder!.fireDate), 18, "two days before the 20th")
+        XCTAssertEqual(store.calendar.component(.hour, from: reminder!.fireDate), 9)
+
+        // Checking below what's due → warned once.
+        for i in store.data.accounts.indices where store.data.accounts[i].kind == .checking {
+            store.data.accounts[i].balance = 1_000
+        }
+        let low = store.lowBalanceAlert(threshold: 50_000)
+        XCTAssertNotNil(low)
+        store.markAlertsSent([low!.key])
+        XCTAssertNil(store.lowBalanceAlert(threshold: 50_000), "once a day")
+
+        // A $640 purchase yesterday is large; a $40 one isn't.
+        store.data.transactions.append(Transaction(id: "tv", accountId: "r", date: date(2026, 10, 14), amount: -64_000,
+                                                   payee: "BEST BUY #123", categoryId: "shopping"))
+        XCTAssertEqual(store.largePurchases(threshold: 30_000).map(\.id), ["tv"])
+        store.markAlertsSent(["large-tv"])
+        XCTAssertTrue(store.largePurchases(threshold: 30_000).isEmpty)
+    }
+
     func testIncomePotAddsEachPersonAndDropsStoppedPay() {
         let store = makeStore()
         store.data.transactions.removeAll { $0.categoryId == "income" }

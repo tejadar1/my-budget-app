@@ -47,6 +47,7 @@ struct BudgetView: View {
                         if isCurrentMonth {
                             SavingsCard(month: month) { showPriorities = true }
                             OverrunsCard(month: month) { showPriorities = true }
+                            LeftoverCard()
                         }
 
                         SectionTitle(text: "By category")
@@ -439,5 +440,44 @@ struct OverrunsCard: View {
                     .foregroundStyle(Theme.accent)
             }
         }
+    }
+}
+
+/// Early in a month: last month's unspent money, and where it should go,
+/// so it doesn't just disappear into checking.
+struct LeftoverCard: View {
+    @Environment(BudgetStore.self) private var store
+
+    var body: some View {
+        if let left = store.unspentLastMonth() {
+            let name = left.month.formatted(.dateTime.month(.wide))
+            VStack(alignment: .leading, spacing: 10) {
+                Text("\(name.uppercased()) LEFT OVER").font(.footnote.weight(.bold)).foregroundStyle(.secondary)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(Money.short(left.amount)).heroNumber(30).foregroundStyle(Theme.accent)
+                    Text("not spent").foregroundStyle(.secondary)
+                }
+                Text("Give it a job so it doesn’t just sit in checking.")
+                    .font(.footnote).foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    choice("Savings") { store.useUnspent(left.amount, for: left.month, as: .savings) }
+                    if store.cardsOwed > 0 {
+                        choice("Cards") { store.useUnspent(left.amount, for: left.month, as: .cards) }
+                    }
+                    choice("Keep") { store.useUnspent(left.amount, for: left.month, as: .keep) }
+                }
+                Text("Savings and Cards raise this month’s targets; move the money when you can.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            .card()
+        }
+    }
+
+    private func choice(_ title: String, action: @escaping () -> Void) -> some View {
+        Button { withAnimation(action) } label: {
+            Text(title).font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .tint(Theme.accent)
     }
 }

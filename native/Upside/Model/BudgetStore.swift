@@ -326,7 +326,13 @@ final class BudgetStore {
 
     /// The limit for a month: a savings plan's lowered limit if one is set
     /// for that month, otherwise the normal limit.
+    /// This month's limit: the planned limit plus anything rolled over.
     func limit(_ category: Category, in month: Date) -> Cents? {
+        plannedLimit(category, in: month).map { $0 + rolledIn(category, to: month) }
+    }
+
+    /// The limit as planned (yours, or this month's cover), before rollover.
+    func plannedLimit(_ category: Category, in month: Date) -> Cents? {
         if let plan = data.plan, isInMonth(plan.month, month), let lowered = plan.limits[category.id] {
             return lowered
         }
@@ -777,8 +783,6 @@ final class BudgetStore {
 
     // MARK: Your own categories
 
-    /// Adds a category and returns its id.
-    @discardableResult
     /// Tickets, fines, penalties and late fees: money to keep at $0.
     static func isFineName(_ name: String) -> Bool {
         let n = name.lowercased()
@@ -791,6 +795,8 @@ final class BudgetStore {
         data.categories[i].group = group
     }
 
+    /// Adds a category and returns its id.
+    @discardableResult
     func addCategory(_ name: String, group: String) -> String {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
         // A new "Parking tickets" starts in Minimize, next to fees.

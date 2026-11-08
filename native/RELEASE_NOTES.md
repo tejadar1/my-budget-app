@@ -3,6 +3,9 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next build
+- Rollover: turn on "Roll over what's left" for a category (Settings → Categories) and unspent money adds to next month's limit.
+- Early each month, Budget asks what to do with last month's unspent money: Savings, Cards or Keep.
+- New alerts: bills due in two days (9am), checking running low (under your amount or under bills still due), and purchases over your amount. Each can be turned off in Settings.
 - iCloud: your whole budget backs up to your private iCloud automatically and comes back on a new phone or after reinstalling.
 - Share your budget: Settings → iCloud → Share budget sends an iCloud invite. Once accepted, both phones read and edit the same budget; changes from both are combined, not overwritten.
 - Only your phone talks to the banks; the shared budget carries the results. The SimpleFIN key never goes to iCloud.

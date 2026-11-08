@@ -164,7 +164,7 @@ struct PlanView: View {
                 LimitPlanRow(name: c.name,
                              usual: store.averageSpent(c.id, before: month) ?? 0,
                              recommended: n.recommended[c.id],
-                             covered: limits[c.id] == loadedLimits[c.id] && store.limit(c, in: month) != c.limit,
+                             covered: limits[c.id] == loadedLimits[c.id] && store.plannedLimit(c, in: month) != c.limit,
                              dollars: Binding(get: { limits[c.id] ?? 0 }, set: { limits[c.id] = max(0, $0) }))
             }
         } header: {
@@ -282,7 +282,7 @@ struct PlanView: View {
         trips = (store.data.tripFund?.monthly ?? 0) / 100
         // Show this month as it stands, including anything covered.
         limits = Dictionary(uniqueKeysWithValues: store.everydayCategories.map {
-            ($0.id, (store.limit($0, in: month) ?? 0) / 100)
+            ($0.id, (store.plannedLimit($0, in: month) ?? 0) / 100)
         })
         loadedLimits = limits
     }
