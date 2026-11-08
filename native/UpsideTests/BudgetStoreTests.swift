@@ -1106,6 +1106,30 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertTrue(store.largePurchases(threshold: 30_000).isEmpty)
     }
 
+    func testGoalsSetAsideAndTripsCanBeTurnedOff() {
+        let store = makeStore()  // October
+        let before = store.monthPlan(store.currentMonth).toSpend
+        // $1,200 car insurance due in March: Oct–Mar is 6 months → $200 a month.
+        store.saveGoal(Goal(id: "ins", name: "Car insurance", kind: .bill, target: 120_000,
+                            due: date(2027, 3, 10), repeatsMonths: 12))
+        XCTAssertEqual(store.goalMonthly(store.goals[0]), 20_000)
+        // An emergency fund with $5,000 saved and $250 a month.
+        store.saveGoal(Goal(id: "ef", name: "Emergency fund", kind: .emergency, target: 1_000_000,
+                            saved: 500_000, monthly: 25_000))
+        XCTAssertEqual(store.goalsSetAside(in: store.currentMonth), 45_000)
+        XCTAssertEqual(store.monthPlan(store.currentMonth).toSpend, before - 45_000, "taken off the top")
+        XCTAssertNotNil(store.monthsCovered(store.goals[1]))
+
+        store.goalUsed("ins")
+        XCTAssertEqual(store.goals[0].saved, 0)
+        XCTAssertEqual(store.calendar.component(.year, from: store.goals[0].due!), 2028, "next year's bill")
+
+        store.data.tripFund = TripFund(monthly: 30_000, start: store.currentMonth, startingBalance: 0)
+        XCTAssertEqual(store.tripSetAside(in: store.currentMonth), 30_000)
+        store.data.tripsOff = true
+        XCTAssertEqual(store.tripSetAside(in: store.currentMonth), 0, "trips turned off")
+    }
+
     func testIncomePotAddsEachPersonAndDropsStoppedPay() {
         let store = makeStore()
         store.data.transactions.removeAll { $0.categoryId == "income" }

@@ -89,6 +89,11 @@ struct SettingsView: View {
                             value: store.toCheck.isEmpty ? nil : "\(store.toCheck.count)",
                             chevron: false)
                     }
+                    Toggle(isOn: Binding(get: { store.data.tripsOff != true },
+                                         set: { on in store.data.tripsOff = on ? nil : true })) {
+                        row("Plan for trips", icon: "airplane", color: .cyan, chevron: false)
+                    }
+                    .tint(Theme.accent)
                 } header: {
                     Text("Budget")
                 }

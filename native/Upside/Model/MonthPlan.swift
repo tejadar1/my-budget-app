@@ -23,9 +23,11 @@ struct MonthPlan: Equatable {
     var daysLeft: Int?
     /// Unspent money rolling-over categories carried in from last month.
     var rolledIn: Cents = 0
+    /// Set aside for goals (emergency fund, yearly bills, big purchases).
+    var goals: Cents = 0
 
     var bills: Cents { billsPaid + billsDue }
-    var toSpend: Cents { income - bills - savings - cardPaydown - trips + rolledIn }
+    var toSpend: Cents { income - bills - savings - cardPaydown - trips - goals + rolledIn }
     var leftToSpend: Cents { toSpend - everydaySpent }
     var perDay: Cents? { daysLeft.map { leftToSpend > 0 ? leftToSpend / max(1, $0) : 0 } }
     /// How far everyday limits overshoot what there is to spend (0 = fits).
@@ -92,7 +94,8 @@ extension BudgetStore {
             everydaySpent: totalSpent(in: month) - billsPaid,
             everydayLimits: everydayLimits,
             daysLeft: isCurrent ? daysLeftInMonth : nil,
-            rolledIn: everydayCategories.reduce(0) { $0 + rolledIn($1, to: month) })
+            rolledIn: everydayCategories.reduce(0) { $0 + rolledIn($1, to: month) },
+            goals: goalsSetAside(in: month))
     }
 
     /// Lowers everyday limits so they fit what there is to spend, taking

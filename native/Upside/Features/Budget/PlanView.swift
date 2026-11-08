@@ -43,8 +43,9 @@ struct PlanView: View {
         let income = max(BudgetStore.incomeToPlanOn(planned: planned, usual: usualIncome), base.incomeReceived)
         let extraSavings = extra * 100
         // $0 for trips means each trip saves its own share.
-        let tripCost = trips > 0 ? trips * 100 : store.tripScheduleSetAside(in: month)
-        let toSpend = income - base.bills - (savings * 100 + extraSavings) - paydown * 100 - tripCost
+        let tripCost = store.data.tripsOff == true ? 0 : trips > 0 ? trips * 100 : store.tripScheduleSetAside(in: month)
+        let goals = store.goalsSetAside(in: month)
+        let toSpend = income - base.bills - (savings * 100 + extraSavings) - paydown * 100 - tripCost - goals + base.rolledIn
         let total = limitsTotal(limits)
         return Numbers(base: base, usualIncome: usualIncome, income: income, extraSavings: extraSavings,
                        tripCost: tripCost, toSpend: toSpend,
@@ -62,6 +63,7 @@ struct PlanView: View {
                         .init(name: "Savings", amount: savings * 100 + n.extraSavings, color: Theme.accent),
                         .init(name: "Cards", amount: paydown * 100, color: .orange),
                         .init(name: "Trips", amount: n.tripCost, color: .cyan),
+                        .init(name: "Goals", amount: store.goalsSetAside(in: month), color: .purple),
                         .init(name: "To spend", amount: n.toSpend, color: .blue),
                     ], income: n.income)
                 }
@@ -128,8 +130,15 @@ struct PlanView: View {
             SliderRow(label: "Card paydown", dollars: $paydown,
                       maxDollars: max(paydown, n.owed > 0 ? min(room, owedDollars) : room),
                       tint: .orange, note: cardsNote(n.owed))
-            SliderRow(label: "Trips each month", dollars: $trips, maxDollars: max(trips, room),
-                      tint: .cyan, note: tripsNote)
+            if store.data.tripsOff != true {
+                SliderRow(label: "Trips each month", dollars: $trips, maxDollars: max(trips, room),
+                          tint: .cyan, note: tripsNote)
+            }
+            if !store.goals.isEmpty {
+                LabeledContent("Goals each month") {
+                    Text(Money.short(store.goalsSetAside(in: month))).monospacedDigit()
+                }
+            }
             LabeledContent("To spend") {
                 Text(Money.short(n.toSpend)).fontWeight(.bold)
                     .foregroundStyle(n.toSpend >= 0 ? Theme.accent : Theme.over)

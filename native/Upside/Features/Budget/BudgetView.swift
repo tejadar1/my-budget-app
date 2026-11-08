@@ -84,7 +84,11 @@ struct BudgetView: View {
                     if !store.data.transactions.isEmpty {
                         BundlesRow(month: month)
 
-                        TripsSection()
+                        GoalsSection()
+
+                        if store.data.tripsOff != true {
+                            TripsSection()
+                        }
                     }
                 }
                 .padding(.horizontal)

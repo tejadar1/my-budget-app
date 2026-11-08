@@ -244,6 +244,10 @@ struct BudgetData: Codable {
     var syncErrors: [String]?
     /// Months whose unspent money you already decided about ("2026-10").
     var leftoverDone: [String]?
+    /// Money set aside for things besides trips (emergency fund, yearly bills, big purchases).
+    var goals: [Goal]?
+    /// Trips turned off: no trip fund, no trip set-aside in the plan.
+    var tripsOff: Bool?
 }
 
 /// "Pay yourself first": standing monthly amounts taken off the top.

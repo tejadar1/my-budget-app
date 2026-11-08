@@ -90,6 +90,7 @@ extension BudgetStore {
     /// What trips need set aside in a month: a fixed trip fund if you set
     /// one, otherwise each trip's share for months it's being paid off.
     func tripSetAside(in month: Date) -> Cents {
+        if data.tripsOff == true { return 0 }
         if let fund = data.tripFund {
             return monthStart(fund.start) <= month ? fund.monthly : 0
         }

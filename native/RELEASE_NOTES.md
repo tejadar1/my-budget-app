@@ -3,6 +3,8 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next build
+- Goals: add an emergency fund (with months of essentials covered), a yearly or quarterly bill (set aside monthly until it's due), or a big purchase. Each takes its monthly amount off the top in your plan. Long-press a goal to add to it, mark a bill paid, or delete it.
+- Trips can be turned off: Settings → Plan for trips.
 - Rollover: turn on "Roll over what's left" for a category (Settings → Categories) and unspent money adds to next month's limit.
 - Early each month, Budget asks what to do with last month's unspent money: Savings, Cards or Keep.
 - New alerts: bills due in two days (9am), checking running low (under your amount or under bills still due), and purchases over your amount. Each can be turned off in Settings.
