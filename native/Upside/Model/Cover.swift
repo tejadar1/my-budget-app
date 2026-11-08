@@ -70,6 +70,16 @@ extension BudgetStore {
             let dollars = limits[id] ?? 0
             setLimit(id, dollars > 0 ? dollars * 100 : nil)
         }
-        data.plan = extra > 0 || !kept.isEmpty ? SavingsPlan(month: month, goal: extra, limits: kept) : nil
+        // Keep what last month's leftover was put toward.
+        let existing = data.plan.flatMap { isInMonth($0.month, month) ? $0 : nil }
+        let carried = (existing?.carriedIn ?? 0) > 0 || (existing?.cardExtra ?? 0) > 0
+        if extra > 0 || !kept.isEmpty || carried {
+            var plan = existing ?? SavingsPlan(month: month, goal: 0, limits: [:])
+            plan.goal = extra
+            plan.limits = kept
+            data.plan = plan
+        } else {
+            data.plan = nil
+        }
     }
 }

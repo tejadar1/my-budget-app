@@ -42,6 +42,7 @@ extension BudgetStore {
         case .cards: plan.cardExtra = (plan.cardExtra ?? 0) + amount
         case .keep: break
         }
+        if choice != .keep { plan.carriedIn = (plan.carriedIn ?? 0) + amount }
         var updated = data
         if choice != .keep { updated.plan = plan }
         updated.leftoverDone = (data.leftoverDone ?? []) + [Self.monthKey(month)]

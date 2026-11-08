@@ -45,7 +45,10 @@ struct PlanView: View {
         // $0 for trips means each trip saves its own share.
         let tripCost = store.data.tripsOff == true ? 0 : trips > 0 ? trips * 100 : store.tripScheduleSetAside(in: month)
         let goals = store.goalsSetAside(in: month)
-        let toSpend = income - base.bills - (savings * 100 + extraSavings) - paydown * 100 - tripCost - goals + base.rolledIn
+        // Leftover from last month given a job adds back what it takes off.
+        let leftoverCards = store.plan.flatMap { store.isInMonth($0.month, month) ? $0.cardExtra : nil } ?? 0
+        let toSpend = income + base.carriedIn - base.bills - (savings * 100 + extraSavings) - paydown * 100 - leftoverCards
+            - tripCost - goals + base.rolledIn
         let total = limitsTotal(limits)
         return Numbers(base: base, usualIncome: usualIncome, income: income, extraSavings: extraSavings,
                        tripCost: tripCost, toSpend: toSpend,

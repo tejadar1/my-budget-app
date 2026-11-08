@@ -184,6 +184,9 @@ struct SavingsPlan: Codable, Equatable {
     var limits: [String: Cents]
     /// Last month's unspent money put toward cards this month.
     var cardExtra: Cents? = nil
+    /// Last month's unspent money given a job this month. It comes from
+    /// last month, so it's added back: this month's spending money stays put.
+    var carriedIn: Cents? = nil
 }
 
 struct CategoryGroup: Identifiable {

@@ -13,9 +13,8 @@ struct GoalsSection: View {
                 .buttonStyle(.plain)
                 .contextMenu {
                     if goal.accountId == nil {
-                        Button("Add \(Money.short(store.goalMonthly(goal)))") {
-                            withAnimation { store.addToGoal(goal.id, store.goalMonthly(goal)) }
-                        }
+                        // Each month's set-aside is added on its own; this is extra.
+                        Button("Add an extra $100") { withAnimation { store.addToGoal(goal.id, 10_000) } }
                     }
                     if goal.kind == .bill {
                         Button("Bill paid, start over") { withAnimation { store.goalUsed(goal.id) } }

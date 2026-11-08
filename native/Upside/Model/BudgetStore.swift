@@ -481,9 +481,12 @@ final class BudgetStore {
     /// Set a category and remember it for this payee from now on.
     /// `as: BankSync.transferCategory` marks it "not spending".
     func categorize(_ transactionId: String, as categoryId: String, remember: Bool = true) {
+        let transactionId = Self.baseId(transactionId)
         guard let i = data.transactions.firstIndex(where: { $0.id == transactionId }) else { return }
         var updated = data
         let isTransfer = categoryId == BankSync.transferCategory
+        // Picking one category undoes a split.
+        updated.transactions[i].splits = nil
         updated.transactions[i].categoryId = isTransfer ? nil : categoryId
         updated.transactions[i].isTransfer = isTransfer
         updated.transactions[i].autoSort = nil
@@ -652,6 +655,7 @@ final class BudgetStore {
     /// prompt instead of changing them silently. With no others, the choice
     /// is remembered for future purchases right away.
     func sort(_ transactionId: String, as categoryId: String) -> SortPrompt? {
+        let transactionId = Self.baseId(transactionId)
         guard let t = data.transactions.first(where: { $0.id == transactionId }) else { return nil }
         categorize(transactionId, as: categoryId, remember: false)
         let key = Self.payeeKey(t.payee)

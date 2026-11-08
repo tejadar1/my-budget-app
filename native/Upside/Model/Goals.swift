@@ -37,6 +37,9 @@ struct Goal: Identifiable, Codable, Equatable {
     var repeatsMonths: Int? = nil
     /// For a goal without a date: how much to put in each month.
     var monthly: Cents? = nil
+    /// For a goal you track by hand: months before this were already
+    /// added to `saved` (the plan took them off the top, so they count).
+    var creditedThrough: Date? = nil
 }
 
 extension BudgetStore {
@@ -48,14 +51,36 @@ extension BudgetStore {
 
     /// What the goal needs each month: what's left spread over the months
     /// until it's due (this month included), or your own monthly amount.
-    func goalMonthly(_ goal: Goal) -> Cents {
+    func goalMonthly(_ goal: Goal) -> Cents { goalMonthly(goal, in: currentMonth) }
+
+    func goalMonthly(_ goal: Goal, in month: Date) -> Cents {
         let left = max(0, goal.target - goalSaved(goal))
         guard left > 0 else { return 0 }
         if let due = goal.due {
-            let months = max(1, (calendar.dateComponents([.month], from: currentMonth, to: monthStart(due)).month ?? 0) + 1)
+            let months = max(1, (calendar.dateComponents([.month], from: month, to: monthStart(due)).month ?? 0) + 1)
             return (left + months - 1) / months
         }
         return min(left, goal.monthly ?? left)
+    }
+
+    /// At each new month, goals you track by hand get what the plan set
+    /// aside for them in the months since (linked accounts track themselves).
+    func creditGoals() {
+        var list = goals
+        var changed = false
+        for i in list.indices where list[i].accountId == nil {
+            var month = monthStart(list[i].creditedThrough ?? currentMonth)
+            while month < currentMonth {
+                list[i].saved = min(list[i].target, list[i].saved + goalMonthly(list[i], in: month))
+                month = self.month(1, from: month)
+                changed = true
+            }
+            if list[i].creditedThrough.map(monthStart) != currentMonth {
+                list[i].creditedThrough = currentMonth
+                changed = true
+            }
+        }
+        if changed { data.goals = list }
     }
 
     /// Everything goals take off the top this month.
@@ -80,6 +105,8 @@ extension BudgetStore {
     }
 
     func saveGoal(_ goal: Goal) {
+        var goal = goal
+        if goal.creditedThrough == nil { goal.creditedThrough = currentMonth }
         var list = goals
         if let i = list.firstIndex(where: { $0.id == goal.id }) { list[i] = goal } else { list.append(goal) }
         data.goals = list

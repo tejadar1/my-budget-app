@@ -1074,7 +1074,11 @@ final class BudgetStoreTests: XCTestCase {
         store.useUnspent(left.amount, for: left.month, as: .cards)
         let after = store.monthPlan(store.currentMonth)
         XCTAssertEqual(after.cardPaydown, before.cardPaydown + left.amount)
+        XCTAssertEqual(after.toSpend, before.toSpend, "last month's money, so this month's spending money stays")
         XCTAssertNil(store.unspentLastMonth(), "asked once")
+        // Saving the Plan keeps it.
+        store.savePlanLimits([:], loaded: [:], extra: 0, in: store.currentMonth)
+        XCTAssertEqual(store.monthPlan(store.currentMonth).cardPaydown, after.cardPaydown)
     }
 
     func testAlertsForBillsLowBalanceAndLargePurchases() {
@@ -1119,6 +1123,14 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.goalsSetAside(in: store.currentMonth), 45_000)
         XCTAssertEqual(store.monthPlan(store.currentMonth).toSpend, before - 45_000, "taken off the top")
         XCTAssertNotNil(store.monthsCovered(store.goals[1]))
+
+        // Two months later, the hand-tracked emergency fund has both months added.
+        store.now = { self.date(2026, 12, 2) }
+        store.creditGoals()
+        XCTAssertEqual(store.goals.first { $0.id == "ef" }?.saved, 550_000, "$5,000 + Oct and Nov at $250")
+        store.creditGoals()
+        XCTAssertEqual(store.goals.first { $0.id == "ef" }?.saved, 550_000, "only once per month")
+        store.now = { self.date(2026, 10, 15) }
 
         store.goalUsed("ins")
         XCTAssertEqual(store.goals[0].saved, 0)

@@ -33,6 +33,7 @@ final class CloudSync {
     private var uploadTask: Task<Void, Never>?
     /// True while a merged copy is being put in place, so it isn't re-uploaded.
     private var applying = false
+    private var isPulling = false
 
     /// Simulators and screenshots have no iCloud account; demo data never syncs.
     static var isAvailable: Bool {
@@ -76,7 +77,10 @@ final class CloudSync {
 
     /// Fetch iCloud's copy, merge it in, and send back anything newer here.
     func pull() async {
-        guard let store else { return }
+        // Opening the app can ask twice at once (launch and becoming active).
+        guard let store, !isPulling else { return }
+        isPulling = true
+        defer { isPulling = false }
         status = .syncing
         do {
             guard try await container.accountStatus() == .available else {
