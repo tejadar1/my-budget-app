@@ -478,7 +478,7 @@ struct LeftoverCard: View {
     }
 
     private func choice(_ title: String, action: @escaping () -> Void) -> some View {
-        Button { withAnimation(action) } label: {
+        Button { withAnimation { action() } } label: {
             Text(title).font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity)
         }
         .buttonStyle(.bordered)
