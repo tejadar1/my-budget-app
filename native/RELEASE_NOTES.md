@@ -3,6 +3,7 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next build
+- Sharing is private to the person you invite. Settings → iCloud lists who has access (joined or invited), Upside notifies you when someone joins, and warns if more than one person has access.
 - Goals you track by hand fill up each month by what the plan set aside for them.
 - Split a purchase: open it and tap "Split this purchase…" to divide it by category (groceries and home) or between the two of you (Half each). Each part counts in its own category and for its own person.
 - Goals: add an emergency fund (with months of essentials covered), a yearly or quarterly bill (set aside monthly until it's due), or a big purchase. Each takes its monthly amount off the top in your plan. Long-press a goal to add to it, mark a bill paid, or delete it.

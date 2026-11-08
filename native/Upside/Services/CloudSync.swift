@@ -2,6 +2,7 @@ import CloudKit
 import Foundation
 import Observation
 import UIKit
+import UserNotifications
 
 /// Keeps the budget in iCloud: a backup for you, and one shared budget for
 /// the two of you. The whole budget is one record ("Budget") with the data
@@ -173,6 +174,71 @@ final class CloudSync {
 
     func refreshShare() async {
         share = try? await database.record(for: shareID) as? CKShare
+        await noticeNewPeople()
+    }
+
+    // MARK: Who has access
+
+    struct Person: Identifiable {
+        var id: String
+        var name: String
+        /// Email or phone, partly hidden: "j•••@gmail.com".
+        var contact: String
+        var joined: Bool
+        var isOwner: Bool
+    }
+
+    /// Everyone on the share besides you, joined or still invited.
+    var people: [Person] {
+        guard let share else { return [] }
+        let me = share.currentUserParticipant?.userIdentity.userRecordID?.recordName
+        return share.participants.compactMap { p in
+            let id = p.userIdentity.userRecordID?.recordName
+                ?? p.userIdentity.lookupInfo?.emailAddress ?? p.userIdentity.lookupInfo?.phoneNumber ?? UUID().uuidString
+            guard id != me else { return nil }
+            let name = p.userIdentity.nameComponents.map { PersonNameComponentsFormatter.localizedString(from: $0, style: .default) }
+            let contact = Self.mask(p.userIdentity.lookupInfo?.emailAddress ?? p.userIdentity.lookupInfo?.phoneNumber ?? "")
+            return Person(id: id, name: (name?.isEmpty == false ? name : nil) ?? (contact.isEmpty ? "Someone" : contact),
+                          contact: contact, joined: p.acceptanceStatus == .accepted, isOwner: p.role == .owner)
+        }
+    }
+
+    /// A couples budget has one partner; more than that is worth a look.
+    var hasExtraPeople: Bool { !isParticipant && people.filter { !$0.isOwner }.count > 1 }
+
+    /// Tells you when someone joins, and warns if it's more than one person.
+    private func noticeNewPeople() async {
+        guard !isParticipant else { return }
+        let joined = people.filter { $0.joined && !$0.isOwner }
+        let known = Set(UserDefaults.standard.stringArray(forKey: "cloudKnownPeople") ?? [])
+        let new = joined.filter { !known.contains($0.id) }
+        guard !new.isEmpty else { return }
+        UserDefaults.standard.set(joined.map(\.id), forKey: "cloudKnownPeople")
+        for person in new {
+            await notify(id: "joined-\(person.id)", title: "\(person.name) joined your budget",
+                         body: "They can see and edit it on their iPhone. Manage access in Settings → iCloud.")
+        }
+        if joined.count > 1 {
+            await notify(id: "extra-\(joined.count)", title: "More than one person has access",
+                         body: "Review who can see your budget in Settings → iCloud → Manage.")
+        }
+    }
+
+    private func notify(id: String, title: String, body: String) async {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        try? await UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: id, content: content, trigger: nil))
+    }
+
+    private static func mask(_ contact: String) -> String {
+        guard !contact.isEmpty else { return "" }
+        if let at = contact.firstIndex(of: "@") {
+            return String(contact.prefix(1)) + "•••" + contact[at...]
+        }
+        let digits = contact.filter(\.isNumber)
+        return digits.count >= 4 ? "•••" + digits.suffix(4) : contact
     }
 
     /// Opens Apple's sharing screen: invite by Messages or Mail, see who

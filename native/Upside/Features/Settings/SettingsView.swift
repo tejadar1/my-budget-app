@@ -241,6 +241,20 @@ private struct ICloudSection: View {
             } label: {
                 Label("iCloud backup", systemImage: "icloud.fill")
             }
+            ForEach(cloud.people) { person in
+                LabeledContent {
+                    Text(person.isOwner ? "Owner" : person.joined ? "Joined" : "Invited, not joined yet")
+                        .foregroundStyle(person.joined || person.isOwner ? Color.secondary : Theme.warning)
+                } label: {
+                    Text(person.name)
+                    if !person.contact.isEmpty && person.contact != person.name { Text(person.contact) }
+                }
+            }
+            if cloud.hasExtraPeople {
+                Label("More than one person has access. Remove anyone who shouldn’t in Manage.",
+                      systemImage: "exclamationmark.triangle.fill")
+                    .font(.footnote).foregroundStyle(Theme.over)
+            }
             if cloud.isParticipant {
                 Button("Leave shared budget", role: .destructive) { confirmLeave = true }
                     .confirmationDialog("Leave the shared budget?", isPresented: $confirmLeave, titleVisibility: .visible) {
@@ -267,8 +281,7 @@ private struct ICloudSection: View {
     }
 
     private var shareTitle: String {
-        let joined = (cloud.share?.participants.count ?? 1) > 1
-        return joined ? "Shared with \(partner) · Manage" : "Share budget with \(partner)"
+        cloud.people.isEmpty ? "Share budget with \(partner)" : "Manage access"
     }
 
     private var footer: String {
@@ -277,7 +290,10 @@ private struct ICloudSection: View {
         default: break
         }
         if cloud.isParticipant { return "You’re using a budget shared with you. Changes sync both ways." }
-        return "Your budget is backed up to your iCloud. Sharing lets \(partner) see and edit it on their iPhone; your phone keeps syncing the banks."
+        if !cloud.people.isEmpty {
+            return "Only people listed here can open your budget; a forwarded link doesn’t work for anyone else. Upside tells you when someone joins."
+        }
+        return "Your budget is backed up to your iCloud. Sharing is private: only the person you invite, by their phone number or email, can join. Your phone keeps syncing the banks."
     }
 
     private var statusText: String {
