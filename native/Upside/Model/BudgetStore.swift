@@ -11,6 +11,8 @@ final class BudgetStore {
 
     /// Demo mode (sample data, never saved).
     let isDemo: Bool
+    /// Called after each save; iCloud uses it to send changes.
+    @ObservationIgnored var onSave: (() -> Void)?
     var calendar = Calendar.current
     /// "Now" — overridable so tests and screenshots are stable.
     var now: () -> Date = Date.init
@@ -122,6 +124,7 @@ final class BudgetStore {
     func save() {
         guard let raw = try? JSONEncoder.upside.encode(data) else { return }
         try? raw.write(to: Self.fileURL, options: [.atomic, .completeFileProtection])
+        onSave?()
     }
 
     // MARK: Months

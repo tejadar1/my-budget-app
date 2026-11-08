@@ -200,6 +200,7 @@ jobs:
             <key>signingStyle</key><string>automatic</string>
             <key>teamID</key><string>${APPLE_TEAM_ID}</string>
             <key>manageAppVersionAndBuildNumber</key><false/>
+            <key>iCloudContainerEnvironment</key><string>Production</string>
           </dict></plist>
           PLIST
           set -o pipefail
@@ -212,6 +213,10 @@ jobs:
               CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
               CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
               archive
+            # An unsigned archive carries no entitlements, and the export signs
+            # with the ones it finds. Ad-hoc sign with iCloud's so they survive.
+            codesign --force --sign - --entitlements Upside/Upside.entitlements \
+              build/Upside.xcarchive/Products/Applications/Upside.app
             xcodebuild -exportArchive -archivePath build/Upside.xcarchive \
               -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
               -exportPath build/export -allowProvisioningUpdates "${AUTH[@]}"

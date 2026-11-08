@@ -1022,6 +1022,36 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.plan?.goal, 30_000)
     }
 
+    func testTwoPhonesMergeWithoutLosingEitherPersonsChanges() {
+        let base = makeStore().data
+        // Ron sorts a purchase and changes the plan; Jadira sorts a different one and adds a trip.
+        var ron = base
+        var jadira = base
+        let first = base.transactions[0].id, second = base.transactions[1].id
+        ron.transactions[0].categoryId = "home"
+        ron.priorities = Priorities(savings: 100_000)
+        jadira.transactions[1].categoryId = "gifts"
+        jadira.trips.append(Trip(id: "miami", name: "Miami", start: date(2026, 12, 1), end: date(2026, 12, 5), budget: 250_000))
+        // A new bank purchase arrives on Ron's phone only.
+        ron.transactions.append(Transaction(id: "new", accountId: "r", date: date(2026, 10, 14), amount: -1_200,
+                                            payee: "Joe's Pizza", categoryId: "dining"))
+
+        // Ron's phone merges Jadira's saved copy.
+        let merged = BudgetMerge.merge(local: ron, remote: jadira, base: base)
+        XCTAssertEqual(merged.transactions.first { $0.id == first }?.categoryId, "home", "Ron's sort kept")
+        XCTAssertEqual(merged.transactions.first { $0.id == second }?.categoryId, "gifts", "Jadira's sort kept")
+        XCTAssertEqual(merged.priorities?.savings, 100_000, "Ron's plan kept")
+        XCTAssertTrue(merged.trips.contains { $0.id == "miami" }, "Jadira's trip kept")
+        XCTAssertTrue(merged.transactions.contains { $0.id == "new" }, "new bank purchase kept")
+        XCTAssertEqual(merged.transactions.count, base.transactions.count + 1)
+
+        // A reinstall (empty phone, no last sync) takes iCloud's budget.
+        let restored = BudgetMerge.merge(local: BudgetData(), remote: merged, base: nil)
+        XCTAssertEqual(restored.priorities?.savings, 100_000)
+        XCTAssertEqual(restored.trips.count, merged.trips.count)
+        XCTAssertEqual(restored.transactions.count, merged.transactions.count)
+    }
+
     func testIncomePotAddsEachPersonAndDropsStoppedPay() {
         let store = makeStore()
         store.data.transactions.removeAll { $0.categoryId == "income" }

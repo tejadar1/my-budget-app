@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct UpsideApp: App {
+    @UIApplicationDelegateAdaptor(UpsideAppDelegate.self) private var appDelegate
     @State private var store: BudgetStore
     @AppStorage("appearance") private var appearance: Appearance = .automatic
 
@@ -21,6 +22,7 @@ struct UpsideApp: App {
                 .environment(store)
                 .tint(Theme.accent)
                 .preferredColorScheme(appearance.colorScheme)
+                .task { CloudSync.shared.start(store) }
         }
         // iOS wakes Upside now and then to sync banks and send alerts.
         .backgroundTask(.appRefresh(Alerts.refreshTaskId)) { [store] in
@@ -88,7 +90,11 @@ struct RootView: View {
         // Bank sync runs whenever Upside comes to the front (at most hourly).
         .onChange(of: scenePhase) { _, phase in
             switch phase {
-            case .active: Task { await autoSync() }
+            case .active: Task {
+                await autoSync()
+                // Pick up the other phone's changes each time Upside opens.
+                await CloudSync.shared.pull()
+            }
             case .background:
                 if lockEnabled && !store.isDemo { LockScreen.show() }
                 Alerts.scheduleRefresh()

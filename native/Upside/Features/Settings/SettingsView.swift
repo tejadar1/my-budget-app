@@ -69,6 +69,10 @@ struct SettingsView: View {
                     Text("Manage banks opens SimpleFIN: add a bank, sign in again, or tap Adjust. Upside syncs when you close it.")
                 }
 
+                if !store.isDemo {
+                    ICloudSection()
+                }
+
                 Section {
                     Button { showLimits = true } label: {
                         row("Categories", icon: "square.grid.2x2.fill", color: Theme.accent)
@@ -186,5 +190,72 @@ struct SettingsView: View {
                     .font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
             }
         }
+    }
+}
+
+/// iCloud backup and sharing the budget with your partner.
+private struct ICloudSection: View {
+    @Environment(BudgetStore.self) private var store
+    private var cloud: CloudSync { CloudSync.shared }
+    @State private var confirmLeave = false
+
+    var body: some View {
+        Section {
+            LabeledContent {
+                Text(statusText).foregroundStyle(statusIsProblem ? Theme.over : .secondary)
+            } label: {
+                Label("iCloud backup", systemImage: "icloud.fill")
+            }
+            if cloud.isParticipant {
+                Button("Leave shared budget", role: .destructive) { confirmLeave = true }
+                    .confirmationDialog("Leave the shared budget?", isPresented: $confirmLeave, titleVisibility: .visible) {
+                        Button("Leave", role: .destructive) { Task { await cloud.leave() } }
+                    } message: {
+                        Text("This phone keeps a copy, but changes stop syncing with the other phone.")
+                    }
+            } else if CloudSync.isAvailable {
+                Button {
+                    Task { await cloud.presentSharing() }
+                } label: {
+                    Label(shareTitle, systemImage: "person.2.fill")
+                }
+            }
+        } header: {
+            Text("iCloud")
+        } footer: {
+            Text(footer)
+        }
+    }
+
+    private var partner: String {
+        store.people.p2.isEmpty ? "your partner" : store.people.p2
+    }
+
+    private var shareTitle: String {
+        let joined = (cloud.share?.participants.count ?? 1) > 1
+        return joined ? "Shared with \(partner) · Manage" : "Share budget with \(partner)"
+    }
+
+    private var footer: String {
+        switch cloud.status {
+        case .failed(let why), .off(let why) where why != "Not started": return why
+        default: break
+        }
+        if cloud.isParticipant { return "You’re using a budget shared with you. Changes sync both ways." }
+        return "Your budget is backed up to your iCloud. Sharing lets \(partner) see and edit it on their iPhone; your phone keeps syncing the banks."
+    }
+
+    private var statusText: String {
+        switch cloud.status {
+        case .off: return "Off"
+        case .syncing: return "Syncing…"
+        case .synced(let date): return "Backed up " + date.formatted(.relative(presentation: .named))
+        case .failed: return "Problem"
+        }
+    }
+
+    private var statusIsProblem: Bool {
+        if case .failed = cloud.status { return true }
+        return false
     }
 }
