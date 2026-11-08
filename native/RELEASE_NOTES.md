@@ -3,6 +3,7 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next build
+- Split a purchase: open it and tap "Split this purchase…" to divide it by category (groceries and home) or between the two of you (Half each). Each part counts in its own category and for its own person.
 - Goals: add an emergency fund (with months of essentials covered), a yearly or quarterly bill (set aside monthly until it's due), or a big purchase. Each takes its monthly amount off the top in your plan. Long-press a goal to add to it, mark a bill paid, or delete it.
 - Trips can be turned off: Settings → Plan for trips.
 - Rollover: turn on "Roll over what's left" for a category (Settings → Categories) and unspent money adds to next month's limit.

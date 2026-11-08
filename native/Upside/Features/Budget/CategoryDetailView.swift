@@ -117,7 +117,7 @@ struct TransactionRow: View {
                 CategoryIcon(categoryId: transaction.tripId != nil ? "travel" : transaction.categoryId,
                              isTransfer: transaction.isTransfer,
                              isIncome: transaction.amount > 0 && !transaction.isTransfer,
-                             owner: account?.owner)
+                             owner: transaction.owner ?? account?.owner)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(Merchant.clean(transaction.payee)).lineLimit(1)
                     Text(detail(account))
@@ -147,6 +147,10 @@ struct TransactionRow: View {
             parts.append(store.transferLabel(transaction))
         } else if let trip = transaction.tripId.flatMap({ id in store.data.trips.first { $0.id == id } }) {
             parts.append(trip.name)
+        } else if let splits = transaction.splits {
+            parts.append("Split \(splits.count) ways")
+        } else if transaction.id.contains("#"), let category = store.category(transaction.categoryId) {
+            parts.append("\(category.name) · part of a split")
         } else if let category = store.category(transaction.categoryId) {
             parts.append(transaction.isHunch ? "\(category.name)?" : category.name)
         }

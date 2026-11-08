@@ -142,9 +142,21 @@ struct Transaction: Identifiable, Codable, Hashable {
     /// A business expense you'll be paid back for (or the reimbursement
     /// itself): kept out of the budget and income.
     var business: Bool? = nil
+    /// One purchase in parts: a Costco run as groceries and home, or
+    /// half each. Amounts add up to `amount`.
+    var splits: [Split]? = nil
+    /// Whose this is, when not the account's owner (set on split parts).
+    var owner: Owner? = nil
 
     var isHunch: Bool { autoSort == "hunch" }
     var isBusiness: Bool { business == true }
+}
+
+struct Split: Codable, Hashable {
+    var categoryId: String?
+    /// Negative like the purchase itself.
+    var amount: Cents
+    var owner: Owner? = nil
 }
 
 struct Category: Identifiable, Codable, Hashable {

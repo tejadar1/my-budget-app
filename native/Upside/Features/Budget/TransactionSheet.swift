@@ -8,10 +8,11 @@ struct TransactionSheet: View {
     let transactionId: String
     @State private var prompt: BudgetStore.SortPrompt?
     @State private var showNewTrip = false
+    @State private var showSplit = false
 
     var body: some View {
         NavigationStack {
-            if let t = store.data.transactions.first(where: { $0.id == transactionId }) {
+            if let t = store.data.transactions.first(where: { $0.id == BudgetStore.baseId(transactionId) }) {
                 Form {
                     Section {
                         VStack(alignment: .leading, spacing: 6) {
@@ -60,7 +61,27 @@ struct TransactionSheet: View {
                         }
                     }
 
-                    if !t.isTransfer {
+                    if !t.isTransfer, t.amount < 0 {
+                        Section {
+                            if let splits = t.splits {
+                                ForEach(Array(splits.enumerated()), id: \.offset) { _, part in
+                                    LabeledContent {
+                                        Text(Money.signed(part.amount)).monospacedDigit()
+                                    } label: {
+                                        Text(store.category(part.categoryId ?? "")?.name ?? "No category")
+                                        if let owner = part.owner { Text(store.people.name(owner)) }
+                                    }
+                                }
+                            }
+                            Button(t.splits == nil ? "Split this purchase…" : "Change split…") { showSplit = true }
+                        } header: {
+                            if t.splits != nil { Text("Split") }
+                        } footer: {
+                            if t.splits == nil { Text("Split a Costco run into groceries and home, or between the two of you.") }
+                        }
+                    }
+
+                    if !t.isTransfer && t.splits == nil {
                         Section("Category") {
                             Picker("Category", selection: Binding(
                                 get: { t.categoryId ?? "" },
@@ -100,6 +121,7 @@ struct TransactionSheet: View {
                 .sheet(isPresented: $showNewTrip) {
                     TripEditor(trip: nil) { trip in store.setTrip(t.id, trip.id) }
                 }
+                .sheet(isPresented: $showSplit) { SplitEditor(transaction: t) }
             }
         }
     }
@@ -140,5 +162,115 @@ private struct SortOthersPrompt: ViewModifier {
         guard let p = shown else { return "" }
         let n = p.otherIds.count
         return "Sort \(n) other \(p.storeName) purchase\(n == 1 ? "" : "s") as \(p.categoryName) too?"
+    }
+}
+
+/// Split one purchase into parts by category and person. The parts must
+/// add up to the purchase.
+private struct SplitEditor: View {
+    @Environment(BudgetStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    let transaction: Transaction
+
+    private struct Part: Identifiable {
+        let id = UUID()
+        var categoryId: String?
+        /// Positive dollars and cents as typed.
+        var amount: Decimal
+        var owner: Owner?
+    }
+
+    @State private var parts: [Part] = []
+
+    private var total: Decimal { Decimal(-transaction.amount) / 100 }
+    private var assigned: Decimal { parts.reduce(0) { $0 + $1.amount } }
+    private var left: Decimal { total - assigned }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    LabeledContent("Purchase", value: Money.exact(-transaction.amount))
+                    LabeledContent("Left to assign") {
+                        Text(left.formatted(.currency(code: "USD")))
+                            .foregroundStyle(left == 0 ? Theme.accent : Theme.over).monospacedDigit()
+                    }
+                    Button("Half each: \(store.people.name(.p1)) and \(store.people.name(.p2))") { halves() }
+                }
+                ForEach($parts) { $part in
+                    Section {
+                        Picker("Category", selection: $part.categoryId) {
+                            Text("Choose…").tag(String?.none)
+                            ForEach(store.groupedCategories) { group in
+                                Section(group.name) {
+                                    ForEach(group.categories) { Text($0.name).tag(Optional($0.id)) }
+                                }
+                            }
+                        }
+                        HStack {
+                            Text("Amount")
+                            Spacer()
+                            TextField("$0.00", value: $part.amount, format: .currency(code: "USD"))
+                                .keyboardType(.decimalPad).multilineTextAlignment(.trailing).frame(maxWidth: 140)
+                        }
+                        Picker("Whose", selection: $part.owner) {
+                            Text("Account’s owner").tag(Owner?.none)
+                            ForEach(Owner.pickable) { Text(store.people.name($0)).tag(Optional($0)) }
+                        }
+                        if parts.count > 1 {
+                            Button("Remove part", role: .destructive) { parts.removeAll { $0.id == part.id } }
+                        }
+                    }
+                }
+                Section {
+                    Button("Add a part") {
+                        parts.append(Part(categoryId: parts.last?.categoryId, amount: max(0, left), owner: nil))
+                    }
+                    if transaction.splits != nil {
+                        Button("Don’t split", role: .destructive) {
+                            store.split(transaction.id, into: [])
+                            dismiss()
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Split")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        store.split(transaction.id, into: parts.map {
+                            Split(categoryId: $0.categoryId, amount: -Self.cents($0.amount), owner: $0.owner)
+                        })
+                        dismiss()
+                    }
+                    .disabled(left != 0 || parts.contains { $0.categoryId == nil })
+                }
+            }
+            .onAppear(perform: load)
+        }
+    }
+
+    private func load() {
+        if let splits = transaction.splits {
+            parts = splits.map { Part(categoryId: $0.categoryId, amount: Decimal(-$0.amount) / 100, owner: $0.owner) }
+        } else {
+            parts = [Part(categoryId: transaction.categoryId, amount: total, owner: nil),
+                     Part(categoryId: nil, amount: 0, owner: nil)]
+        }
+    }
+
+    /// Same category, half each; the odd cent goes to the first.
+    private func halves() {
+        let cents = -transaction.amount
+        let second = cents / 2
+        let category = parts.first?.categoryId ?? transaction.categoryId
+        parts = [Part(categoryId: category, amount: Decimal(cents - second) / 100, owner: .p1),
+                 Part(categoryId: category, amount: Decimal(second) / 100, owner: .p2)]
+    }
+
+    private static func cents(_ dollars: Decimal) -> Cents {
+        Int(NSDecimalNumber(decimal: dollars * 100).doubleValue.rounded())
     }
 }

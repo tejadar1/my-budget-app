@@ -1130,6 +1130,28 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.tripSetAside(in: store.currentMonth), 0, "trips turned off")
     }
 
+    func testSplittingAPurchaseByCategoryAndPerson() {
+        let store = makeStore()
+        let month = store.currentMonth
+        store.data.transactions.append(Transaction(id: "costco", accountId: "r", date: date(2026, 10, 12), amount: -20_000,
+                                                   payee: "COSTCO WHSE #123", categoryId: "groceries"))
+        let groceriesBefore = store.spent("groceries", in: month)
+        let homeBefore = store.spent("home", in: month)
+        let anaBefore = store.spentByOwner(in: month)[.p2] ?? 0
+
+        // $150 groceries for Ron, $50 home for Jadira.
+        store.split("costco", into: [Split(categoryId: "groceries", amount: -15_000, owner: .p1),
+                                     Split(categoryId: "home", amount: -5_000, owner: .p2)])
+        XCTAssertEqual(store.spent("groceries", in: month), groceriesBefore - 5_000)
+        XCTAssertEqual(store.spent("home", in: month), homeBefore + 5_000)
+        XCTAssertEqual(store.spentByOwner(in: month)[.p2] ?? 0, anaBefore + 5_000, "Jadira's part counts as hers")
+        XCTAssertEqual(BudgetStore.baseId("costco#1"), "costco")
+
+        store.split("costco", into: [])
+        XCTAssertNil(store.data.transactions.first { $0.id == "costco" }?.splits, "back to one purchase")
+        XCTAssertEqual(store.spent("groceries", in: month), groceriesBefore)
+    }
+
     func testIncomePotAddsEachPersonAndDropsStoppedPay() {
         let store = makeStore()
         store.data.transactions.removeAll { $0.categoryId == "income" }

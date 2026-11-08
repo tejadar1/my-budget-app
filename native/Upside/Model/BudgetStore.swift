@@ -204,11 +204,42 @@ final class BudgetStore {
     var spendingTransactions: [Transaction] {
         let onBudget = Set(data.accounts.filter(\.countsInBudget).map(\.id))
         let expenseIds = Set(expenseCategories.map(\.id))
-        return data.transactions.filter { t in
+        // A split purchase counts as its parts ("id#0", "id#1"…).
+        return data.transactions.flatMap(Self.parts).filter { t in
             guard let categoryId = t.categoryId else { return false }
             return onBudget.contains(t.accountId) && !t.isTransfer && !t.isBusiness
                 && expenseIds.contains(categoryId)
         }
+    }
+
+    static func parts(_ t: Transaction) -> [Transaction] {
+        guard let splits = t.splits, !splits.isEmpty else { return [t] }
+        return splits.enumerated().map { i, split in
+            var part = t
+            part.id = "\(t.id)#\(i)"
+            part.categoryId = split.categoryId
+            part.amount = split.amount
+            part.owner = split.owner ?? t.owner
+            part.splits = nil
+            return part
+        }
+    }
+
+    /// The purchase a split part came from.
+    static func baseId(_ id: String) -> String { String(id.split(separator: "#").first ?? Substring(id)) }
+
+    /// Splits a purchase into parts (or back into one with an empty list).
+    /// The first part's category becomes the purchase's own.
+    func split(_ transactionId: String, into parts: [Split]) {
+        guard let i = data.transactions.firstIndex(where: { $0.id == transactionId }) else { return }
+        var t = data.transactions[i]
+        t.splits = parts.count > 1 ? parts : nil
+        if let first = parts.first {
+            t.categoryId = first.categoryId
+            t.autoSort = nil
+            if parts.count == 1 { t.owner = first.owner }
+        }
+        data.transactions[i] = t
     }
 
     // MARK: Spending
@@ -316,7 +347,7 @@ final class BudgetStore {
             if let c = t.categoryId, bills.contains(c) { continue }
             if categoryId == nil && isTripSpending(t) { continue }
             if categoryId != nil && categoryId != "travel" && t.tripId != nil { continue }
-            let owner = account(t.accountId)?.owner ?? .unassigned
+            let owner = t.owner ?? account(t.accountId)?.owner ?? .unassigned
             result[owner, default: 0] -= t.amount
         }
         return result.mapValues { max(0, $0) }
