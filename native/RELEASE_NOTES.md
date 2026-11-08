@@ -6,6 +6,7 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 - iCloud: your whole budget backs up to your private iCloud automatically and comes back on a new phone or after reinstalling.
 - Share your budget: Settings → iCloud → Share budget sends an iCloud invite. Once accepted, both phones read and edit the same budget; changes from both are combined, not overwritten.
 - Only your phone talks to the banks; the shared budget carries the results. The SimpleFIN key never goes to iCloud.
+- Settings shows iCloud status ("Backed up 2 min ago") or what's wrong.
 
 ## 0.28, November 7 (Plan and covers, fines)
 - Tickets and fines go in Minimize with fees (aim for $0); a Tickets category you made moves there once. Any category's detail in Settings → Categories now has a Group picker: Everyday, Bills or Minimize. The tile is now "Fees & fines".
