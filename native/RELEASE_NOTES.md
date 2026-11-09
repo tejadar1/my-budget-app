@@ -2,6 +2,9 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.30.1)
+- Usual income now plans on a typical paycheck from the last 6 months, leaning low, instead of the average. Overtime, bonuses and the higher fall paychecks after Social Security stops being withheld no longer raise the plan; when they come, they show up as money left over at month end.
+
 ## 0.30: A simpler Budget page
 - Budget reads top to bottom: how much you can spend, what needs you, savings, categories, goals and trips, then More.
 - Needs attention: one list, shown only when something needs you, with a row each for a bank that isn't syncing, a category over its limit, last month's wrap-up, purchases to check, and limits that don't fit. Each row opens a screen that explains it.

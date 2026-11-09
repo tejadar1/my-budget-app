@@ -92,8 +92,11 @@ extension BudgetStore {
     }
 
     /// Each source's usual month. Weekly and biweekly pay counts a normal
-    /// month: 4 or 2 average paychecks; the extra paycheck some months bring
-    /// is a bonus when it arrives. Other pay is averaged over the months the
+    /// month: 4 or 2 typical paychecks; the extra paycheck some months bring
+    /// is a bonus when it arrives. "Typical" is the lower-quartile check of
+    /// the last 6 months, not the average: overtime, bonuses and the fall
+    /// months after Social Security stops being withheld shouldn't set the
+    /// plan, since they don't last (withholding restarts in January). Other pay is averaged over the months the
     /// account has history. A source that has gone quiet (no pay in 3 weeks
     /// for weekly, 5 weeks otherwise) has stopped and adds nothing.
     func incomeSources(before month: Date) -> [IncomeSource] {
@@ -103,16 +106,17 @@ extension BudgetStore {
         let starts = accountHistoryStart
         let owners = data.incomeOwners ?? [:]
         let paidCount = Dictionary(grouping: incomeTransactions.filter { $0.date < month }, by: payerKey).mapValues(\.count)
-        let window = incomeTransactions.filter { $0.date >= self.month(-1, from: oldest) && $0.date < month }
+        let regularStart = self.month(-6, from: month)
+        let window = incomeTransactions.filter { $0.date >= min(regularStart, self.month(-1, from: oldest)) && $0.date < month }
         return Dictionary(grouping: window, by: payerKey).compactMap { key, list -> IncomeSource? in
             guard let latest = list.max(by: { $0.date < $1.date }) else { return nil }
             let payer = all[key] ?? Payer(cadence: .other, paidEarlyInMonth: false)
             var monthly: Cents
             var estimated = false
             if payer.cadence != .other {
-                let recent = list.filter { $0.date >= oldest }
-                guard !recent.isEmpty else { return nil }
-                monthly = recent.reduce(0) { $0 + $1.amount } / recent.count * (payer.cadence == .weekly ? 4 : 2)
+                let recent = list.filter { $0.date >= regularStart }.map(\.amount).sorted()
+                guard !recent.isEmpty, list.contains(where: { $0.date >= oldest }) else { return nil }
+                monthly = recent[recent.count / 4] * (payer.cadence == .weekly ? 4 : 2)
             } else {
                 let covered = months.filter { $0 >= (starts[latest.accountId] ?? oldest) }
                 if covered.isEmpty {
@@ -155,7 +159,8 @@ extension BudgetStore {
         case 27...33: perMonth = 1
         default: return nil
         }
-        return sorted.reduce(0) { $0 + $1.amount } / sorted.count * perMonth
+        let amounts = sorted.map(\.amount).sorted()
+        return amounts[amounts.count / 4] * perMonth
     }
 
     /// Says whose paycheck a source is, for paychecks into a joint account.

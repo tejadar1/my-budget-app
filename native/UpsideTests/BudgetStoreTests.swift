@@ -927,6 +927,26 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(Money.signed(2_000), "+$20.00", "money in has a plus")
     }
 
+    func testUsualPayIgnoresOvertimeAndTheSocialSecurityBump() {
+        let store = makeStore()
+        store.data.accounts.append(Account(id: "w", name: "Checking", institution: "Chase",
+                                           kind: .checking, balance: 0, owner: .p2))
+        // Weekly $1,700 since April; two overtime weeks, then September's
+        // checks rise once Social Security stops being withheld.
+        var day = date(2026, 4, 3), n = 0
+        while day < store.currentMonth {
+            let overtime = n == 5 || n == 12
+            let afterCap = day >= date(2026, 9, 1)
+            store.data.transactions.append(Transaction(id: "w\(n)", accountId: "w", date: day,
+                                                       amount: overtime ? 230_000 : afterCap ? 182_000 : 170_000,
+                                                       payee: "DISNEY PAYROLL", categoryId: "income"))
+            day = store.calendar.date(byAdding: .day, value: 7, to: day)!
+            n += 1
+        }
+        let source = store.incomeSources(before: store.currentMonth).first { $0.accountId == "w" }
+        XCTAssertEqual(source?.monthly, 680_000, "4 typical $1,700 checks, not the $1,780+ average")
+    }
+
     func testShortBankHistoryStillCountsPartnersPay() {
         let store = makeStore()
         // A bank that only shared from September 12: two paychecks, two weeks apart.
