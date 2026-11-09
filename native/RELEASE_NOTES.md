@@ -3,6 +3,9 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next build
+- Large-purchase alerts and bill detection look at whole purchases, so a split purchase isn't counted twice.
+- With trips turned off, purchases no longer show a Trip picker.
+- Leaving a shared budget, or the owner stopping sharing, keeps that phone's copy as its own budget (and says so) instead of bringing back old data.
 - Settings: removed the old "Share with your partner · Coming soon" row; sharing lives in Settings → iCloud.
 
 ## 0.28, November 8 (iCloud, goals, splits)

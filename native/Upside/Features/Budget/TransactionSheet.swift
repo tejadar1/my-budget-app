@@ -97,6 +97,7 @@ struct TransactionSheet: View {
                             .pickerStyle(.navigationLink)
                         }
 
+                        if store.data.tripsOff != true {
                         Section {
                             Picker("Trip", selection: Binding(
                                 get: { t.tripId ?? "" },
@@ -109,6 +110,7 @@ struct TransactionSheet: View {
                             Text("Trip")
                         } footer: {
                             Text("Trip purchases count toward the trip, not everyday spending.")
+                        }
                         }
                     }
                 }

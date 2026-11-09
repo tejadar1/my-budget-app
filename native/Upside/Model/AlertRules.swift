@@ -53,9 +53,11 @@ extension BudgetStore {
         let since = now().addingTimeInterval(-3 * 86_400)
         let sent = Set(data.alertsSent ?? [])
         let bills = billCategoryIds
-        return spendingTransactions.filter {
-            $0.date >= since && -$0.amount >= threshold && !sent.contains("large-\($0.id)")
-                && !bills.contains($0.categoryId ?? "")
+        // Whole purchases: a split $640 is one large purchase, not two.
+        let spending = Set(spendingTransactions.map { Self.baseId($0.id) })
+        return data.transactions.filter {
+            spending.contains($0.id) && $0.date >= since && -$0.amount >= threshold
+                && !sent.contains("large-\($0.id)") && !bills.contains($0.categoryId ?? "")
         }
     }
 

@@ -106,7 +106,15 @@ final class CloudSync {
             }
             await refreshShare()
         } catch {
-            if (error as? CKError)?.code == .zoneNotFound {
+            let code = (error as? CKError)?.code
+            if isParticipant && (code == .zoneNotFound || code == .userDeletedZone) {
+                // The owner stopped sharing: keep this phone's copy as its own.
+                await notify(id: "share-ended", title: "Sharing ended",
+                             body: "The shared budget was stopped. This iPhone keeps a copy.")
+                await becomeOwnBudget()
+                return
+            }
+            if code == .zoneNotFound {
                 // iCloud data was deleted; recreate the zone next time.
                 UserDefaults.standard.set(false, forKey: "cloudZoneReady")
             }
@@ -294,11 +302,20 @@ final class CloudSync {
     func leave() async {
         guard isParticipant else { return }
         if let share { _ = try? await database.modifyRecords(saving: [], deleting: [share.recordID]) }
+        await becomeOwnBudget()
+    }
+
+    /// After leaving (or being removed), this phone's copy becomes its own
+    /// budget again. Its old private backup from before joining is replaced,
+    /// so the merge doesn't bring back pre-sharing data.
+    private func becomeOwnBudget() async {
         UserDefaults.standard.removeObject(forKey: "cloudJoinedOwner")
+        UserDefaults.standard.removeObject(forKey: "cloudKnownPeople")
         share = nil
         serverRecord = nil
         Self.clearBase()
-        await pull()
+        _ = try? await container.privateCloudDatabase.modifyRecords(saving: [], deleting: [recordID])
+        do { try await ensureZone(); try await upload() } catch { status = .failed(Self.describe(error)) }
     }
 
     // MARK: Helpers

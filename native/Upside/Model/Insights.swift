@@ -35,7 +35,7 @@ extension BudgetStore {
         let thisMonth = currentMonth
         let since = month(-6, from: thisMonth)
         let today = now()
-        let charges = spendingTransactions.filter {
+        let charges = spendingTransactions.filter { !$0.id.contains("#") }.filter {
             $0.amount < 0 && $0.tripId == nil && $0.date >= since && $0.date <= today
         }
         let groups = Dictionary(grouping: charges) { BudgetStore.payeeKey($0.payee) }
