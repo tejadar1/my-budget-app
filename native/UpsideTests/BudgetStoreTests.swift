@@ -1191,6 +1191,12 @@ final class BudgetStoreTests: XCTestCase {
         store.data.transactions.append(Transaction(id: "div", accountId: "rhi", date: date(2026, 10, 10), amount: 1_200,
                                                    payee: "Dividend from VTI", categoryId: nil))
         XCTAssertEqual(store.savedAndInvested(in: month), before + 50_000, "the deposit counts; the dividend is growth")
+
+        // The Chase side, marked as investing, isn't counted a second time.
+        store.data.transactions.append(Transaction(id: "out", accountId: "r", date: date(2026, 10, 9), amount: -50_000,
+                                                   payee: "ROBINHOOD FUNDS", categoryId: nil, isTransfer: true))
+        store.setSaving("out", true)
+        XCTAssertEqual(store.savedAndInvested(in: month), before + 50_000, "counted once")
     }
 
     func testIncomePotAddsEachPersonAndDropsStoppedPay() {

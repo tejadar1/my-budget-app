@@ -237,6 +237,12 @@ extension BudgetStore {
         let connected = saving.map { $0.institution.lowercased() }
         let sentOut = data.transactions.filter { t in
             guard t.amount < 0 && t.isTransfer && !ids.contains(t.accountId) && isInMonth(t.date, month) else { return false }
+            // Sent to a savings or investing account that's connected here?
+            // Its arrival already counts above.
+            let payee = t.payee.lowercased()
+            if connected.contains(where: { inst in
+                inst.split(separator: " ").first.map { payee.contains($0) } ?? false
+            }) { return false }
             if isMarkedSaving(t) { return true }
             return BankSync.isInvestmentPayee(t.payee)
                 && !connected.contains { inst in BankSync.investmentWords.contains { inst.contains($0) && t.payee.lowercased().contains($0) } }
