@@ -6,6 +6,7 @@ struct SavingsCard: View {
     @Environment(BudgetStore.self) private var store
     let month: Date
     let onChange: () -> Void
+    @State private var showMoves = false
 
     var body: some View {
         let plan = store.monthPlan(month)
@@ -14,12 +15,12 @@ struct SavingsCard: View {
         let usual = store.usual({ store.savedAndInvested(in: $0) }, before: month)
         let payoff = store.extraCardPayoff(in: month)
 
-        Button(action: onChange) {
-            VStack(alignment: .leading, spacing: 10) {
+        let moves = store.savingsMoves(in: month)
+        VStack(alignment: .leading, spacing: 10) {
                 HStack {
                     Text("SAVINGS").font(.footnote.weight(.bold)).foregroundStyle(.secondary)
                     Spacer()
-                    Text(goal > 0 ? "Change in Plan" : "Set in Plan")
+                    Button(goal > 0 ? "Change in Plan" : "Set in Plan", action: onChange)
                         .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.accent)
                 }
                 if goal > 0 {
@@ -49,10 +50,20 @@ struct SavingsCard: View {
                         if payoff > 0 { figure("Extra paid on cards", payoff) }
                     }
                 }
+                if !moves.isEmpty {
+                    Button { showMoves = true } label: {
+                        HStack {
+                            Text("What counted (\(moves.count))")
+                            Spacer()
+                            Image(systemName: "chevron.right").font(.caption.weight(.semibold))
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                    }
+                }
             }
             .card()
-        }
-        .buttonStyle(.plain)
+            .sheet(isPresented: $showMoves) { SavingsMovesSheet(month: month) }
     }
 
     private func breakdown(_ plan: MonthPlan, goal: Cents) -> String {
@@ -119,5 +130,40 @@ struct SpendingSubtotals: View {
             Text(note).font(.caption).foregroundStyle(.secondary)
         }
         .contentShape(Rectangle())
+    }
+}
+
+/// The transfers behind "saved so far", so the number can be checked.
+private struct SavingsMovesSheet: View {
+    @Environment(BudgetStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    let month: Date
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(store.savingsMoves(in: month)) { t in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(Merchant.clean(t.payee)).lineLimit(1)
+                                Text("\(t.date.formatted(.dateTime.month(.abbreviated).day())) · \(store.account(t.accountId)?.fullName ?? "")")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            let amount = store.savingsAmount(t)
+                            Text((amount >= 0 ? "+" : "−") + Money.exact(abs(amount)))
+                                .monospacedDigit()
+                                .foregroundStyle(amount >= 0 ? Theme.accent : Theme.over)
+                        }
+                    }
+                } footer: {
+                    Text("Money into savings and investment accounts, and transfers you marked Saved & invested. Interest and dividends don’t count.")
+                }
+            }
+            .navigationTitle("Saved in \(month.formatted(.dateTime.month(.wide)))")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+        }
     }
 }

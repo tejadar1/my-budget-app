@@ -223,17 +223,27 @@ extension BudgetStore {
     /// back out. Only moves between your own accounts count, not interest
     /// or trades inside the account.
     func savedAndInvested(in month: Date) -> Cents {
+        savingsMoves(in: month).reduce(0) { $0 + savingsAmount($1) }
+    }
+
+    /// What one move adds to savings: arrivals count as they are (a
+    /// withdrawal from savings is negative); money sent out counts positive.
+    func savingsAmount(_ t: Transaction) -> Cents {
+        let saving = visibleAccounts.contains { $0.id == t.accountId && ($0.kind == .savings || $0.kind == .investment) }
+        return saving ? t.amount : -t.amount
+    }
+
+    /// The transactions behind "saved so far": money arriving in savings or
+    /// investment accounts, and money sent to investing that isn't connected.
+    func savingsMoves(in month: Date) -> [Transaction] {
         let saving = visibleAccounts.filter { $0.kind == .savings || $0.kind == .investment }
         let ids = Set(saving.map(\.id))
         // Money arriving in a savings or investment account counts, matched to
         // the other side or not (a brokerage deposit often isn't), except
         // what the account earned or sold: interest, dividends, sales.
-        let into = data.transactions
-            .filter { ids.contains($0.accountId) && isInMonth($0.date, month)
-                && ($0.isTransfer || ($0.amount > 0 && !Self.isEarnings($0.payee))) }
-            .reduce(0) { $0 + $1.amount }
-        // Sent to a 529, Vanguard, Fidelity… that isn't connected here
-        // (if it is, the deposit above already counts it).
+        // Money taken back out of savings counts against it.
+        let into = data.transactions.filter { ids.contains($0.accountId) && isInMonth($0.date, month)
+            && ($0.isTransfer || ($0.amount > 0 && !Self.isEarnings($0.payee))) }
         let connected = saving.map { $0.institution.lowercased() }
         let sentOut = data.transactions.filter { t in
             guard t.amount < 0 && t.isTransfer && !ids.contains(t.accountId) && isInMonth(t.date, month) else { return false }
@@ -247,7 +257,7 @@ extension BudgetStore {
             return BankSync.isInvestmentPayee(t.payee)
                 && !connected.contains { inst in BankSync.investmentWords.contains { inst.contains($0) && t.payee.lowercased().contains($0) } }
         }
-        return into - sentOut.reduce(0) { $0 + $1.amount }
+        return (into + sentOut).sorted { $0.date > $1.date }
     }
 
     /// Interest, dividends and sales inside an account: growth, not saving.
