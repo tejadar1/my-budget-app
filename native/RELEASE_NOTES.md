@@ -3,6 +3,7 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next (0.29: Settle in)
+- Money arriving in a savings or investment account counts toward savings even when Upside can't match it to the transfer out (brokerage deposits often don't match). Interest, dividends and sales don't count.
 - Saved & invested: open a transfer (or long-press it in Transactions) and turn on Saved & invested for money moved to investing, like Robinhood. It counts toward your savings, and future transfers worded the same way follow.
 
 ## 0.28, November 8 (sharing fixes)

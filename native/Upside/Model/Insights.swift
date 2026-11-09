@@ -225,8 +225,12 @@ extension BudgetStore {
     func savedAndInvested(in month: Date) -> Cents {
         let saving = visibleAccounts.filter { $0.kind == .savings || $0.kind == .investment }
         let ids = Set(saving.map(\.id))
+        // Money arriving in a savings or investment account counts, matched to
+        // the other side or not (a brokerage deposit often isn't), except
+        // what the account earned or sold: interest, dividends, sales.
         let into = data.transactions
-            .filter { ids.contains($0.accountId) && $0.isTransfer && isInMonth($0.date, month) }
+            .filter { ids.contains($0.accountId) && isInMonth($0.date, month)
+                && ($0.isTransfer || ($0.amount > 0 && !Self.isEarnings($0.payee))) }
             .reduce(0) { $0 + $1.amount }
         // Sent to a 529, Vanguard, Fidelity… that isn't connected here
         // (if it is, the deposit above already counts it).
@@ -238,6 +242,13 @@ extension BudgetStore {
                 && !connected.contains { inst in BankSync.investmentWords.contains { inst.contains($0) && t.payee.lowercased().contains($0) } }
         }
         return into - sentOut.reduce(0) { $0 + $1.amount }
+    }
+
+    /// Interest, dividends and sales inside an account: growth, not saving.
+    static func isEarnings(_ payee: String) -> Bool {
+        let p = payee.lowercased()
+        return ["interest", "dividend", " div", "reinvest", "capital gain", "sell", "sold", "sale ",
+                "cash back", "cashback", "reward", "bonus", "stock lending", "fee rebate"].contains { p.contains($0) }
     }
 
     /// A transfer you said is saving or investing (or one with the same wording).

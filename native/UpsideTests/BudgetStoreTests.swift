@@ -1180,6 +1180,19 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.savedAndInvested(in: month), before + 70_000)
     }
 
+    func testDepositsIntoAnInvestmentAccountCountEvenUnmatched() {
+        let store = makeStore()
+        let month = store.currentMonth
+        store.data.accounts.append(Account(id: "rhi", name: "Robinhood Investing", institution: "Robinhood",
+                                           kind: .investment, balance: 0, owner: .p1))
+        let before = store.savedAndInvested(in: month)
+        store.data.transactions.append(Transaction(id: "dep", accountId: "rhi", date: date(2026, 10, 9), amount: 50_000,
+                                                   payee: "ACH Deposit", categoryId: nil))
+        store.data.transactions.append(Transaction(id: "div", accountId: "rhi", date: date(2026, 10, 10), amount: 1_200,
+                                                   payee: "Dividend from VTI", categoryId: nil))
+        XCTAssertEqual(store.savedAndInvested(in: month), before + 50_000, "the deposit counts; the dividend is growth")
+    }
+
     func testIncomePotAddsEachPersonAndDropsStoppedPay() {
         let store = makeStore()
         store.data.transactions.removeAll { $0.categoryId == "income" }
