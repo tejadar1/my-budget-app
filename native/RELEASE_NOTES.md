@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next (0.29.1)
+## 0.29.1: Month-end check-in
 - A yearly or quarterly bill goal can name its bill category. The plan then stops holding back that bill's usual every month, and the month it's paid comes from the goal, not that month's money.
 - Accounts a goal or the trip fund follows aren't counted as regular savings, so the same dollars don't count twice.
 - Card paydown uses the balance you carry (what's owed minus this month's new charges) for "clear in about N months".
