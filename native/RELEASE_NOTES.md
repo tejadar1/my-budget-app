@@ -2,6 +2,10 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.29.2)
+- Plan warns when savings, card paydown and trips don't fit in your income after bills: a red section with ways to lower them, and Save asks before keeping a plan that spends more than you make. The Budget card says so too.
+- Plan's bar counts last month's money put to work this month (a catch-up or leftover), so it no longer shows a false "more than your income".
+
 ## 0.29.1: Month-end check-in
 - A yearly or quarterly bill goal can name its bill category. The plan then stops holding back that bill's usual every month, and the month it's paid comes from the goal, not that month's money.
 - Accounts a goal or the trip fund follows aren't counted as regular savings, so the same dollars don't count twice.

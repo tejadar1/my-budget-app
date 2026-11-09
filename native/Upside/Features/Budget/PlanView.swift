@@ -17,6 +17,7 @@ struct PlanView: View {
     @State private var useUsual = true
     /// Extra savings just this month, in dollars.
     @State private var extra = 0
+    @State private var confirmOver = false
     /// What "Fix it for me" did, shown until the next change.
     @State private var fixNote: String?
 
@@ -28,6 +29,11 @@ struct PlanView: View {
         var usualIncome: Cents
         var income: Cents
         var extraSavings: Cents
+        /// Last month's leftover put toward cards this month.
+        var extraCards: Cents
+        /// Money this month has besides income: last month's leftover given a
+        /// job, rolled-over limits, bills paid from a goal's fund.
+        var carried: Cents
         var tripCost: Cents
         var toSpend: Cents
         var recommended: [String: Cents]
@@ -51,6 +57,7 @@ struct PlanView: View {
             - tripCost - goals + base.rolledIn
         let total = limitsTotal(limits)
         return Numbers(base: base, usualIncome: usualIncome, income: income, extraSavings: extraSavings,
+                       extraCards: leftoverCards, carried: base.carriedIn + base.rolledIn + base.fundedByGoals,
                        tripCost: tripCost, toSpend: toSpend,
                        recommended: store.recommendedLimits(toSpend: toSpend), total: total, owed: store.cardsCarried)
     }
@@ -64,12 +71,13 @@ struct PlanView: View {
                     PlanSplit(parts: [
                         .init(name: "Bills", amount: n.base.bills - n.base.fundedByGoals, color: .gray),
                         .init(name: "Savings", amount: savings * 100 + n.extraSavings, color: Theme.accent),
-                        .init(name: "Cards", amount: paydown * 100, color: .orange),
+                        .init(name: "Cards", amount: paydown * 100 + n.extraCards, color: .orange),
                         .init(name: "Trips", amount: n.tripCost, color: .cyan),
                         .init(name: "Goals", amount: store.goalsSetAside(in: month), color: .purple),
                         .init(name: "To spend", amount: n.toSpend, color: .blue),
-                    ], income: n.income)
+                    ], income: n.income, carried: n.carried)
                 }
+                overIncomeSection(n)
                 incomeSection(n)
                 prioritiesSection(n).id("priorities")
                 limitsSection(n)
@@ -82,11 +90,21 @@ struct PlanView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { proxy.scrollTo("priorities", anchor: .top) }
             }
             }
+            .alert("This plan spends more than you make", isPresented: $confirmOver) {
+                Button("Save anyway", role: .destructive) { save(); dismiss() }
+                Button("Keep editing", role: .cancel) {}
+            } message: {
+                Text("After bills, savings, cards and trips, there’s \(Money.short(-numbers().toSpend)) less than nothing for everyday spending.")
+            }
             .navigationTitle("Plan")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button("Save") { save(); dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        if numbers().toSpend < 0 { confirmOver = true } else { save(); dismiss() }
+                    }
+                }
             }
             .onAppear(perform: load)
         }
@@ -232,6 +250,30 @@ struct PlanView: View {
         let head = fits ? "Limits add up to \(Money.short(n.total)) of \(Money.short(n.toSpend)) to spend."
                         : "Limits add up to \(Money.short(n.total)), \(Money.short(n.total - n.toSpend)) more than you have."
         return head + " No limit counts as usual."
+    }
+
+    /// Savings, cards, trips and goals more than income after bills: say so
+    /// plainly and offer the ways out, lowest priority first.
+    @ViewBuilder private func overIncomeSection(_ n: Numbers) -> some View {
+        if n.toSpend < 0 {
+            let over = (-n.toSpend + 99) / 100
+            Section {
+                if trips > 0 {
+                    Button("Put \(Money.short(min(trips, over) * 100)) less toward trips") { withAnimation { trips -= min(trips, over) } }
+                }
+                if paydown > 0 {
+                    Button("Pay \(Money.short(min(paydown, over) * 100)) less on cards") { withAnimation { paydown -= min(paydown, over) } }
+                }
+                if savings > 0 {
+                    Button("Save \(Money.short(min(savings, over) * 100)) less") { withAnimation { savings -= min(savings, over) } }
+                }
+            } header: {
+                Label("\(Money.short(over * 100)) more than you make", systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(Theme.over).textCase(nil).font(.subheadline.weight(.semibold))
+            } footer: {
+                Text("After bills, savings, card paydown and trips don’t fit in your income. Lower one, or there’s nothing left for everyday spending.")
+            }
+        }
     }
 
     /// Limits still more than there is to spend: a small cut can't close
@@ -423,13 +465,19 @@ private struct PlanSplit: View {
     }
     let parts: [Part]
     let income: Cents
+    /// Last month's money given a job this month, rollover and funded bills.
+    var carried: Cents = 0
 
     var body: some View {
         let shown = parts.filter { $0.amount > 0 }
-        let total = max(income, shown.reduce(0) { $0 + $1.amount }, 1)
-        let over = shown.reduce(0) { $0 + $1.amount } - income
+        let available = income + carried
+        let total = max(available, shown.reduce(0) { $0 + $1.amount }, 1)
+        let over = shown.reduce(0) { $0 + $1.amount } - available
         VStack(alignment: .leading, spacing: 10) {
             Text("\(Money.short(income)) a month").font(.headline)
+            if carried > 0 {
+                Text("+ \(Money.short(carried)) from last month and funds").font(.caption).foregroundStyle(.secondary)
+            }
             GeometryReader { geo in
                 HStack(spacing: 2) {
                     ForEach(shown) { part in
