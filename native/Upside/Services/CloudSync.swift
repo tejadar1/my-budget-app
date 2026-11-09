@@ -28,6 +28,9 @@ final class CloudSync {
 
     private(set) var status: Status = .off("Not started")
     private(set) var share: CKShare?
+    /// Shown when the sharing sheet can't open, so the button never just does nothing.
+    var shareError: String?
+    private(set) var isPreparingShare = false
     private weak var store: BudgetStore?
     /// Last record from iCloud, kept to save over it (its change tag).
     private var serverRecord: CKRecord?
@@ -252,7 +255,9 @@ final class CloudSync {
     /// Opens Apple's sharing screen: invite by Messages or Mail, see who
     /// has joined, or stop sharing.
     func presentSharing() async {
-        guard !isParticipant else { return }
+        guard !isParticipant, !isPreparingShare else { return }
+        isPreparingShare = true
+        defer { isPreparingShare = false }
         do {
             try await upload()
             var current = share
@@ -267,13 +272,15 @@ final class CloudSync {
                 case nil: break
                 }
             }
-            guard let current else { return }
+            guard let current else { throw CKError(.internalError) }
             share = current
             let controller = UICloudSharingController(share: current, container: container)
             controller.availablePermissions = [.allowReadWrite, .allowPrivate]
-            Self.topViewController()?.present(controller, animated: true)
+            guard let host = Self.topViewController() else { throw CKError(.internalError) }
+            host.present(controller, animated: true)
         } catch {
             status = .failed(Self.describe(error))
+            shareError = "Couldn’t open sharing: " + Self.describe(error)
         }
     }
 
@@ -357,11 +364,14 @@ final class CloudSync {
         }
     }
 
+    /// The screen to show Apple's sharing sheet on. Skips the Face ID lock
+    /// window, which stays around hidden (and can still be "key") after unlock.
     private static func topViewController() -> UIViewController? {
-        let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
-            .first { $0.activationState == .foregroundActive }
-        var top = scene?.windows.first { $0.isKeyWindow }?.rootViewController
-        while let presented = top?.presentedViewController { top = presented }
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let scene = scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
+        let windows = (scene?.windows ?? []).filter { !$0.isHidden && $0.windowLevel == .normal }
+        var top = (windows.first { $0.isKeyWindow } ?? windows.first)?.rootViewController
+        while let presented = top?.presentedViewController, !presented.isBeingDismissed { top = presented }
         return top
     }
 }

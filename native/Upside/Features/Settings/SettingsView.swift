@@ -261,7 +261,17 @@ private struct ICloudSection: View {
                 Button {
                     Task { await cloud.presentSharing() }
                 } label: {
-                    Label(shareTitle, systemImage: "person.2.fill")
+                    HStack {
+                        Label(shareTitle, systemImage: "person.2.fill")
+                        if cloud.isPreparingShare { Spacer(); ProgressView() }
+                    }
+                }
+                .disabled(cloud.isPreparingShare)
+                .alert("Sharing", isPresented: Binding(get: { cloud.shareError != nil },
+                                                       set: { if !$0 { cloud.shareError = nil } })) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text(cloud.shareError ?? "")
                 }
             }
         } header: {
