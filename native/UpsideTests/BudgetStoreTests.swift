@@ -975,6 +975,26 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.limit(store.category("shopping")!, in: next), 24_000, "next month goes back")
     }
 
+    func testBudgetPageListsWhatNeedsYouAndMostUsedCategoriesFirst() {
+        let store = makeStore()
+        store.setLimit("shopping", 24_000)
+        store.setLimit("dining", 50_000)
+        store.setLimit("groceries", 100_000)
+        store.data.transactions.append(Transaction(id: "s", accountId: "r", date: date(2026, 10, 9), amount: -26_040,
+                                                   payee: "Target", categoryId: "shopping"))
+        store.data.transactions.append(Transaction(id: "d", accountId: "r", date: date(2026, 10, 9), amount: -40_000,
+                                                   payee: "Chipotle", categoryId: "dining"))
+        let items = store.attention()
+        XCTAssertTrue(items.contains(.over(categoryId: "shopping", amount: 2_100)), "rounded up to whole dollars")
+        XCTAssertTrue(items.contains(.toCheck(count: 2)))
+        XCTAssertFalse(items.contains(.bank))
+
+        // Shopping 108%, dining 80%, groceries 13%: closest to the limit first.
+        let rows = store.categoryRows(in: store.currentMonth).map(\.id)
+        XCTAssertEqual(Array(rows.prefix(3)), ["shopping", "dining", "groceries"])
+        XCTAssertFalse(rows.contains("housing"), "bills aren't everyday rows")
+    }
+
     func testTicketsAndFinesAreMinimized() {
         let store = makeStore()
         let id = store.addCategory("Parking Tickets", group: "Everyday")

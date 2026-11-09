@@ -1,34 +1,5 @@
 import SwiftUI
 
-/// Budget row: what you're still owed for business expenses.
-struct BusinessRow: View {
-    @Environment(BudgetStore.self) private var store
-
-    var body: some View {
-        if !store.businessTransactions.isEmpty {
-            NavigationLink(value: Route.business) {
-                HStack(spacing: 14) {
-                    Image(systemName: "briefcase.fill")
-                        .font(.title3).foregroundStyle(.white)
-                        .frame(width: 36, height: 36)
-                        .background(Color.brown, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(store.businessOwed > 0 ? "\(Money.short(store.businessOwed)) waiting to be paid back"
-                                                    : "Business expenses all paid back")
-                            .font(.headline)
-                        Text("Kept out of your budget until it's reimbursed.")
-                            .font(.footnote).foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
-                }
-                .card()
-            }
-            .buttonStyle(.plain)
-        }
-    }
-}
-
 /// Business purchases and the reimbursements that paid them back.
 struct BusinessView: View {
     @Environment(BudgetStore.self) private var store

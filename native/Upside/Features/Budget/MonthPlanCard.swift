@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The top of Budget: income, minus bills, savings and trips, leaves
-/// "to spend"; the big number is what's left of it.
+/// "to spend"; the big number is what's left of it. Plan changes happen in
+/// Plan (toolbar), so the card only answers "how much can we spend".
 struct MonthPlanCard: View {
     @Environment(BudgetStore.self) private var store
     let month: Date
@@ -19,16 +20,6 @@ struct MonthPlanCard: View {
             planToggle(plan)
             if showLines {
                 lines(plan).transition(.opacity.combined(with: .move(edge: .top)))
-            }
-            if !isPast && plan.limitsOverBy > 0 && onSavings != nil { fitButton(plan) }
-            if !isPast, let onSavings {
-                Button(action: onSavings) {
-                    Label("Adjust plan", systemImage: "slider.horizontal.3")
-                        .font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity, minHeight: 40)
-                        .background(Color.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                }
-                .buttonStyle(.plain)
             }
         }
         .foregroundStyle(.white)
@@ -151,22 +142,6 @@ struct MonthPlanCard: View {
         owners.append(.shared)
         if (byOwner[.unassigned] ?? 0) > 0 { owners.append(.unassigned) }
         return owners
-    }
-
-    private func fitButton(_ plan: MonthPlan) -> some View {
-        // Limits change in Plan only, where the trade-offs are shown.
-        Button { onSavings?() } label: {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Your everyday limits are \(Money.short(plan.limitsOverBy)) more than you have")
-                    .font(.subheadline.weight(.semibold))
-                Text("Open Plan to fix it.")
-                    .font(.footnote).opacity(0.9)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(12)
-            .background(Color.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        }
-        .buttonStyle(.plain)
     }
 
     /// "paid $420 of $500", or what was charged vs paid; flags a growing balance.

@@ -2,7 +2,16 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next (0.29.2)
+## 0.30: A simpler Budget page
+- Budget reads top to bottom: how much you can spend, what needs you, savings, categories, goals and trips, then More.
+- Needs attention: one list, shown only when something needs you, with a row each for a bank that isn't syncing, a category over its limit, last month's wrap-up, purchases to check, and limits that don't fit. Each row opens a screen that explains it.
+- Last month's wrap-up is now step by step, with the facts first: "You planned to save $1,500 and $502 went in. The other $998 should still be in checking." Then a clear choice: save it this month, or skip it. This replaces Catch up and Let it go.
+- Cover opens its own screen: how much over, and which categories have room to cover it, for this month only.
+- Categories are one list with a thin bar each, closest to its limit first, then Show all. The tiles and the By category totals are gone.
+- Savings is one row with a bar; tap it for the details and What counted.
+- Goals and trips share one section with a single Add button.
+- More: Bills, Credit cards, Fees & fines, Business and the monthly recap in one Settings-style list.
+- The Budget card no longer has an Adjust plan button; Plan is in the toolbar.
 - Plan warns when savings, card paydown and trips don't fit in your income after bills: a red section with ways to lower them, and Save asks before keeping a plan that spends more than you make. The Budget card says so too.
 - Plan's bar counts last month's money put to work this month (a catch-up or leftover), so it no longer shows a false "more than your income".
 

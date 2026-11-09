@@ -1,14 +1,12 @@
 import SwiftUI
 
 /// Trips live outside everyday spending, so a vacation month doesn't look
-/// like overspending and doesn't skew your averages.
-struct TripsSection: View {
+/// like overspending and doesn't skew your averages. Shown under Goals.
+struct TripRows: View {
     @Environment(BudgetStore.self) private var store
-    @State private var showNew = false
     @State private var editFund = false
 
     var body: some View {
-        SectionTitle(text: "Trips", trailing: "kept out of everyday")
         Button { editFund = true } label: { TripFundCard() }
             .buttonStyle(.plain)
             .sheet(isPresented: $editFund) { TripFundEditor() }
@@ -18,14 +16,6 @@ struct TripsSection: View {
             }
             .buttonStyle(.plain)
         }
-        Button { showNew = true } label: {
-            Label("New trip", systemImage: "airplane.departure")
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .card()
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(Theme.accent)
-        .sheet(isPresented: $showNew) { TripEditor(trip: nil) }
     }
 }
 

@@ -1,13 +1,17 @@
 import SwiftUI
 
-/// Goals on Budget: each with its progress and what it takes a month.
+/// Goals on Budget: each with its progress and what it takes a month,
+/// then the trip fund and trips (unless trips are off). One Add button.
 struct GoalsSection: View {
     @Environment(BudgetStore.self) private var store
     @State private var editing: Goal?
     @State private var adding = false
+    @State private var addingTrip = false
 
     var body: some View {
-        SectionTitle(text: "Goals", trailing: store.goals.isEmpty ? nil : "\(Money.short(store.goalsSetAside(in: store.currentMonth))) a month")
+        let tripsOn = store.data.tripsOff != true
+        SectionTitle(text: tripsOn ? "Goals & trips" : "Goals",
+                     trailing: store.goals.isEmpty ? nil : "\(Money.short(store.goalsSetAside(in: store.currentMonth))) a month")
         ForEach(store.goals) { goal in
             Button { editing = goal } label: { GoalCard(goal: goal) }
                 .buttonStyle(.plain)
@@ -22,14 +26,23 @@ struct GoalsSection: View {
                     Button("Delete goal", role: .destructive) { withAnimation { store.deleteGoal(goal.id) } }
                 }
         }
-        Button { adding = true } label: {
-            Label("Add a goal", systemImage: "plus.circle.fill")
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .card()
+        if tripsOn { TripRows() }
+        let addLabel = Label(tripsOn ? "Add a goal or trip" : "Add a goal", systemImage: "plus.circle.fill")
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .card()
+        Group {
+            if tripsOn {
+                Menu {
+                    Button("Goal", systemImage: "target") { adding = true }
+                    Button("Trip", systemImage: "airplane.departure") { addingTrip = true }
+                } label: { addLabel }
+            } else {
+                Button { adding = true } label: { addLabel }.buttonStyle(.plain)
+            }
         }
-        .buttonStyle(.plain)
         .foregroundStyle(Theme.accent)
         .sheet(isPresented: $adding) { GoalEditor(goal: nil) }
+        .sheet(isPresented: $addingTrip) { TripEditor(trip: nil) }
         .sheet(item: $editing) { GoalEditor(goal: $0) }
     }
 }

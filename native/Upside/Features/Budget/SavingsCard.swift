@@ -5,7 +5,8 @@ import SwiftUI
 struct SavingsCard: View {
     @Environment(BudgetStore.self) private var store
     let month: Date
-    let onChange: () -> Void
+    /// Opens Plan; nil hides the button (past months).
+    var onChange: (() -> Void)? = nil
     @State private var showMoves = false
 
     var body: some View {
@@ -20,8 +21,10 @@ struct SavingsCard: View {
                 HStack {
                     Text("SAVINGS").font(.footnote.weight(.bold)).foregroundStyle(.secondary)
                     Spacer()
-                    Button(goal > 0 ? "Change in Plan" : "Set in Plan", action: onChange)
-                        .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.accent)
+                    if let onChange {
+                        Button(goal > 0 ? "Change in Plan" : "Set in Plan", action: onChange)
+                            .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.accent)
+                    }
                 }
                 if goal > 0 {
                     // One number: what's moved so far against Plan's savings.
@@ -88,48 +91,20 @@ struct SavingsCard: View {
     }
 }
 
-/// Subtotals by kind of spending this month: everyday against its limits,
-/// bills against what's expected, fees, and trips.
-struct SpendingSubtotals: View {
-    @Environment(BudgetStore.self) private var store
+/// Savings opened from its Budget row.
+struct SavingsSheet: View {
+    @Environment(\.dismiss) private var dismiss
     let month: Date
+    var openPlan: (() -> Void)? = nil
 
     var body: some View {
-        let plan = store.monthPlan(month)
-        let fees = store.minimizeSpent(in: month)
-        let trips = store.totalSpent(in: month, includeTrips: true) - store.totalSpent(in: month)
-        VStack(spacing: 12) {
-            row("Everyday", spent: plan.everydaySpent - fees, of: plan.everydayLimits, note: "of limits")
-            NavigationLink(value: Route.bills) {
-                row("Bills", spent: plan.billsPaid, of: plan.bills, note: "of expected", chevron: true)
-            }
-            .buttonStyle(.plain)
-            row("Fees & fines", spent: fees, of: nil, note: fees == 0 ? "none" : "aim for $0", warn: fees > 0)
-            if trips > 0 { row("Trips", spent: trips, of: nil, note: "from the trip budget") }
+        NavigationStack {
+            ScrollView { SavingsCard(month: month, onChange: openPlan).padding() }
+                .background(Color(.systemGroupedBackground))
+                .navigationTitle("Savings")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
-        .card()
-    }
-
-    private func row(_ label: String, spent: Cents, of total: Cents?, note: String,
-                     warn: Bool = false, chevron: Bool = false) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(label).font(.subheadline.weight(.semibold))
-                Spacer()
-                Text(total.map { "\(Money.short(spent)) of \(Money.short($0))" } ?? Money.short(spent))
-                    .font(.subheadline.monospacedDigit())
-                    .foregroundStyle(warn ? Theme.over : .primary)
-                if chevron {
-                    Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
-                }
-            }
-            if let total, total > 0 {
-                SplitBar(fraction: Double(spent) / Double(total),
-                         fill: spent > total ? Theme.over : Theme.accent, height: 6, overflow: Theme.over)
-            }
-            Text(note).font(.caption).foregroundStyle(.secondary)
-        }
-        .contentShape(Rectangle())
     }
 }
 

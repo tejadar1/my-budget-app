@@ -350,7 +350,7 @@ private struct AccountGroupSection: View {
 
 /// Shown when a bank stops sending new activity or SimpleFIN reports a
 /// problem, so a missing purchase has an explanation and a fix.
-private struct BankHealthCard: View {
+struct BankHealthCard: View {
     @Environment(BudgetStore.self) private var store
     @State private var showBridge = false
 

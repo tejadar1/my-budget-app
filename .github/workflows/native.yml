@@ -95,6 +95,11 @@ jobs:
           xcrun simctl launch "$UDID" com.tejadar1.upside -demo > /dev/null; sleep 12
           for mode in light dark; do
             shot $mode 1-budget -demo -tab budget
+            shot $mode 1b-budget-categories -demo -tab budget -scrollTo categories
+            shot $mode 1c-budget-more -demo -tab budget -scrollTo more
+            shot $mode 1d-checkin -demo -tab budget -open checkin
+            shot $mode 1e-cover -demo -tab budget -open cover
+            shot $mode 1f-savings -demo -tab budget -open savings
             shot $mode 2-accounts -demo -tab accounts
             shot $mode 2b-transactions -demo -tab transactions
             shot $mode 3-settings -demo -tab settings
