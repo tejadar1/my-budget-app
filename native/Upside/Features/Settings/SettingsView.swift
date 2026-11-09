@@ -159,11 +159,6 @@ struct SettingsView: View {
                     .pickerStyle(.segmented)
                 }
 
-                Section("Sharing") {
-                    row("Share with your partner", icon: "person.2.fill", color: .blue,
-                        value: "Coming soon", chevron: false)
-                }
-
                 // Start over: kept apart at the bottom, two confirmations.
                 Section {
                     Button(role: .destructive) { confirmResort = true } label: {

@@ -2,6 +2,9 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next build
+- Settings: removed the old "Share with your partner · Coming soon" row; sharing lives in Settings → iCloud.
+
 ## 0.28, November 8 (iCloud, goals, splits)
 - Sharing is private to the person you invite. Settings → iCloud lists who has access (joined or invited), Upside notifies you when someone joins, and warns if more than one person has access.
 - Goals you track by hand fill up each month by what the plan set aside for them.
