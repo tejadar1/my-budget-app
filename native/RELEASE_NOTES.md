@@ -6,7 +6,7 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 - Budget reads top to bottom: how much you can spend, what needs you, savings, categories, goals and trips, then More.
 - Needs attention: one list, shown only when something needs you, with a row each for a bank that isn't syncing, a category over its limit, last month's wrap-up, purchases to check, and limits that don't fit. Each row opens a screen that explains it.
 - Last month's wrap-up is now step by step, with the facts first: "You planned to save $1,500 and $502 went in. The other $998 should still be in checking." Then a clear choice: save it this month, or skip it. This replaces Catch up and Let it go.
-- Cover opens its own screen: how much over, and which categories have room to cover it, for this month only.
+- Cover opens its own screen: how much over, and which categories have room to cover it, for this month only (rounded up to the dollar).
 - Categories are one list with a thin bar each, closest to its limit first, then Show all. The tiles and the By category totals are gone.
 - Savings is one row with a bar; tap it for the details and What counted.
 - Goals and trips share one section with a single Add button.
