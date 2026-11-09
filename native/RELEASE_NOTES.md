@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next build
+## 0.28, November 8 (sharing fixes)
 - Share budget opens Apple's sharing screen reliably (it could fail silently with Face ID lock on), shows a spinner while it prepares, and explains any problem.
 - Large-purchase alerts and bill detection look at whole purchases, so a split purchase isn't counted twice.
 - With trips turned off, purchases no longer show a Trip picker.
