@@ -172,9 +172,18 @@ struct MonthPlanCard: View {
     private func cardsNote(_ plan: MonthPlan) -> String {
         let paid = store.creditCards.reduce(0) { $0 + store.cardMonth($1, month).paid }
         let charged = store.creditCards.reduce(0) { $0 + store.cardMonth($1, month).charged }
-        if !store.growingCards.isEmpty && month == store.currentMonth { return "balance growing" }
-        return plan.cardPaydown > 0 ? "paid \(Money.short(paid)) of \(Money.short(plan.cardPaydown + charged))"
-                                    : "charged \(Money.short(charged)) · paid \(Money.short(paid))"
+        guard plan.cardPaydown > 0 else {
+            if !store.growingCards.isEmpty && month == store.currentMonth { return "balance growing" }
+            return "charged \(Money.short(charged)) · paid \(Money.short(paid))"
+        }
+        // Paydown is what's paid beyond new charges.
+        let extra = store.extraCardPayoff(in: month)
+        let short = plan.cardPaydown - extra
+        if short <= 0 { return "\(Money.short(plan.cardPaydown)) paid down ✓" }
+        if let days = plan.daysLeft, days <= 10 {
+            return "\(Money.short(short)) more to pay by month end"
+        }
+        return "\(Money.short(max(0, extra))) of \(Money.short(plan.cardPaydown)) paid down"
     }
 
     private func subtitle(_ plan: MonthPlan, isPast: Bool) -> String {

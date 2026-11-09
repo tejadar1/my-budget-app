@@ -283,6 +283,8 @@ struct TripFund: Codable, Hashable {
     var monthly: Cents
     var start: Date
     var startingBalance: Cents = 0
+    /// A savings account the trip money really sits in; its balance is the fund.
+    var accountId: String? = nil
 }
 
 // MARK: - Default categories

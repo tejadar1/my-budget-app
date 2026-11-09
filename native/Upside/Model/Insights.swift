@@ -229,14 +229,17 @@ extension BudgetStore {
     /// What one move adds to savings: arrivals count as they are (a
     /// withdrawal from savings is negative); money sent out counts positive.
     func savingsAmount(_ t: Transaction) -> Cents {
-        let saving = visibleAccounts.contains { $0.id == t.accountId && ($0.kind == .savings || $0.kind == .investment) }
+        let saving = visibleAccounts.contains { $0.id == t.accountId && ($0.kind == .savings || $0.kind == .investment)
+            && $0.id != data.tripFund?.accountId }
         return saving ? t.amount : -t.amount
     }
 
     /// The transactions behind "saved so far": money arriving in savings or
     /// investment accounts, and money sent to investing that isn't connected.
     func savingsMoves(in month: Date) -> [Transaction] {
-        let saving = visibleAccounts.filter { $0.kind == .savings || $0.kind == .investment }
+        // The trip fund's own account holds trip money, not savings.
+        let tripAccount = data.tripFund?.accountId
+        let saving = visibleAccounts.filter { ($0.kind == .savings || $0.kind == .investment) && $0.id != tripAccount }
         let ids = Set(saving.map(\.id))
         // Money arriving in a savings or investment account counts, matched to
         // the other side or not (a brokerage deposit often isn't), except

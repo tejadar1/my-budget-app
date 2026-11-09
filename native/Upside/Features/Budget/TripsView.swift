@@ -34,6 +34,10 @@ extension BudgetStore {
     /// purchase since then (prepaid flights included).
     func tripFundBalance() -> Cents? {
         guard let fund = data.tripFund else { return nil }
+        // Kept in a real account: its balance is the fund, nothing to estimate.
+        if let id = fund.accountId, let account = data.accounts.first(where: { $0.id == id }) {
+            return account.balance
+        }
         let start = monthStart(fund.start)
         let spent = -data.transactions
             .filter { $0.amount != 0 && $0.date >= start && $0.tripId != nil && !$0.isTransfer }
@@ -377,10 +381,21 @@ struct TripFundEditor: View {
     @Environment(\.dismiss) private var dismiss
     @State private var monthly = 0
     @State private var starting = 0
+    @State private var accountId: String?
 
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    Picker("Kept in", selection: $accountId) {
+                        Text("Not a separate account").tag(String?.none)
+                        ForEach(store.visibleAccounts.filter { $0.kind == .savings }) { Text($0.fullName).tag(Optional($0.id)) }
+                    }
+                } footer: {
+                    Text(accountId == nil
+                         ? "Upside estimates the fund: each month adds what you set, if spending left room. Pick a savings account to use its real balance."
+                         : "The fund is that account’s balance. Move money there each month; it won’t count as regular savings.")
+                }
                 Section {
                     HStack {
                         Text("Each month")
@@ -388,14 +403,16 @@ struct TripFundEditor: View {
                         TextField("Amount", value: $monthly, format: .currency(code: "USD").precision(.fractionLength(0)))
                             .keyboardType(.numberPad).multilineTextAlignment(.trailing).frame(maxWidth: 140)
                     }
-                    HStack {
-                        Text("Already saved")
-                        Spacer()
-                        TextField("$0", value: $starting, format: .currency(code: "USD").precision(.fractionLength(0)))
-                            .keyboardType(.numberPad).multilineTextAlignment(.trailing).frame(maxWidth: 140)
+                    if accountId == nil {
+                        HStack {
+                            Text("Already saved")
+                            Spacer()
+                            TextField("$0", value: $starting, format: .currency(code: "USD").precision(.fractionLength(0)))
+                                .keyboardType(.numberPad).multilineTextAlignment(.trailing).frame(maxWidth: 140)
+                        }
                     }
                 } footer: {
-                    Text("Saved before spending each month. Trip purchases come out of it.")
+                    Text("Taken off the top each month in your plan.")
                 }
                 if store.data.tripFund != nil {
                     Section {
@@ -413,7 +430,8 @@ struct TripFundEditor: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         let start = store.data.tripFund?.start ?? store.currentMonth
-                        store.data.tripFund = TripFund(monthly: monthly * 100, start: start, startingBalance: starting * 100)
+                        store.data.tripFund = TripFund(monthly: monthly * 100, start: start, startingBalance: starting * 100,
+                                                       accountId: accountId)
                         dismiss()
                     }
                     .disabled(monthly <= 0)
@@ -422,6 +440,7 @@ struct TripFundEditor: View {
             .onAppear {
                 monthly = (store.data.tripFund?.monthly ?? 0) / 100
                 starting = (store.data.tripFund?.startingBalance ?? 0) / 100
+                accountId = store.data.tripFund?.accountId
             }
         }
     }

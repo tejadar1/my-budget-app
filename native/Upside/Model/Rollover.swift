@@ -54,3 +54,62 @@ extension BudgetStore {
         return String(format: "%04d-%02d", c.year ?? 0, c.month ?? 0)
     }
 }
+
+/// The month-end check-in: what the plan said versus what happened, so
+/// money that wasn't moved doesn't quietly disappear.
+extension BudgetStore {
+    struct CheckIn {
+        var month: Date
+        /// Planned savings that weren't moved (0 = on plan or asked already).
+        var savingsShort: Cents
+        /// Planned card paydown that wasn't paid.
+        var cardsShort: Cents
+        /// Everyday money left unspent.
+        var unspent: Cents
+        var isEmpty: Bool { savingsShort == 0 && cardsShort == 0 && unspent == 0 }
+    }
+
+    enum CheckInItem: String { case savings, cards }
+
+    /// Last month's check-in, while anything is still to decide.
+    func monthCheckIn() -> CheckIn? {
+        let previous = month(-1, from: currentMonth)
+        guard previous >= firstFullMonth else { return nil }
+        let plan = monthPlan(previous)
+        let done = Set(data.leftoverDone ?? [])
+        let key = Self.monthKey(previous)
+        func short(_ planned: Cents, _ actual: Cents, _ item: CheckInItem) -> Cents {
+            guard !done.contains("\(key):\(item.rawValue)") else { return 0 }
+            let gap = planned - max(0, actual)
+            return gap >= 1_000 ? gap / 100 * 100 : 0
+        }
+        let checkIn = CheckIn(
+            month: previous,
+            savingsShort: short(plan.savings, savedAndInvested(in: previous), .savings),
+            cardsShort: short(plan.cardPaydown, extraCardPayoff(in: previous), .cards),
+            unspent: unspentLastMonth()?.amount ?? 0)
+        return checkIn.isEmpty ? nil : checkIn
+    }
+
+    /// Catch up this month: the shortfall is still in checking from last
+    /// month, so it's added to this month's target (and carried in, so this
+    /// month's spending money stays put).
+    func catchUp(_ item: CheckInItem, _ amount: Cents, for month: Date) {
+        var plan = data.plan.flatMap { isInMonth($0.month, currentMonth) ? $0 : nil }
+            ?? SavingsPlan(month: currentMonth, goal: 0, limits: [:])
+        switch item {
+        case .savings: plan.goal += amount
+        case .cards: plan.cardExtra = (plan.cardExtra ?? 0) + amount
+        }
+        plan.carriedIn = (plan.carriedIn ?? 0) + amount
+        var updated = data
+        updated.plan = plan
+        updated.leftoverDone = (data.leftoverDone ?? []) + ["\(Self.monthKey(month)):\(item.rawValue)"]
+        data = updated
+    }
+
+    /// Let it go: don't ask about this one again.
+    func letGo(_ item: CheckInItem, for month: Date) {
+        data.leftoverDone = (data.leftoverDone ?? []) + ["\(Self.monthKey(month)):\(item.rawValue)"]
+    }
+}

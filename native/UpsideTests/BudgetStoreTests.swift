@@ -1207,6 +1207,32 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.savedAndInvested(in: month), before + 50_000, "counted once")
     }
 
+    func testMonthEndCheckInCatchesUpWhatWasntMoved() {
+        let store = makeStore()
+        store.data.priorities = Priorities(savings: 50_000)  // $500 a month
+        store.now = { self.date(2026, 11, 3) }  // October is finished, nothing was moved
+        guard let check = store.monthCheckIn() else { return XCTFail("October was short") }
+        XCTAssertEqual(check.savingsShort, 50_000)
+        let before = store.monthPlan(store.currentMonth)
+        store.catchUp(.savings, check.savingsShort, for: check.month)
+        let after = store.monthPlan(store.currentMonth)
+        XCTAssertEqual(after.savings, before.savings + 50_000, "this month's target includes the catch-up")
+        XCTAssertEqual(after.toSpend, before.toSpend, "it's last month's money, so spending money stays")
+        XCTAssertEqual(store.monthCheckIn()?.savingsShort ?? 0, 0, "asked once")
+    }
+
+    func testTripFundInARealAccountUsesItsBalanceAndIsntSavings() {
+        let store = makeStore()
+        store.data.accounts.append(Account(id: "trip", name: "Trips", institution: "Bank of America",
+                                           kind: .savings, balance: 240_000, owner: .shared))
+        store.data.transactions.append(Transaction(id: "tin", accountId: "trip", date: date(2026, 10, 5), amount: 150_000,
+                                                   payee: "Transfer from checking", categoryId: nil, isTransfer: true))
+        let withTrip = store.savedAndInvested(in: store.currentMonth)
+        store.data.tripFund = TripFund(monthly: 150_000, start: store.currentMonth, accountId: "trip")
+        XCTAssertEqual(store.tripFundBalance(), 240_000, "the account's balance")
+        XCTAssertEqual(store.savedAndInvested(in: store.currentMonth), withTrip - 150_000, "trip money isn't savings")
+    }
+
     func testIncomePotAddsEachPersonAndDropsStoppedPay() {
         let store = makeStore()
         store.data.transactions.removeAll { $0.categoryId == "income" }

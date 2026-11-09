@@ -3,6 +3,9 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next (0.29.1)
+- Month-end check-in: early each month, Budget shows what last month's plan said versus what happened. Savings not moved or card paydown not paid can be caught up this month (without cutting this month's spending money) or let go; unspent money gets Savings, Cards or Keep.
+- Card paydown on the Budget card shows progress ("$344 of $1,301 paid down") and, in the last 10 days, how much is left to pay.
+- Trip fund can be kept in a real savings account (Trip fund → Kept in). Its balance becomes the fund, and that money doesn't count as regular savings.
 - Savings: buying or selling stock inside Robinhood (or any brokerage) no longer counts against what you saved; only money taken out of the account does.
 
 ## 0.29: Savings you can check

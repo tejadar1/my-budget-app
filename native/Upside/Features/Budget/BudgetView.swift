@@ -47,7 +47,7 @@ struct BudgetView: View {
                         if isCurrentMonth {
                             SavingsCard(month: month) { showPriorities = true }
                             OverrunsCard(month: month) { showPriorities = true }
-                            LeftoverCard()
+                            CheckInCard { showPriorities = true }
                         }
 
                         SectionTitle(text: "By category")
@@ -447,33 +447,68 @@ struct OverrunsCard: View {
     }
 }
 
-/// Early in a month: last month's unspent money, and where it should go,
-/// so it doesn't just disappear into checking.
-struct LeftoverCard: View {
+/// Early in a month: last month's plan versus what happened. Shortfalls
+/// (savings not moved, cards not paid) and unspent money each get a choice,
+/// so nothing quietly disappears.
+struct CheckInCard: View {
     @Environment(BudgetStore.self) private var store
+    let openPlan: () -> Void
 
     var body: some View {
-        if let left = store.unspentLastMonth() {
-            let name = left.month.formatted(.dateTime.month(.wide))
-            VStack(alignment: .leading, spacing: 10) {
-                Text("\(name.uppercased()) LEFT OVER").font(.footnote.weight(.bold)).foregroundStyle(.secondary)
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(Money.short(left.amount)).heroNumber(30).foregroundStyle(Theme.accent)
-                    Text("not spent").foregroundStyle(.secondary)
+        if let check = store.monthCheckIn() {
+            let name = check.month.formatted(.dateTime.month(.wide))
+            VStack(alignment: .leading, spacing: 12) {
+                Text("\(name.uppercased()) CHECK-IN").font(.footnote.weight(.bold)).foregroundStyle(.secondary)
+                if check.savingsShort > 0 {
+                    shortRow("Savings", check.savingsShort, .savings, check.month)
                 }
-                Text("Give it a job so it doesn’t just sit in checking.")
-                    .font(.footnote).foregroundStyle(.secondary)
-                HStack(spacing: 8) {
-                    choice("Savings") { store.useUnspent(left.amount, for: left.month, as: .savings) }
-                    if store.cardsOwed > 0 {
-                        choice("Cards") { store.useUnspent(left.amount, for: left.month, as: .cards) }
-                    }
-                    choice("Keep") { store.useUnspent(left.amount, for: left.month, as: .keep) }
+                if check.cardsShort > 0 {
+                    if check.savingsShort > 0 { Divider() }
+                    shortRow("Card paydown", check.cardsShort, .cards, check.month)
                 }
-                Text("Savings and Cards raise this month’s targets; move the money when you can.")
-                    .font(.caption).foregroundStyle(.secondary)
+                if check.unspent > 0 {
+                    if check.savingsShort > 0 || check.cardsShort > 0 { Divider() }
+                    unspentRow(check.unspent, check.month)
+                }
+                Button("Plan was too much? Lower it in Plan", action: openPlan)
+                    .font(.footnote.weight(.semibold)).foregroundStyle(Theme.accent)
             }
             .card()
+        }
+    }
+
+    private func shortRow(_ title: String, _ amount: Cents, _ item: BudgetStore.CheckInItem, _ month: Date) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(title).font(.headline)
+                Spacer()
+                Text("\(Money.short(amount)) short").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.over)
+            }
+            Text(item == .savings ? "Planned but not moved to savings. It’s still in checking."
+                                  : "Planned but not paid toward cards. It’s still in checking.")
+                .font(.footnote).foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                choice("Catch up this month") { store.catchUp(item, amount, for: month) }
+                choice("Let it go") { store.letGo(item, for: month) }
+            }
+        }
+    }
+
+    private func unspentRow(_ amount: Cents, _ month: Date) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Not spent").font(.headline)
+                Spacer()
+                Text(Money.short(amount)).font(.subheadline.weight(.semibold)).foregroundStyle(Theme.accent)
+            }
+            Text("Give it a job so it doesn’t just sit in checking.").font(.footnote).foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                choice("Savings") { store.useUnspent(amount, for: month, as: .savings) }
+                if store.cardsOwed > 0 {
+                    choice("Cards") { store.useUnspent(amount, for: month, as: .cards) }
+                }
+                choice("Keep") { store.useUnspent(amount, for: month, as: .keep) }
+            }
         }
     }
 
