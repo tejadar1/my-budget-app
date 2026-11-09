@@ -2,6 +2,9 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.29.1)
+- Savings: buying or selling stock inside Robinhood (or any brokerage) no longer counts against what you saved; only money taken out of the account does.
+
 ## 0.29: Savings you can check
 - Savings card: "What counted" lists the transfers behind "saved so far", so you can see where a number like $2 came from.
 - Money arriving in a savings or investment account counts toward savings even when Upside can't match it to the transfer out (brokerage deposits often don't match). Interest, dividends and sales don't count.

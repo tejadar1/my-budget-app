@@ -1191,6 +1191,14 @@ final class BudgetStoreTests: XCTestCase {
         store.data.transactions.append(Transaction(id: "div", accountId: "rhi", date: date(2026, 10, 10), amount: 1_200,
                                                    payee: "Dividend from VTI", categoryId: nil))
         XCTAssertEqual(store.savedAndInvested(in: month), before + 50_000, "the deposit counts; the dividend is growth")
+        // Buying a stock with it keeps the money invested; it doesn't take savings back.
+        store.data.transactions.append(Transaction(id: "buy", accountId: "rhi", date: date(2026, 10, 10), amount: -50_000,
+                                                   payee: "Buy Shares of Alphabet Class A", categoryId: nil, isTransfer: true))
+        XCTAssertEqual(store.savedAndInvested(in: month), before + 50_000, "a stock purchase isn't a withdrawal")
+        // Taking money out to the bank does count against it.
+        store.data.transactions.append(Transaction(id: "wd", accountId: "rhi", date: date(2026, 10, 11), amount: -10_000,
+                                                   payee: "Withdrawal to Chase", categoryId: nil, isTransfer: true))
+        XCTAssertEqual(store.savedAndInvested(in: month), before + 40_000)
 
         // The Chase side, marked as investing, isn't counted a second time.
         store.data.transactions.append(Transaction(id: "out", accountId: "r", date: date(2026, 10, 9), amount: -50_000,

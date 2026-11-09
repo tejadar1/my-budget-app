@@ -242,8 +242,15 @@ extension BudgetStore {
         // the other side or not (a brokerage deposit often isn't), except
         // what the account earned or sold: interest, dividends, sales.
         // Money taken back out of savings counts against it.
-        let into = data.transactions.filter { ids.contains($0.accountId) && isInMonth($0.date, month)
-            && ($0.isTransfer || ($0.amount > 0 && !Self.isEarnings($0.payee))) }
+        let investing = Set(saving.filter { $0.kind == .investment }.map(\.id))
+        let into = data.transactions.filter { t in
+            guard ids.contains(t.accountId) && isInMonth(t.date, month) else { return false }
+            if Self.isTrade(t.payee) { return false }
+            // Inside a brokerage, only money leaving the account counts
+            // against savings; buying a stock keeps the money invested.
+            if t.amount < 0 && investing.contains(t.accountId) { return Self.isWithdrawal(t.payee) }
+            return t.isTransfer || (t.amount > 0 && !Self.isEarnings(t.payee))
+        }
         let connected = saving.map { $0.institution.lowercased() }
         let sentOut = data.transactions.filter { t in
             guard t.amount < 0 && t.isTransfer && !ids.contains(t.accountId) && isInMonth(t.date, month) else { return false }
@@ -258,6 +265,19 @@ extension BudgetStore {
                 && !connected.contains { inst in BankSync.investmentWords.contains { inst.contains($0) && t.payee.lowercased().contains($0) } }
         }
         return (into + sentOut).sorted { $0.date > $1.date }
+    }
+
+    /// Buying or selling inside a brokerage: the money stays invested.
+    static func isTrade(_ payee: String) -> Bool {
+        let p = payee.lowercased()
+        return ["buy ", "bought", "shares of", "share of", "sell ", "sold", "market order", "limit order",
+                "recurring investment", "crypto"].contains { p.contains($0) }
+    }
+
+    /// Money taken out of a brokerage to a bank.
+    static func isWithdrawal(_ payee: String) -> Bool {
+        let p = payee.lowercased()
+        return ["withdraw", "transfer to", "ach out", "instant transfer", "debit"].contains { p.contains($0) }
     }
 
     /// Interest, dividends and sales inside an account: growth, not saving.
