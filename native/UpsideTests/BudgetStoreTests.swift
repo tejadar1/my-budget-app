@@ -1204,7 +1204,7 @@ final class BudgetStoreTests: XCTestCase {
         store.data.transactions.append(Transaction(id: "out", accountId: "r", date: date(2026, 10, 9), amount: -50_000,
                                                    payee: "ROBINHOOD FUNDS", categoryId: nil, isTransfer: true))
         store.setSaving("out", true)
-        XCTAssertEqual(store.savedAndInvested(in: month), before + 50_000, "counted once")
+        XCTAssertEqual(store.savedAndInvested(in: month), before + 40_000, "counted once (after the $100 withdrawal)")
     }
 
     func testMonthEndCheckInCatchesUpWhatWasntMoved() {
