@@ -105,8 +105,8 @@ extension BudgetStore {
             daysLeft: isCurrent ? daysLeftInMonth : nil,
             rolledIn: everydayCategories.reduce(0) { $0 + rolledIn($1, to: month) },
             goals: goalsSetAside(in: month),
-            carriedIn: plan.flatMap { isInMonth($0.month, month) ? $0.carriedIn : nil } ?? 0,
-            fundedByGoals: goalFundedCategories.reduce(0) { $0 + spent($1, in: month) })
+            fundedByGoals: goalFundedCategories.reduce(0) { $0 + spent($1, in: month) },
+            carriedIn: plan.flatMap { isInMonth($0.month, month) ? $0.carriedIn : nil } ?? 0)
     }
 
     /// Lowers everyday limits so they fit what there is to spend, taking
