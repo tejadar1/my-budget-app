@@ -3,6 +3,7 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next (0.29: Settle in)
+- Saved & invested: open a transfer (or long-press it in Transactions) and turn on Saved & invested for money moved to investing, like Robinhood. It counts toward your savings, and future transfers worded the same way follow.
 
 ## 0.28, November 8 (sharing fixes)
 - Share budget opens Apple's sharing screen reliably (it could fail silently with Face ID lock on), shows a spinner while it prepares, and explains any problem.

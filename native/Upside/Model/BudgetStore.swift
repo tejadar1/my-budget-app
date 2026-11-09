@@ -711,7 +711,7 @@ final class BudgetStore {
 
     /// "Credit card payment" when a card is involved, otherwise "Transfer".
     func transferLabel(_ t: Transaction) -> String {
-        if BankSync.isInvestmentPayee(t.payee) { return "Saved & invested" }
+        if BankSync.isInvestmentPayee(t.payee) || isMarkedSaving(t) { return "Saved & invested" }
         let p = t.payee.lowercased()
         let cardWords = ["card", "crcardpmt", "payment", "pymt", "pmt", "autopay", "robinhood", "amex"]
         let isCard = account(t.accountId)?.kind == .credit || cardWords.contains { p.contains($0) }

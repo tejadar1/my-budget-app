@@ -232,11 +232,28 @@ extension BudgetStore {
         // (if it is, the deposit above already counts it).
         let connected = saving.map { $0.institution.lowercased() }
         let sentOut = data.transactions.filter { t in
-            t.amount < 0 && t.isTransfer && !ids.contains(t.accountId) && isInMonth(t.date, month)
-                && BankSync.isInvestmentPayee(t.payee)
+            guard t.amount < 0 && t.isTransfer && !ids.contains(t.accountId) && isInMonth(t.date, month) else { return false }
+            if isMarkedSaving(t) { return true }
+            return BankSync.isInvestmentPayee(t.payee)
                 && !connected.contains { inst in BankSync.investmentWords.contains { inst.contains($0) && t.payee.lowercased().contains($0) } }
         }
         return into - sentOut.reduce(0) { $0 + $1.amount }
+    }
+
+    /// A transfer you said is saving or investing (or one with the same wording).
+    func isMarkedSaving(_ t: Transaction) -> Bool {
+        (data.savingPayees ?? []).contains(Self.payeeKey(t.payee))
+    }
+
+    /// "This went to savings / investing": counts it (and transfers worded
+    /// the same way) toward savings instead of as a card payment.
+    func setSaving(_ transactionId: String, _ on: Bool) {
+        guard let t = data.transactions.first(where: { $0.id == transactionId }) else { return }
+        let key = Self.payeeKey(t.payee)
+        var keys = Set(data.savingPayees ?? [])
+        if on { keys.insert(key) } else { keys.remove(key) }
+        data.savingPayees = keys.isEmpty ? nil : keys.sorted()
+        if on && !t.isTransfer { setTransfer(transactionId, true) }
     }
 
     /// Paid to cards beyond what was charged, so balances went down.

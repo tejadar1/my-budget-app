@@ -1164,6 +1164,22 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.spent("groceries", in: month), groceriesBefore)
     }
 
+    func testMarkingARobinhoodTransferAsInvestingCountsAsSavings() {
+        let store = makeStore()
+        let month = store.currentMonth
+        store.data.transactions.append(Transaction(id: "rh", accountId: "r", date: date(2026, 10, 8), amount: -50_000,
+                                                   payee: "ROBINHOOD FUNDS", categoryId: nil, isTransfer: true))
+        let before = store.savedAndInvested(in: month)
+        XCTAssertEqual(store.transferLabel(store.data.transactions.last!), "Credit card payment", "looks like a card payment at first")
+        store.setSaving("rh", true)
+        XCTAssertEqual(store.savedAndInvested(in: month), before + 50_000)
+        XCTAssertEqual(store.transferLabel(store.data.transactions.last!), "Saved & invested")
+        // The next one worded the same way counts on its own.
+        store.data.transactions.append(Transaction(id: "rh2", accountId: "r", date: date(2026, 10, 12), amount: -20_000,
+                                                   payee: "ROBINHOOD FUNDS", categoryId: nil, isTransfer: true))
+        XCTAssertEqual(store.savedAndInvested(in: month), before + 70_000)
+    }
+
     func testIncomePotAddsEachPersonAndDropsStoppedPay() {
         let store = makeStore()
         store.data.transactions.removeAll { $0.categoryId == "income" }

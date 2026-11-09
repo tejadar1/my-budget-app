@@ -130,6 +130,11 @@ struct TransactionsView: View {
         Button { prompt = store.sort(t.id, as: BankSync.transferCategory) } label: {
             Label("Card payment or transfer", systemImage: "arrow.left.arrow.right")
         }
+        if t.isTransfer && t.amount < 0 && !BankSync.isInvestmentPayee(t.payee) {
+            Button { withAnimation { store.setSaving(t.id, !store.isMarkedSaving(t)) } } label: {
+                Label(store.isMarkedSaving(t) ? "Not savings" : "Saved & invested", systemImage: "chart.line.uptrend.xyaxis")
+            }
+        }
         Menu {
             ForEach(store.expenseCategories.filter { $0.group == "Bills" }) { c in
                 Button(c.name) { prompt = store.markAsBill(t.id, as: c.id) }

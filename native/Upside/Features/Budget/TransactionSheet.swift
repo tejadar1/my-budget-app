@@ -45,8 +45,18 @@ struct TransactionSheet: View {
                             Label(t.isTransfer ? store.transferLabel(t) : "Card payment or transfer",
                                   systemImage: "arrow.left.arrow.right")
                         }
+                        if t.isTransfer && t.amount < 0 {
+                            Toggle(isOn: Binding(get: { store.isMarkedSaving(t) || BankSync.isInvestmentPayee(t.payee) },
+                                                 set: { store.setSaving(t.id, $0) })) {
+                                Label("Saved & invested", systemImage: "chart.line.uptrend.xyaxis")
+                            }
+                            .tint(Theme.accent)
+                            .disabled(BankSync.isInvestmentPayee(t.payee))
+                        }
                     } footer: {
-                        Text("Card payments and moves between your accounts aren’t spending.")
+                        Text(t.isTransfer && t.amount < 0
+                             ? "Turn on Saved & invested for money moved to savings or investing (like Robinhood). It counts toward your savings, and transfers worded the same way follow."
+                             : "Card payments and moves between your accounts aren’t spending.")
                     }
 
                     if !t.isTransfer {

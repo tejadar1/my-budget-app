@@ -263,6 +263,9 @@ struct BudgetData: Codable {
     var goals: [Goal]?
     /// Trips turned off: no trip fund, no trip set-aside in the plan.
     var tripsOff: Bool?
+    /// Transfer wording you said is saving or investing ("ROBINHOOD FUNDS"),
+    /// by payee key, so future transfers like it count toward savings.
+    var savingPayees: [String]?
 }
 
 /// "Pay yourself first": standing monthly amounts taken off the top.
