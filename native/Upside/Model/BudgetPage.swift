@@ -32,8 +32,7 @@ extension BudgetStore {
         var items: [Attention] = []
         if !staleAccounts.isEmpty || !(data.syncErrors ?? []).isEmpty { items.append(.bank) }
         for overrun in overruns(in: currentMonth) {
-            // Whole dollars, matching what Cover moves.
-            items.append(.over(categoryId: overrun.id, amount: (overrun.over + 99) / 100 * 100))
+            items.append(.over(categoryId: overrun.id, amount: overrun.over))
         }
         if let check = monthCheckIn() {
             let decisions = [check.savingsShort, check.cardsShort, check.unspent, check.overspent].filter { $0 > 0 }.count

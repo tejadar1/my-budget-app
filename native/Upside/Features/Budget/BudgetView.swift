@@ -130,6 +130,11 @@ struct BudgetView: View {
 
     private func openFromLaunchArgs() {
         guard path.isEmpty, let open = LaunchArgs.open else { return }
+        // Wait for the window to settle; a sheet asked for during launch can be dropped.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { handleLaunch(open) }
+    }
+
+    private func handleLaunch(_ open: (kind: String, id: String)) {
         switch open.kind {
         case "category": path.append(Route.category(open.id, store.currentMonth))
         case "review": path.append(Route.review)
@@ -483,7 +488,7 @@ struct CategoryRow: View {
         if limit == 0 { return Text("\(Money.short(spent)) spent").foregroundColor(.secondary) }
         if left < 0 {
             return Text("\(Money.short(-left)) over").fontWeight(.semibold).foregroundColor(Theme.over)
-                + Text(" \(Money.short(limit))").foregroundColor(.secondary)
+                + Text(" \(Money.short(limit)) limit").foregroundColor(.secondary)
         }
         return Text(Money.short(left)).fontWeight(.semibold).foregroundColor(color == Theme.accent ? .primary : color)
             + Text(" left of \(Money.short(limit))").foregroundColor(.secondary)

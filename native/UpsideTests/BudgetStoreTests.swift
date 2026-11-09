@@ -985,7 +985,7 @@ final class BudgetStoreTests: XCTestCase {
         store.data.transactions.append(Transaction(id: "d", accountId: "r", date: date(2026, 10, 9), amount: -40_000,
                                                    payee: "Chipotle", categoryId: "dining"))
         let items = store.attention()
-        XCTAssertTrue(items.contains(.over(categoryId: "shopping", amount: 2_100)), "rounded up to whole dollars")
+        XCTAssertTrue(items.contains(.over(categoryId: "shopping", amount: 2_040)))
         XCTAssertTrue(items.contains(.toCheck(count: 2)))
         XCTAssertFalse(items.contains(.bank))
 

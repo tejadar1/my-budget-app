@@ -184,7 +184,9 @@ struct CoverSheet: View {
         let category = store.category(categoryId)
         let name = category?.name ?? "This category"
         let overrun = store.overruns(in: month).first { $0.id == categoryId }
-        let amount = overrun.map { ($0.over + 99) / 100 * 100 } ?? 0
+        let over = overrun?.over ?? 0
+        // Whole dollars, so the category ends at $0 left, not -$0.40.
+        let amount = (over + 99) / 100 * 100
         let allowed = category.flatMap { store.limit($0, in: month) }
         let sources = store.coverSources(for: categoryId, in: month).filter { $0.room >= amount }
         let monthName = month.formatted(.dateTime.month(.wide))
@@ -194,7 +196,7 @@ struct CoverSheet: View {
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
                         CategoryIcon(categoryId: categoryId, size: 40)
-                        Text(amount > 0 ? "\(name) is \(Money.short(amount)) over" : "\(name) is covered")
+                        Text(amount > 0 ? "\(name) is \(Money.short(over)) over" : "\(name) is covered")
                             .font(.title2.bold())
                         Text(amount == 0 ? "Nothing to move."
                              : allowed.map { "It has a \(Money.short($0)) limit this month. Move \(Money.short(amount)) from another category so the month still adds up." }
