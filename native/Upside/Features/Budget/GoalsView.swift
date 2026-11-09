@@ -86,6 +86,7 @@ struct GoalEditor: View {
     @State private var due = Date()
     @State private var repeats = 12
     @State private var monthly = 0
+    @State private var categoryId: String?
 
     var body: some View {
         NavigationStack {
@@ -123,6 +124,10 @@ struct GoalEditor: View {
                         if hasDate {
                             DatePicker("Date", selection: $due, in: Date()..., displayedComponents: .date)
                             if kind == .bill {
+                                Picker("Bill category", selection: $categoryId) {
+                                    Text("None").tag(String?.none)
+                                    ForEach(store.expenseCategories.filter { $0.group == "Bills" }) { Text($0.name).tag(Optional($0.id)) }
+                                }
                                 Picker("Comes back", selection: $repeats) {
                                     Text("Every 3 months").tag(3)
                                     Text("Every year").tag(12)
@@ -134,7 +139,9 @@ struct GoalEditor: View {
                     if kind == .emergency || !hasDate { amountRow("Each month", $monthly) }
                     LabeledContent("Sets aside", value: Money.short(store.goalMonthly(draft)) + " a month")
                 } footer: {
-                    Text("Taken off the top in your plan, like savings and trips.")
+                    Text(kind == .bill
+                         ? "Taken off the top each month. With its bill category picked, the plan stops holding back that bill’s usual every month, and the month it’s paid doesn’t count it twice."
+                         : "Taken off the top in your plan, like savings and trips.")
                 }
                 if let goal {
                     Section {
@@ -175,7 +182,9 @@ struct GoalEditor: View {
                     accountId: accountId,
                     due: kind != .emergency && hasDate ? due : nil,
                     repeatsMonths: kind == .bill && hasDate && repeats > 0 ? repeats : nil,
-                    monthly: kind == .emergency || !hasDate ? monthly * 100 : nil)
+                    categoryId: kind == .bill ? categoryId : nil,
+                    monthly: kind == .emergency || !hasDate ? monthly * 100 : nil,
+                    creditedThrough: goal?.creditedThrough)
     }
 
     private func load() {
@@ -189,6 +198,7 @@ struct GoalEditor: View {
         due = goal.due ?? Date()
         repeats = goal.repeatsMonths ?? 0
         monthly = (goal.monthly ?? 0) / 100
+        categoryId = goal.categoryId
         if goal.kind == .emergency, store.monthlyEssentials > 0 {
             let exact = Double(goal.target) / Double(store.monthlyEssentials)
             months = [3, 6, 9, 12].min { abs(Double($0) - exact) < abs(Double($1) - exact) } ?? 6

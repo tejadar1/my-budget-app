@@ -35,6 +35,9 @@ struct Goal: Identifiable, Codable, Equatable {
     var due: Date? = nil
     /// For a bill: it comes back every 3 or 12 months.
     var repeatsMonths: Int? = nil
+    /// For a bill: its category. The goal saves for it, so the plan doesn't
+    /// also hold back the category's usual each month.
+    var categoryId: String? = nil
     /// For a goal without a date: how much to put in each month.
     var monthly: Cents? = nil
     /// For a goal you track by hand: months before this were already
@@ -44,6 +47,17 @@ struct Goal: Identifiable, Codable, Equatable {
 
 extension BudgetStore {
     var goals: [Goal] { data.goals ?? [] }
+
+    /// Bill categories a goal saves for.
+    var goalFundedCategories: Set<String> {
+        Set(goals.filter { $0.kind == .bill }.compactMap(\.categoryId))
+    }
+
+    /// Savings or investing accounts a goal or the trip fund follows; money
+    /// there is for that, not regular savings.
+    var earmarkedAccounts: Set<String> {
+        Set(goals.compactMap(\.accountId) + [data.tripFund?.accountId].compactMap { $0 })
+    }
 
     func goalSaved(_ goal: Goal) -> Cents {
         goal.accountId.flatMap { id in data.accounts.first { $0.id == id }?.balance } ?? goal.saved

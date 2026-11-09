@@ -470,6 +470,19 @@ struct CheckInCard: View {
                     if check.savingsShort > 0 || check.cardsShort > 0 { Divider() }
                     unspentRow(check.unspent, check.month)
                 }
+                if check.overspent > 0 {
+                    if check.savingsShort > 0 || check.cardsShort > 0 { Divider() }
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("Everyday spending").font(.headline)
+                            Spacer()
+                            Text("\(Money.short(check.overspent)) over").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.over)
+                        }
+                        Text("More than the plan had to spend. It came out of checking, or what you meant to save.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                        choice("Got it") { store.letGo(.overspent, for: check.month) }
+                    }
+                }
                 Button("Plan was too much? Lower it in Plan", action: openPlan)
                     .font(.footnote.weight(.semibold)).foregroundStyle(Theme.accent)
             }

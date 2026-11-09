@@ -47,12 +47,12 @@ struct PlanView: View {
         let goals = store.goalsSetAside(in: month)
         // Leftover from last month given a job adds back what it takes off.
         let leftoverCards = store.plan.flatMap { store.isInMonth($0.month, month) ? $0.cardExtra : nil } ?? 0
-        let toSpend = income + base.carriedIn - base.bills - (savings * 100 + extraSavings) - paydown * 100 - leftoverCards
+        let toSpend = income + base.carriedIn - base.bills + base.fundedByGoals - (savings * 100 + extraSavings) - paydown * 100 - leftoverCards
             - tripCost - goals + base.rolledIn
         let total = limitsTotal(limits)
         return Numbers(base: base, usualIncome: usualIncome, income: income, extraSavings: extraSavings,
                        tripCost: tripCost, toSpend: toSpend,
-                       recommended: store.recommendedLimits(toSpend: toSpend), total: total, owed: store.cardsOwed)
+                       recommended: store.recommendedLimits(toSpend: toSpend), total: total, owed: store.cardsCarried)
     }
 
     var body: some View {
@@ -62,7 +62,7 @@ struct PlanView: View {
             Form {
                 Section {
                     PlanSplit(parts: [
-                        .init(name: "Bills", amount: n.base.bills, color: .gray),
+                        .init(name: "Bills", amount: n.base.bills - n.base.fundedByGoals, color: .gray),
                         .init(name: "Savings", amount: savings * 100 + n.extraSavings, color: Theme.accent),
                         .init(name: "Cards", amount: paydown * 100, color: .orange),
                         .init(name: "Trips", amount: n.tripCost, color: .cyan),
@@ -154,10 +154,10 @@ struct PlanView: View {
     }
 
     private func cardsNote(_ owed: Cents) -> String {
-        guard owed > 0 else { return "No card balance." }
-        guard paydown > 0 else { return "\(Money.short(owed)) owed. Balance won't go down." }
+        guard owed > 0 else { return "No balance carried; this month's charges are paid as usual." }
+        guard paydown > 0 else { return "\(Money.short(owed)) carried. Balance won't go down." }
         let months = Int((Double(owed) / Double(paydown * 100)).rounded(.up))
-        return "\(Money.short(owed)) owed · clear in about \(months) month\(months == 1 ? "" : "s")"
+        return "\(Money.short(owed)) carried · clear in about \(months) month\(months == 1 ? "" : "s")"
     }
 
     private var tripsNote: String {

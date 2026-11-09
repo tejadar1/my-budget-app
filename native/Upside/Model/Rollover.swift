@@ -66,10 +66,12 @@ extension BudgetStore {
         var cardsShort: Cents
         /// Everyday money left unspent.
         var unspent: Cents
-        var isEmpty: Bool { savingsShort == 0 && cardsShort == 0 && unspent == 0 }
+        /// Spent more than there was to spend; it came out of checking or savings.
+        var overspent: Cents = 0
+        var isEmpty: Bool { savingsShort == 0 && cardsShort == 0 && unspent == 0 && overspent == 0 }
     }
 
-    enum CheckInItem: String { case savings, cards }
+    enum CheckInItem: String { case savings, cards, overspent }
 
     /// Last month's check-in, while anything is still to decide.
     func monthCheckIn() -> CheckIn? {
@@ -87,7 +89,8 @@ extension BudgetStore {
             month: previous,
             savingsShort: short(plan.savings, savedAndInvested(in: previous), .savings),
             cardsShort: short(plan.cardPaydown, extraCardPayoff(in: previous), .cards),
-            unspent: unspentLastMonth()?.amount ?? 0)
+            unspent: unspentLastMonth()?.amount ?? 0,
+            overspent: done.contains("\(key):overspent") || plan.leftToSpend > -1_000 ? 0 : -plan.leftToSpend / 100 * 100)
         return checkIn.isEmpty ? nil : checkIn
     }
 
@@ -100,6 +103,7 @@ extension BudgetStore {
         switch item {
         case .savings: plan.goal += amount
         case .cards: plan.cardExtra = (plan.cardExtra ?? 0) + amount
+        case .overspent: return letGo(item, for: month)
         }
         plan.carriedIn = (plan.carriedIn ?? 0) + amount
         var updated = data

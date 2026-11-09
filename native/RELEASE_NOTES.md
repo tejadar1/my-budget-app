@@ -3,6 +3,10 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next (0.29.1)
+- A yearly or quarterly bill goal can name its bill category. The plan then stops holding back that bill's usual every month, and the month it's paid comes from the goal, not that month's money.
+- Accounts a goal or the trip fund follows aren't counted as regular savings, so the same dollars don't count twice.
+- Card paydown uses the balance you carry (what's owed minus this month's new charges) for "clear in about N months".
+- The check-in also tells you when last month's everyday spending went over the plan.
 - Month-end check-in: early each month, Budget shows what last month's plan said versus what happened. Savings not moved or card paydown not paid can be caught up this month (without cutting this month's spending money) or let go; unspent money gets Savings, Cards or Keep.
 - Card paydown on the Budget card shows progress ("$344 of $1,301 paid down") and, in the last 10 days, how much is left to pay.
 - Trip fund can be kept in a real savings account (Trip fund → Kept in). Its balance becomes the fund, and that money doesn't count as regular savings.

@@ -25,11 +25,14 @@ struct MonthPlan: Equatable {
     var rolledIn: Cents = 0
     /// Set aside for goals (emergency fund, yearly bills, big purchases).
     var goals: Cents = 0
+    /// Bills paid from a goal's fund this month: saved in earlier months,
+    /// so they don't come out of this month's money again.
+    var fundedByGoals: Cents = 0
     /// Last month's leftover put toward savings or cards this month.
     var carriedIn: Cents = 0
 
     var bills: Cents { billsPaid + billsDue }
-    var toSpend: Cents { income + carriedIn - bills - savings - cardPaydown - trips - goals + rolledIn }
+    var toSpend: Cents { income + carriedIn - bills + fundedByGoals - savings - cardPaydown - trips - goals + rolledIn }
     var leftToSpend: Cents { toSpend - everydaySpent }
     var perDay: Cents? { daysLeft.map { leftToSpend > 0 ? leftToSpend / max(1, $0) : 0 } }
     /// How far everyday limits overshoot what there is to spend (0 = fits).
@@ -60,11 +63,15 @@ extension BudgetStore {
         let isCurrent = month == currentMonth
         let due = isCurrent ? Dictionary(grouping: recurringCharges().filter { !$0.paidThisMonth },
                                          by: { $0.categoryId ?? "" }) : [:]
+        let funded = goalFundedCategories
         return expenseCategories.filter { $0.group == "Bills" }.compactMap { c in
             let paid = spent(c.id, in: month)
             let usual = averageSpent(c.id, before: month) ?? 0
             let knownDue = (due[c.id] ?? []).reduce(0) { $0 + $1.amount }
-            let expected = isCurrent ? max(usual, paid + knownDue) : paid
+            // A bill with its own goal is saved for there; only count what's
+            // actually charged, not its usual every month.
+            let floor = funded.contains(c.id) ? 0 : usual
+            let expected = isCurrent ? max(floor, paid + knownDue) : paid
             return expected > 0 || paid > 0 ? BillLine(category: c, paid: paid, usual: usual, expected: max(expected, paid)) : nil
         }
         .sorted { $0.expected > $1.expected }
@@ -98,7 +105,8 @@ extension BudgetStore {
             daysLeft: isCurrent ? daysLeftInMonth : nil,
             rolledIn: everydayCategories.reduce(0) { $0 + rolledIn($1, to: month) },
             goals: goalsSetAside(in: month),
-            carriedIn: plan.flatMap { isInMonth($0.month, month) ? $0.carriedIn : nil } ?? 0)
+            carriedIn: plan.flatMap { isInMonth($0.month, month) ? $0.carriedIn : nil } ?? 0,
+            fundedByGoals: goalFundedCategories.reduce(0) { $0 + spent($1, in: month) })
     }
 
     /// Lowers everyday limits so they fit what there is to spend, taking
@@ -113,6 +121,13 @@ extension BudgetStore {
 
     /// What's owed across visible credit cards right now.
     var cardsOwed: Cents { creditCards.reduce(0) { $0 + max(0, -$1.balance) } }
+
+    /// The balance you're carrying: what's owed minus this month's new
+    /// charges, which normal payments cover. Paydown targets this.
+    var cardsCarried: Cents {
+        let charged = creditCards.reduce(0) { $0 + cardMonth($1, currentMonth).charged }
+        return max(0, cardsOwed - charged)
+    }
 
     /// Everyday categories: the ones with limits you control day to day.
     var everydayCategories: [Category] {

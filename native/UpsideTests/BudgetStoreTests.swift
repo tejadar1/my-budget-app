@@ -1233,6 +1233,42 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.savedAndInvested(in: store.currentMonth), withTrip - 150_000, "trip money isn't savings")
     }
 
+    func testABillWithItsOwnGoalIsntCountedTwice() {
+        let store = makeStore()  // October
+        // Car insurance: $1,200 twice a year, so its usual is $400 a month.
+        for m in [4, 7] {
+            store.data.transactions.append(Transaction(id: "ins\(m)", accountId: "r", date: date(2026, m, 10), amount: -120_000,
+                                                       payee: "GEICO", categoryId: "insurance"))
+        }
+        let before = store.monthPlan(store.currentMonth)
+        store.saveGoal(Goal(id: "g", name: "Car insurance", kind: .bill, target: 120_000,
+                            due: date(2027, 1, 10), repeatsMonths: 6, categoryId: "insurance"))
+        let after = store.monthPlan(store.currentMonth)
+        // The plan holds back the goal's $300 (Oct–Jan), not also the usual each month.
+        let usualInsurance = store.averageSpent("insurance", before: store.currentMonth) ?? 0
+        XCTAssertEqual(after.bills, before.bills - usualInsurance)
+        XCTAssertEqual(after.goals, 30_000)
+
+        // The month it's paid, the payment comes from the fund, not this month's money.
+        store.data.transactions.append(Transaction(id: "ins10", accountId: "r", date: date(2026, 10, 10), amount: -120_000,
+                                                   payee: "GEICO", categoryId: "insurance"))
+        let paid = store.monthPlan(store.currentMonth)
+        XCTAssertEqual(paid.fundedByGoals, 120_000)
+        XCTAssertEqual(paid.toSpend, after.toSpend, "paid from the fund")
+    }
+
+    func testMoneyInAGoalsAccountIsntAlsoSavings() {
+        let store = makeStore()
+        store.data.accounts.append(Account(id: "ef", name: "Emergency", institution: "Ally Bank", kind: .savings,
+                                           balance: 500_000, owner: .shared))
+        store.data.transactions.append(Transaction(id: "efin", accountId: "ef", date: date(2026, 10, 3), amount: 25_000,
+                                                   payee: "Transfer from checking", categoryId: nil, isTransfer: true))
+        let counted = store.savedAndInvested(in: store.currentMonth)
+        store.saveGoal(Goal(id: "e", name: "Emergency fund", kind: .emergency, target: 1_000_000, accountId: "ef", monthly: 25_000))
+        XCTAssertEqual(store.savedAndInvested(in: store.currentMonth), counted - 25_000, "it's the goal's money")
+        XCTAssertEqual(store.goalSaved(store.goals[0]), 500_000)
+    }
+
     func testIncomePotAddsEachPersonAndDropsStoppedPay() {
         let store = makeStore()
         store.data.transactions.removeAll { $0.categoryId == "income" }
