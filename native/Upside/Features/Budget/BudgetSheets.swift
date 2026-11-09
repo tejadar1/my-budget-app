@@ -230,11 +230,12 @@ struct CoverSheet: View {
                                         Text("\(Money.short(source.room)) left").foregroundStyle(.secondary).monospacedDigit()
                                     }
                                 }
+                                .tint(.primary)
                             }
                         } header: {
                             Text("Take \(Money.short(amount)) from")
                         } footer: {
-                            Text("Only for \(monthName). Next month goes back to your usual limits.")
+                            Text("Rounded up to the dollar, for \(monthName) only. Next month goes back to your usual limits.")
                         }
                     }
                 }
