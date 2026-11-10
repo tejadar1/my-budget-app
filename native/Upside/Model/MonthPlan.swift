@@ -174,12 +174,12 @@ extension BudgetStore {
 
     /// When a recommendation is only that high because of this month's
     /// spending (Personal Care usually $0, $490 already spent), the standing
-    /// limit to keep for next months instead: the usual, or none. Nil when
-    /// the recommendation is a normal standing limit.
+    /// limit to keep for next months instead: the one you have, else the
+    /// usual, else none. Nil when the recommendation is a normal limit.
     func standingInstead(of recommended: Cents, for category: Category) -> Cents?? {
         let usual = limitFromAverage(category)
         guard recommended > (usual ?? 0), recommended <= spentFloor(category, in: currentMonth) else { return nil }
-        return .some(usual)
+        return .some(category.limit ?? usual)
     }
 
     /// Sets every everyday limit to its recommendation for this month's plan.
