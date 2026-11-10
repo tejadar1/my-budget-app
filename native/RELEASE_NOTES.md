@@ -2,6 +2,11 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.30.2)
+- Recommended limits cover what's already spent: a category is never set below the money already gone this month, and only the room above that is trimmed. Plan shows "$490 spent so far → $490" for these.
+- Those raises are for this month only. Next month the category goes back to its usual limit (or none).
+- Month end judges against your original plan. The first time you change the plan after spending starts, the app keeps a copy of the plan as it stood; the monthly recap compares spending with that copy ("over plan"), so mid-month adjustments don't erase what went differently. Your changes still carry into next month.
+
 ## 0.30.1: Plan on a typical paycheck
 - Usual income now plans on a typical paycheck from the last 6 months, leaning low, instead of the average. Overtime, bonuses and the higher fall paychecks after Social Security stops being withheld no longer raise the plan; when they come, they show up as money left over at month end.
 

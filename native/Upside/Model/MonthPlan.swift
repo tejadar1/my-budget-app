@@ -143,27 +143,62 @@ extension BudgetStore {
     /// (shopping first, then dining, entertainment…) are trimmed, never more
     /// than 25%, until the total fits. Doesn't change anything.
     func recommendedLimits(toSpend: Cents, cap: Double = maxMonthlyCut) -> [String: Cents] {
-        var base: [String: Cents] = [:]
-        for c in everydayCategories { if let l = limitFromAverage(c) { base[c.id] = l } }
+        // Money already spent this month can't be un-spent: a category's
+        // limit starts at least there, and only the part above it is trimmed.
+        var base: [String: Cents] = [:], floors: [String: Cents] = [:]
+        for c in everydayCategories {
+            let floor = spentFloor(c, in: currentMonth)
+            let start = max(limitFromAverage(c) ?? 0, floor)
+            if start > 0 { base[c.id] = start; floors[c.id] = floor }
+        }
         let over = base.values.reduce(0, +) - toSpend
         guard over > 0 else { return base }
         let rooms = Dictionary(uniqueKeysWithValues: everydayCategories.compactMap { c -> (String, Double)? in
-            base[c.id].map { (c.id, Double($0) * max(0.1, flexibility(of: c)) * cap) }
+            base[c.id].map { (c.id, min(Double($0 - (floors[c.id] ?? 0)), Double($0) * max(0.1, flexibility(of: c)) * cap)) }
         })
         let totalRoom = rooms.values.reduce(0, +)
         guard totalRoom > 0 else { return base }
         let share = min(1, Double(over) / totalRoom)
-        return base.mapValues { $0 }.reduce(into: [:]) { result, entry in
+        return base.reduce(into: [:]) { result, entry in
             let lowered = Double(entry.value) - (rooms[entry.key] ?? 0) * share
-            result[entry.key] = max(1000, Int(lowered / 1000) * 1000)
+            result[entry.key] = max(floors[entry.key] ?? 0, max(1000, Int(lowered / 1000) * 1000))
         }
+    }
+
+    /// This month's spending so far, rounded up to $10; 0 for other months.
+    func spentFloor(_ category: Category, in month: Date) -> Cents {
+        guard month == currentMonth else { return 0 }
+        let used = spent(category.id, in: month)
+        return used > 0 ? Int((Double(used) / 1000).rounded(.up)) * 1000 : 0
+    }
+
+    /// When a recommendation is only that high because of this month's
+    /// spending (Personal Care usually $0, $490 already spent), the standing
+    /// limit to keep for next months instead: the usual, or none. Nil when
+    /// the recommendation is a normal standing limit.
+    func standingInstead(of recommended: Cents, for category: Category) -> Cents?? {
+        let usual = limitFromAverage(category)
+        guard recommended > (usual ?? 0), recommended <= spentFloor(category, in: currentMonth) else { return nil }
+        return .some(usual)
     }
 
     /// Sets every everyday limit to its recommendation for this month's plan.
     @discardableResult
     func setLimitsToPlan(_ month: Date) -> Cents {
         let recommended = recommendedLimits(toSpend: monthPlan(month).toSpend)
-        for category in everydayCategories { setLimit(category.id, recommended[category.id]) }
+        keepOriginalPlan(for: month)
+        var plan = data.plan.flatMap { isInMonth($0.month, month) ? $0 : nil } ?? SavingsPlan(month: month, goal: 0, limits: [:])
+        for category in everydayCategories {
+            let value = recommended[category.id]
+            if let value, let standing = standingInstead(of: value, for: category) {
+                setLimit(category.id, standing)
+                plan.limits[category.id] = value
+            } else {
+                setLimit(category.id, value)
+                plan.limits[category.id] = nil
+            }
+        }
+        data.plan = plan
         return monthPlan(month).limitsOverBy
     }
 

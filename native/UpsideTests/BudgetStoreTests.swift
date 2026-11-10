@@ -995,6 +995,28 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.limit(store.category("shopping")!, in: next), 24_000, "next month goes back")
     }
 
+    func testRecommendationsCoverWhatsSpentAndMonthEndUsesTheOriginalPlan() {
+        let store = makeStore()
+        let shopping = store.category("shopping")!
+        store.setLimit("groceries", 60_000)
+        // Shopping usually $0, but $485 already went out this month.
+        store.data.transactions.append(Transaction(id: "pc", accountId: "r", date: date(2026, 10, 9), amount: -48_500,
+                                                   payee: "Ulta", categoryId: "shopping"))
+        XCTAssertEqual(store.recommendedLimits(toSpend: 0)["shopping"], 49_000, "never below what's spent, even when cutting")
+        XCTAssertEqual(store.standingInstead(of: 49_000, for: shopping), .some(nil), "next month goes back to no limit")
+
+        // Re-balancing mid-month: shopping covers its $490 this month only;
+        // groceries gets a new standing limit.
+        store.savePlanLimits(["shopping": 490, "groceries": 800], loaded: ["groceries": 600], extra: 0,
+                             in: store.currentMonth, thisMonthOnly: ["shopping": (490, nil)])
+        XCTAssertNil(store.category("shopping")!.limit)
+        XCTAssertEqual(store.limit(store.category("shopping")!, in: store.currentMonth), 49_000)
+        XCTAssertEqual(store.category("groceries")!.limit, 80_000)
+        // Month end judges against the plan the month started with.
+        XCTAssertEqual(store.originalLimit(store.category("groceries")!, in: store.currentMonth), 60_000)
+        XCTAssertNil(store.originalLimit(store.category("shopping")!, in: store.currentMonth))
+    }
+
     func testBudgetPageListsWhatNeedsYouAndMostUsedCategoriesFirst() {
         let store = makeStore()
         store.setLimit("shopping", 24_000)

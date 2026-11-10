@@ -85,7 +85,10 @@ struct RecapView: View {
     let month: Date
 
     var body: some View {
-        let limit = store.totalLimit(in: month)
+        // Judged against the plan as made; mid-month adjustments show beside it.
+        let everyday = store.expenseCategories.filter { $0.group != "Trips" }
+        let limit = everyday.compactMap { store.originalLimit($0, in: month) }.reduce(0, +)
+        let adjusted = store.totalLimit(in: month)
         let spent = store.totalSpent(in: month)
         let usual = store.averageTotal(before: month)
         let income = store.income(in: month)
@@ -96,7 +99,7 @@ struct RecapView: View {
             .map { ($0, store.spent($0.id, in: month)) }
             .filter { $0.1 > 0 }
             .sorted { $0.1 > $1.1 }
-        let overs = categories.filter { c, s in (store.limit(c, in: month) ?? 0) > 0 && s > (store.limit(c, in: month) ?? 0) }
+        let overs = categories.filter { c, s in (store.originalLimit(c, in: month) ?? 0) > 0 && s > (store.originalLimit(c, in: month) ?? 0) }
         let fees = store.expenseCategories.filter(\.aimsForZero).reduce(0) { $0 + store.spent($1.id, in: month) }
 
         NavigationStack {
@@ -148,10 +151,10 @@ struct RecapView: View {
                 }
 
                 if !overs.isEmpty {
-                    Section("Over the limit") {
+                    Section("Over the plan") {
                         ForEach(overs, id: \.0.id) { category, amount in
                             LabeledContent(category.name) {
-                                Text("\(Money.short(amount - (store.limit(category, in: month) ?? 0))) over")
+                                Text("\(Money.short(amount - (store.originalLimit(category, in: month) ?? 0))) over plan")
                                     .foregroundStyle(Theme.over)
                             }
                         }

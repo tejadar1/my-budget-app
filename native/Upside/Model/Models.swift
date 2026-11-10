@@ -266,6 +266,10 @@ struct BudgetData: Codable {
     /// Transfer wording you said is saving or investing ("ROBINHOOD FUNDS"),
     /// by payee key, so future transfers like it count toward savings.
     var savingPayees: [String]?
+    /// Each month's everyday limits as they stood before the first change
+    /// once spending had started, by month key ("2026-11"). Month-end judges
+    /// against these; mid-month changes are adjustments.
+    var originalLimits: [String: [String: Cents]]?
 }
 
 /// "Pay yourself first": standing monthly amounts taken off the top.

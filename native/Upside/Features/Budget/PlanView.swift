@@ -20,6 +20,9 @@ struct PlanView: View {
     @State private var confirmOver = false
     /// What "Fix it for me" did, shown until the next change.
     @State private var fixNote: String?
+    /// Limits a recommendation raised only to cover what's already spent:
+    /// shown dollars → the standing limit to keep for next months.
+    @State private var thisMonthOnly: [String: (shown: Int, standing: Cents?)] = [:]
 
     private var month: Date { store.currentMonth }
 
@@ -187,14 +190,16 @@ struct PlanView: View {
     private func limitsSection(_ n: Numbers) -> some View {
         Section {
             Button("Use recommended limits") {
-                withAnimation { limits = n.recommended.mapValues { $0 / 100 } }
+                withAnimation { limits = dollars(n.recommended) }
             }
             .fontWeight(.semibold)
             ForEach(store.everydayCategories) { c in
                 LimitPlanRow(name: c.name,
                              usual: store.averageSpent(c.id, before: month) ?? 0,
+                             spentSoFar: store.spent(c.id, in: month),
                              recommended: n.recommended[c.id],
-                             covered: limits[c.id] == loadedLimits[c.id] && store.plannedLimit(c, in: month) != c.limit,
+                             covered: (limits[c.id] == loadedLimits[c.id] && store.plannedLimit(c, in: month) != c.limit)
+                                || (thisMonthOnly[c.id].map { $0.shown == limits[c.id] } ?? false),
                              dollars: Binding(get: { limits[c.id] ?? 0 }, set: { limits[c.id] = max(0, $0) }))
             }
         } header: {
@@ -208,9 +213,27 @@ struct PlanView: View {
         }
     }
 
-    /// Recommended limits (cents), but never above a limit you already lowered.
+    /// Recommended limits in dollars. Notes the ones raised only because of
+    /// this month's spending, so Save keeps those to this month.
+    private func dollars(_ recommended: [String: Cents]) -> [String: Int] {
+        for c in store.everydayCategories {
+            if let r = recommended[c.id], let standing = store.standingInstead(of: r, for: c) {
+                thisMonthOnly[c.id] = (r / 100, standing)
+            } else {
+                thisMonthOnly[c.id] = nil
+            }
+        }
+        return recommended.mapValues { $0 / 100 }
+    }
+
+    /// Recommended limits, but never above a limit you already lowered, and
+    /// never below what's already spent this month.
     private func lowerOf(_ recommended: [String: Cents]) -> [String: Int] {
-        recommended.mapValues { $0 / 100 }.merging(limits) { new, current in current > 0 ? min(new, current) : new }
+        dollars(recommended).merging(limits) { new, current in current > 0 ? min(new, current) : new }
+            .reduce(into: [:]) { result, entry in
+                let floor = store.category(entry.key).map { store.spentFloor($0, in: month) / 100 } ?? 0
+                result[entry.key] = max(floor, entry.value)
+            }
     }
 
     /// Limits plus usual spending for categories without one.
@@ -344,7 +367,7 @@ struct PlanView: View {
     private func save() {
         store.data.priorities = Priorities(savings: savings * 100, cardPaydown: paydown * 100,
                                            plannedIncome: !useUsual && plannedIncome > 0 ? plannedIncome * 100 : nil)
-        store.savePlanLimits(limits, loaded: loadedLimits, extra: extra * 100, in: month)
+        store.savePlanLimits(limits, loaded: loadedLimits, extra: extra * 100, in: month, thisMonthOnly: thisMonthOnly)
         if trips > 0 {
             let fund = store.data.tripFund
             store.data.tripFund = TripFund(monthly: trips * 100, start: fund?.start ?? month,
@@ -368,6 +391,7 @@ struct PlanView: View {
 private struct LimitPlanRow: View {
     let name: String
     let usual: Cents
+    var spentSoFar: Cents = 0
     let recommended: Cents?
     /// Changed for this month by Cover or Save extra.
     var covered = false
@@ -377,7 +401,9 @@ private struct LimitPlanRow: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(name)
-                Text(recommended.map { "usual \(Money.short(usual)) → \(Money.short($0))" } ?? "usual \(Money.short(usual))")
+                // Spent more than usual already: say so, since that's why it's higher.
+                let base = spentSoFar > usual ? "\(Money.short(spentSoFar)) spent so far" : "usual \(Money.short(usual))"
+                Text(recommended.map { "\(base) → \(Money.short($0))" } ?? base)
                     .font(.caption).foregroundStyle(.secondary).monospacedDigit()
                 if covered {
                     Text("Adjusted for this month").font(.caption).foregroundStyle(Theme.accent)
