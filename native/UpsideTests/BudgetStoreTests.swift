@@ -1045,9 +1045,9 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertTrue(together.contains(.rebalance(categories: 2, amount: 2_040 + 10_000)))
         XCTAssertFalse(together.contains { if case .over = $0 { true } else { false } })
 
-        // Shopping 108%, dining 80%, groceries 13%: closest to the limit first.
+        // Dining 120%, shopping 108%, groceries 13%: closest to the limit first.
         let rows = store.categoryRows(in: store.currentMonth).map(\.id)
-        XCTAssertEqual(Array(rows.prefix(3)), ["shopping", "dining", "groceries"])
+        XCTAssertEqual(Array(rows.prefix(3)), ["dining", "shopping", "groceries"])
         XCTAssertFalse(rows.contains("housing"), "bills aren't everyday rows")
     }
 
