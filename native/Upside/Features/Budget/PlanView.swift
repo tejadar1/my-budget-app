@@ -3,8 +3,13 @@ import SwiftUI
 /// The one place to plan the month: savings, card paydown and trips come
 /// off the top, and everyday limits are recommended to fit what's left.
 struct PlanView: View {
+    enum Mode { case normal, planning, rebalance }
+
     @Environment(BudgetStore.self) private var store
     @Environment(\.dismiss) private var dismiss
+    /// `.planning` from the month's wrap-up (this save makes the plan);
+    /// `.rebalance` opens with limits already rebalanced to cover overruns.
+    var mode: Mode = .normal
     @State private var plannedIncome = 0
     @State private var savings = 0
     @State private var paydown = 0
@@ -188,11 +193,25 @@ struct PlanView: View {
     }
 
     private func limitsSection(_ n: Numbers) -> some View {
-        Section {
-            Button("Use recommended limits") {
-                withAnimation { limits = dollars(n.recommended) }
+        let adjusting = mode != .planning && !store.isPlanningWindow(month)
+        let monthName = month.formatted(.dateTime.month(.wide))
+        let snapshot = store.data.originalLimits?[BudgetStore.monthKey(month)]
+        return Section {
+            if adjusting {
+                Text("\(monthName)’s plan is set. Changes now are adjustments; your recap at the end of \(monthName) compares with the plan you started with.")
+                    .font(.footnote).foregroundStyle(.secondary)
             }
-            .fontWeight(.semibold)
+            Button {
+                withAnimation { limits = dollars(n.recommended) }
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(adjusting ? "Rebalance the rest of \(monthName)" : "Use recommended limits").fontWeight(.semibold)
+                    if adjusting {
+                        Text("Covers what’s already spent and fits the rest to what’s left.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
+                }
+            }
             ForEach(store.everydayCategories) { c in
                 LimitPlanRow(name: c.name,
                              usual: store.averageSpent(c.id, before: month) ?? 0,
@@ -200,6 +219,7 @@ struct PlanView: View {
                              recommended: n.recommended[c.id],
                              covered: (limits[c.id] == loadedLimits[c.id] && store.plannedLimit(c, in: month) != c.limit)
                                 || (thisMonthOnly[c.id].map { $0.shown == limits[c.id] } ?? false),
+                             planned: plannedLabel(c.id, snapshot),
                              dollars: Binding(get: { limits[c.id] ?? 0 }, set: { limits[c.id] = max(0, $0) }))
             }
         } header: {
@@ -211,6 +231,15 @@ struct PlanView: View {
                     .foregroundStyle(n.total <= n.toSpend ? Color.secondary : Theme.over)
             }
         }
+    }
+
+    /// The month's plan for a category when its limit now differs from it.
+    private func plannedLabel(_ id: String, _ snapshot: [String: Cents]?) -> String? {
+        guard let snapshot else { return nil }
+        let was: Cents = snapshot[id] ?? 0
+        let now: Cents = (limits[id] ?? 0) * 100
+        guard was != now else { return nil }
+        return was > 0 ? Money.short(was) : "none"
     }
 
     /// Recommended limits in dollars. Notes the ones raised only because of
@@ -362,12 +391,17 @@ struct PlanView: View {
             ($0.id, (store.plannedLimit($0, in: month) ?? 0) / 100)
         })
         loadedLimits = limits
+        if mode == .rebalance {
+            limits = dollars(numbers().recommended)
+            fixNote = "Rebalanced to cover what’s over. Review it, then tap Save."
+        }
     }
 
     private func save() {
         store.data.priorities = Priorities(savings: savings * 100, cardPaydown: paydown * 100,
                                            plannedIncome: !useUsual && plannedIncome > 0 ? plannedIncome * 100 : nil)
-        store.savePlanLimits(limits, loaded: loadedLimits, extra: extra * 100, in: month, thisMonthOnly: thisMonthOnly)
+        store.savePlanLimits(limits, loaded: loadedLimits, extra: extra * 100, in: month,
+                             thisMonthOnly: thisMonthOnly, planning: mode == .planning)
         if trips > 0 {
             let fund = store.data.tripFund
             store.data.tripFund = TripFund(monthly: trips * 100, start: fund?.start ?? month,
@@ -395,6 +429,8 @@ private struct LimitPlanRow: View {
     let recommended: Cents?
     /// Changed for this month by Cover or Save extra.
     var covered = false
+    /// What the month's plan had, when this month's limit was adjusted.
+    var planned: String? = nil
     @Binding var dollars: Int
 
     var body: some View {
@@ -405,7 +441,9 @@ private struct LimitPlanRow: View {
                 let base = spentSoFar > usual ? "\(Money.short(spentSoFar)) spent so far" : "usual \(Money.short(usual))"
                 Text(recommended.map { "\(base) → \(Money.short($0))" } ?? base)
                     .font(.caption).foregroundStyle(.secondary).monospacedDigit()
-                if covered {
+                if let planned {
+                    Text("Planned \(planned) · adjusted for this month").font(.caption).foregroundStyle(Theme.accent)
+                } else if covered {
                     Text("Adjusted for this month").font(.caption).foregroundStyle(Theme.accent)
                 }
             }

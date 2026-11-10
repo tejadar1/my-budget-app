@@ -8,6 +8,8 @@ extension BudgetStore {
         case bank
         /// A category past its limit, and by how much.
         case over(categoryId: String, amount: Cents)
+        /// Several categories over: rebalance them in one go.
+        case rebalance(categories: Int, amount: Cents)
         /// Last month's check-in, with this many decisions left.
         case checkIn(decisions: Int)
         /// Purchases sorted on a hunch.
@@ -19,6 +21,7 @@ extension BudgetStore {
             switch self {
             case .bank: "bank"
             case .over(let id, _): "over-\(id)"
+            case .rebalance: "rebalance"
             case .checkIn: "checkin"
             case .toCheck: "check"
             case .limitsOver: "limits"
@@ -31,8 +34,11 @@ extension BudgetStore {
     func attention() -> [Attention] {
         var items: [Attention] = []
         if !staleAccounts.isEmpty || !(data.syncErrors ?? []).isEmpty { items.append(.bank) }
-        for overrun in overruns(in: currentMonth) {
-            items.append(.over(categoryId: overrun.id, amount: overrun.over))
+        let overs = overruns(in: currentMonth)
+        if overs.count >= 2 {
+            items.append(.rebalance(categories: overs.count, amount: overs.reduce(0) { $0 + $1.over }))
+        } else if let one = overs.first {
+            items.append(.over(categoryId: one.id, amount: one.over))
         }
         if let check = monthCheckIn() {
             let decisions = [check.savingsShort, check.cardsShort, check.unspent, check.overspent].filter { $0 > 0 }.count

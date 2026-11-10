@@ -1015,6 +1015,13 @@ final class BudgetStoreTests: XCTestCase {
         // Month end judges against the plan the month started with.
         XCTAssertEqual(store.originalLimit(store.category("groceries")!, in: store.currentMonth), 60_000)
         XCTAssertNil(store.originalLimit(store.category("shopping")!, in: store.currentMonth))
+        XCTAssertTrue(store.wasAdjusted(store.category("shopping")!, in: store.currentMonth))
+
+        // Planning the month from its wrap-up makes the plan instead.
+        store.savePlanLimits(["shopping": 490, "groceries": 900], loaded: ["shopping": 490, "groceries": 800], extra: 0,
+                             in: store.currentMonth, planning: true)
+        XCTAssertEqual(store.originalLimit(store.category("groceries")!, in: store.currentMonth), 90_000)
+        XCTAssertFalse(store.wasAdjusted(store.category("groceries")!, in: store.currentMonth))
     }
 
     func testBudgetPageListsWhatNeedsYouAndMostUsedCategoriesFirst() {
@@ -1030,6 +1037,13 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertTrue(items.contains(.over(categoryId: "shopping", amount: 2_040)))
         XCTAssertTrue(items.contains(.toCheck(count: 2)))
         XCTAssertFalse(items.contains(.bank))
+
+        // Two or more over: one row to rebalance them together.
+        store.data.transactions.append(Transaction(id: "d2", accountId: "r", date: date(2026, 10, 10), amount: -20_000,
+                                                   payee: "Nobu", categoryId: "dining"))
+        let together = store.attention()
+        XCTAssertTrue(together.contains(.rebalance(categories: 2, amount: 2_040 + 10_000)))
+        XCTAssertFalse(together.contains { if case .over = $0 { true } else { false } })
 
         // Shopping 108%, dining 80%, groceries 13%: closest to the limit first.
         let rows = store.categoryRows(in: store.currentMonth).map(\.id)

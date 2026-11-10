@@ -85,12 +85,18 @@ struct CheckInSheet: View {
             Spacer()
             Image(systemName: "checkmark.circle.fill").font(.system(size: 56)).foregroundStyle(Theme.accent)
             Text("\(lastName) is wrapped up").font(.title2.bold())
-            Text("Nothing left to decide.").foregroundStyle(.secondary)
+            Text("Next, set \(thisName)’s plan. Your recap at the end of \(thisName) compares with it.")
+                .foregroundStyle(.secondary).multilineTextAlignment(.center)
             Spacer()
-            Button { dismiss() } label: {
-                Text("Done").font(.headline).frame(maxWidth: .infinity, minHeight: 34)
+            Button(action: openPlan) {
+                Text("Plan \(thisName)").font(.headline).frame(maxWidth: .infinity, minHeight: 34)
             }
             .buttonStyle(.borderedProminent)
+            .tint(Theme.accent)
+            Button { dismiss() } label: {
+                Text("Not now").font(.headline).frame(maxWidth: .infinity, minHeight: 34)
+            }
+            .buttonStyle(.bordered)
             .tint(Theme.accent)
         }
         .frame(maxWidth: .infinity)

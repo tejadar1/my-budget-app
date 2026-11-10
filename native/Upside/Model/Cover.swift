@@ -23,21 +23,36 @@ extension BudgetStore {
     /// Month-end looks at this.
     func originalLimit(_ category: Category, in month: Date) -> Cents? {
         let saved = data.originalLimits?[Self.monthKey(month)]
-        let planned = saved.map { $0[category.id] } ?? category.limit
+        let planned = saved.map { $0[category.id] } ?? plannedLimit(category, in: month)
         guard let planned, planned > 0 else { return nil }
         return planned + (limit(category, in: month) ?? 0) - (plannedLimit(category, in: month) ?? 0)
     }
 
-    /// Saves this month's plan as it stands, once: the first change after
-    /// spending has started. Changes before that are making the plan.
-    func keepOriginalPlan(for month: Date) {
+    /// While the month is still being planned: you came from the month's
+    /// wrap-up, it's the 1st–5th, or nothing's been spent yet. Changes then
+    /// make the plan; later ones are adjustments.
+    func isPlanningWindow(_ month: Date) -> Bool {
+        month == currentMonth && (calendar.component(.day, from: now()) <= 5 || totalSpent(in: month) == 0)
+    }
+
+    /// Saves this month's plan as it stands, once: before the first
+    /// adjustment. `force` replaces it (a save while planning).
+    func keepOriginalPlan(for month: Date, force: Bool = false) {
         let key = Self.monthKey(month)
-        guard data.originalLimits?[key] == nil, totalSpent(in: month) > 0 else { return }
+        guard force || data.originalLimits?[key] == nil else { return }
         var all = data.originalLimits ?? [:]
-        all[key] = Dictionary(uniqueKeysWithValues: everydayCategories.compactMap { c in c.limit.map { (c.id, $0) } })
+        all[key] = Dictionary(uniqueKeysWithValues: everydayCategories.compactMap { c in
+            plannedLimit(c, in: month).map { (c.id, $0) }
+        })
         // A year is plenty for recaps.
         for old in all.keys.sorted().dropLast(12) { all[old] = nil }
         data.originalLimits = all
+    }
+
+    /// Was the plan changed after it was made?
+    func wasAdjusted(_ category: Category, in month: Date) -> Bool {
+        guard let saved = data.originalLimits?[Self.monthKey(month)] else { return false }
+        return saved[category.id] != plannedLimit(category, in: month)
     }
 
     /// Everyday categories past their limit this month. One without a limit
@@ -71,7 +86,7 @@ extension BudgetStore {
     /// the usual limits.
     func cover(_ categoryId: String, amount: Cents, from source: String, in month: Date) {
         guard amount > 0, let target = category(categoryId) else { return }
-        keepOriginalPlan(for: month)
+        if !isPlanningWindow(month) { keepOriginalPlan(for: month) }
         var plan = data.plan.flatMap { isInMonth($0.month, month) ? $0 : nil }
             ?? SavingsPlan(month: month, goal: 0, limits: [:])
         let current = plannedLimit(target, in: month) ?? averageSpent(categoryId, before: month) ?? 0
@@ -88,10 +103,14 @@ extension BudgetStore {
     /// `thisMonthOnly`: limits raised only to cover what's already spent
     /// (whole dollars → the standing limit to keep, in cents or nil); they
     /// apply to this month and next month goes back to the standing one.
+    /// `planning`: opened from the month's wrap-up, so this save makes the
+    /// month's plan rather than adjusting it.
     func savePlanLimits(_ limits: [String: Int], loaded: [String: Int], extra: Cents, in month: Date,
-                        thisMonthOnly: [String: (shown: Int, standing: Cents?)] = [:]) {
+                        thisMonthOnly: [String: (shown: Int, standing: Cents?)] = [:], planning: Bool = false) {
         let changed = everydayCategories.map(\.id).filter { limits[$0] != loaded[$0] }
-        if !changed.isEmpty { keepOriginalPlan(for: month) }
+        let making = planning || isPlanningWindow(month)
+        defer { if making { keepOriginalPlan(for: month, force: true) } }
+        if !changed.isEmpty && !making { keepOriginalPlan(for: month) }
         var kept = data.plan.flatMap { isInMonth($0.month, month) ? $0.limits : nil } ?? [:]
         for id in changed {
             kept[id] = nil

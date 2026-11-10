@@ -10,7 +10,8 @@
 ## Roadmap
 - 0.29 Settle in: sharing verified end to end, first-week fixes, split purchases in the Transactions filter
 - 0.30 Look ahead: checking forecast to month end, net worth over time (home value and mortgage)
-- 0.31 Debt plan: card interest rates, which card first, interest saved
-- 0.32 At a glance: widgets, Siri
-- 0.33 Year-end: year summary, CSV export, 401(k) per paycheck, notes and tags
+- 0.31 Plan, adjust, look back: original plan vs adjustments, rebalance, recap against the plan (done)
+- 0.32 Debt plan: card interest rates, which card first, interest saved
+- 0.33 At a glance: widgets, Siri
+- 0.34 Year-end: year summary, CSV export, 401(k) per paycheck, notes and tags
 - 1.0 Ready: two weeks of shared use without data problems, then App Store prep if wanted

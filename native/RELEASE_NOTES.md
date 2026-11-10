@@ -2,7 +2,12 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next (0.30.2)
+## 0.31: Plan, adjust, look back
+- Plan the month at the start: the month-end wrap-up now ends with "Plan November". That save is the month's plan. Without it, changes on the 1st–5th still count as planning.
+- After that, changes are adjustments. Plan says so at the top, and "Use recommended limits" becomes "Rebalance the rest of November": it covers what's already spent and fits the rest to what's left.
+- When two or more categories are over, Needs attention shows one row ("4 categories are $768 over") that opens Plan already rebalanced. Review it, then Save. One category over still offers Cover.
+- Adjusted limits in Plan show what the plan had: "Planned $0 · adjusted for this month".
+- The monthly recap shows planned, adjusted and spent for each category over the plan, and lists spending the plan had no limit for, with a suggested limit.
 - Recommended limits cover what's already spent: a category is never set below the money already gone this month, and only the room above that is trimmed. Plan shows "$490 spent so far → $490" for these.
 - Those raises are for this month only. Next month the category goes back to its usual limit (or none).
 - Month end judges against your original plan. The first time you change the plan after spending starts, the app keeps a copy of the plan as it stood; the monthly recap compares spending with that copy ("over plan"), so mid-month adjustments don't erase what went differently. Your changes still carry into next month.

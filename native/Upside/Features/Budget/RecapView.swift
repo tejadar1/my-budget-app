@@ -100,6 +100,9 @@ struct RecapView: View {
             .filter { $0.1 > 0 }
             .sorted { $0.1 > $1.1 }
         let overs = categories.filter { c, s in (store.originalLimit(c, in: month) ?? 0) > 0 && s > (store.originalLimit(c, in: month) ?? 0) }
+        // Everyday spending the plan had no limit for.
+        let everydayIds = Set(store.everydayCategories.map(\.id))
+        let unplanned = categories.filter { c, _ in everydayIds.contains(c.id) && store.originalLimit(c, in: month) == nil }
         let fees = store.expenseCategories.filter(\.aimsForZero).reduce(0) { $0 + store.spent($1.id, in: month) }
 
         NavigationStack {
@@ -151,13 +154,32 @@ struct RecapView: View {
                 }
 
                 if !overs.isEmpty {
-                    Section("Over the plan") {
+                    Section {
                         ForEach(overs, id: \.0.id) { category, amount in
-                            LabeledContent(category.name) {
-                                Text("\(Money.short(amount - (store.originalLimit(category, in: month) ?? 0))) over plan")
-                                    .foregroundStyle(Theme.over)
+                            PlanVsSpentRow(category: category, month: month, spent: amount)
+                        }
+                    } header: {
+                        Text("Over the plan")
+                    } footer: {
+                        Text("Compared with the plan \(month.formatted(.dateTime.month(.wide))) started with, before any adjustments.")
+                    }
+                }
+
+                if !unplanned.isEmpty {
+                    Section {
+                        ForEach(unplanned.prefix(5), id: \.0.id) { category, amount in
+                            let usual = store.averageSpent(category.id, before: store.month(1, from: month)) ?? amount
+                            let suggest = Int((Double(usual) / 1000).rounded(.up)) * 1000
+                            VStack(alignment: .leading, spacing: 2) {
+                                LabeledContent(category.name, value: Money.short(amount))
+                                Text("A \(Money.short(suggest)) limit would cover a usual month.")
+                                    .font(.footnote).foregroundStyle(.secondary)
                             }
                         }
+                    } header: {
+                        Text("Not in the plan")
+                    } footer: {
+                        Text("Add these in Plan so next month accounts for them.")
                     }
                 }
 
@@ -189,6 +211,30 @@ struct RecapView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
+        }
+    }
+}
+
+/// Planned · adjusted to · spent for one category.
+private struct PlanVsSpentRow: View {
+    @Environment(BudgetStore.self) private var store
+    let category: Category
+    let month: Date
+    let spent: Cents
+
+    var body: some View {
+        let planned = store.originalLimit(category, in: month) ?? 0
+        let adjusted = store.limit(category, in: month) ?? 0
+        // Only this month's (or a still-open month's) adjustments are kept.
+        let knowsAdjusted = month == store.currentMonth || (store.plan.map { store.isInMonth($0.month, month) } ?? false)
+        VStack(alignment: .leading, spacing: 2) {
+            LabeledContent(category.name) {
+                Text("\(Money.short(spent - planned)) over plan").foregroundStyle(Theme.over)
+            }
+            Text(knowsAdjusted && adjusted != planned
+                 ? "Planned \(Money.short(planned)) · adjusted to \(Money.short(adjusted)) · spent \(Money.short(spent))"
+                 : "Planned \(Money.short(planned)) · spent \(Money.short(spent))")
+                .font(.footnote).foregroundStyle(.secondary).monospacedDigit()
         }
     }
 }

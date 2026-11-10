@@ -186,7 +186,7 @@ extension BudgetStore {
     @discardableResult
     func setLimitsToPlan(_ month: Date) -> Cents {
         let recommended = recommendedLimits(toSpend: monthPlan(month).toSpend)
-        keepOriginalPlan(for: month)
+        if !isPlanningWindow(month) { keepOriginalPlan(for: month) }
         var plan = data.plan.flatMap { isInMonth($0.month, month) ? $0 : nil } ?? SavingsPlan(month: month, goal: 0, limits: [:])
         for category in everydayCategories {
             let value = recommended[category.id]

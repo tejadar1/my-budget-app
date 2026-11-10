@@ -99,9 +99,11 @@ struct BudgetView: View {
             }) { sheet in
                 switch sheet {
                 case .plan: PlanView()
+                case .planning: PlanView(mode: .planning)
+                case .rebalance: PlanView(mode: .rebalance)
                 case .limits: LimitsView()
                 case .savings(let month): SavingsSheet(month: month, openPlan: isCurrentMonth ? { then(.plan) } : nil)
-                case .checkIn: CheckInSheet { then(.plan) }
+                case .checkIn: CheckInSheet { then(.planning) }
                 case .cover(let id): CoverSheet(categoryId: id, month: store.currentMonth) { then(.plan) }
                 case .bank: BankSheet()
                 case .recap(let month): RecapView(month: month)
@@ -122,6 +124,7 @@ struct BudgetView: View {
         switch item {
         case .bank: sheet = .bank
         case .over(let id, _): sheet = .cover(id)
+        case .rebalance: sheet = .rebalance
         case .checkIn: sheet = .checkIn
         case .toCheck: path.append(Route.review)
         case .limitsOver: sheet = .plan
@@ -145,6 +148,7 @@ struct BudgetView: View {
         case "search": path.append(Route.search(open.id))
         case "limits", "recommended", "limit": sheet = .limits
         case "save", "priorities": sheet = .plan
+        case "rebalance": sheet = .rebalance
         case "savings": sheet = .savings(store.currentMonth)
         case "checkin": sheet = .checkIn
         case "bank": sheet = .bank
@@ -165,6 +169,10 @@ struct BudgetView: View {
 
 enum BudgetSheet: Identifiable, Hashable {
     case plan, limits, checkIn, bank
+    /// Plan opened from the month's wrap-up: saving makes the month's plan.
+    case planning
+    /// Plan opened to cover several overspent categories at once.
+    case rebalance
     case savings(Date)
     case cover(String)
     case recap(Date)
@@ -351,6 +359,11 @@ struct AttentionList: View {
             ListRow(title: "\(store.category(id)?.name ?? "A category") is \(Money.short(amount)) over",
                     subtitle: "Cover it from another category") {
                 CategoryIcon(categoryId: id, size: 30)
+            }
+        case .rebalance(let count, let amount):
+            ListRow(title: "\(count) categories are \(Money.short(amount)) over",
+                    subtitle: "Rebalance the rest of the month") {
+                SymbolIcon(symbol: "arrow.left.arrow.right", color: .red)
             }
         case .checkIn(let decisions):
             let name = store.month(-1, from: store.currentMonth).formatted(.dateTime.month(.wide))
