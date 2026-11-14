@@ -93,10 +93,13 @@ extension BudgetStore {
         let expected = Self.incomeToPlanOn(planned: planned, usual: usualIncome)
         let monthsPlan = plan(for: month)
         // Pay yourself first: income above the plan isn't spending money
-        // until you give it a job (Needs attention asks).
+        // until you give it a job (Needs attention asks). With nothing to
+        // expect yet (a new budget, a bank sharing little history), what's
+        // come in is all there is to go on, so it all counts.
         let used = monthsPlan?.extraIncomeUsed ?? 0
+        let extra = isCurrent && expected > 0 ? max(0, actualIncome - expected - used) : 0
         return MonthPlan(
-            income: isCurrent ? expected + min(used, max(0, actualIncome - expected)) : actualIncome,
+            income: isCurrent ? max(actualIncome - extra, expected) : actualIncome,
             incomeIsUsual: isCurrent && planned == nil && usualIncome > actualIncome,
             incomePlanned: planned,
             incomeReceived: actualIncome,
@@ -113,7 +116,7 @@ extension BudgetStore {
             goals: goalsSetAside(in: month),
             fundedByGoals: goalFundedCategories.reduce(0) { $0 + spent($1, in: month) },
             carriedIn: monthsPlan?.carriedIn ?? 0,
-            extraIncome: isCurrent ? max(0, actualIncome - expected - used) : 0)
+            extraIncome: extra)
     }
 
     /// Lowers everyday limits so they fit what there is to spend, taking

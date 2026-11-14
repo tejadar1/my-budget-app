@@ -744,7 +744,8 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.monthPlan(store.currentMonth).income, 400_000, "the income you entered wins, even above usual")
         store.data.priorities = Priorities(plannedIncome: 250_000)
         let plan = store.monthPlan(store.currentMonth)
-        XCTAssertEqual(plan.income, 300_000, "more came in than planned; the extra counts")
+        XCTAssertEqual(plan.income, 250_000, "more came in than planned; the extra waits for a job")
+        XCTAssertEqual(plan.extraIncome, 50_000)
         XCTAssertEqual(plan.aboveIncomePlan, 50_000)
         // Plans saved before planned income existed still load.
         let old = #"{"savings":100000,"cardPaydown":50000}"#
