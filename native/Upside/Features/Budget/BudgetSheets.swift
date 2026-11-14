@@ -192,6 +192,11 @@ struct ExtraIncomeSheet: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
                 Image(systemName: "dollarsign.circle").font(.system(size: 40)).foregroundStyle(Theme.accent)
+                if amount == 0 {
+                    Text("Nothing extra right now").font(.title2.bold())
+                    Text("When more comes in than \(month)’s plan counted on, you’ll decide here what it’s for.")
+                        .foregroundStyle(.secondary)
+                } else {
                 Text("\(text) more came in than planned").font(.title2.bold())
                 Text("\(month)’s plan counted on \(Money.short(plan.income)). \(Money.short(plan.incomeReceived)) has come in so far. The extra isn’t in your spending money yet. Give it a job:")
                     .foregroundStyle(.secondary)
@@ -203,13 +208,14 @@ struct ExtraIncomeSheet: View {
                     choice("Put it toward cards", note: nil) { store.useExtraIncome(amount, as: .cards) }
                 }
                 choice("Add it to spending money", note: nil) { store.useExtraIncome(amount, as: .keep) }
+                }
             }
             .padding(24)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Extra income")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Later") { dismiss() } } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button(amount == 0 ? "Done" : "Later") { dismiss() } } }
         }
     }
 
