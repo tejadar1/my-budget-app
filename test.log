@@ -1,0 +1,997 @@
+Command line invocation:
+    /Applications/Xcode_26.3.app/Contents/Developer/usr/bin/xcodebuild test -project Upside.xcodeproj -scheme Upside -destination id=E3312CA2-0242-435C-AF8C-49E295DEC90A -derivedDataPath build CODE_SIGNING_ALLOWED=NO
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (2 targets)
+    Target 'UpsideTests' in project 'Upside'
+        ➜ Explicit dependency on target 'Upside' in project 'Upside'
+    Target 'Upside' in project 'Upside' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode_26.3.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+ExecuteExternalTool /Applications/Xcode_26.3.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+Build description signature: 07df5472b878398c0fa5a7c4a4573b4e
+Build description path: /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/XCBuildData/07df5472b878398c0fa5a7c4a4573b4e.xcbuilddata
+CreateBuildDirectory /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products
+    cd /Users/runner/work/my-budget-app/my-budget-app/native/Upside.xcodeproj
+    builtin-create-build-directory /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products
+
+CreateBuildDirectory /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex
+    cd /Users/runner/work/my-budget-app/my-budget-app/native/Upside.xcodeproj
+    builtin-create-build-directory /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex
+
+ClangStatCache /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk /Users/runner/work/my-budget-app/my-budget-app/native/build/SDKStatCaches.noindex/iphonesimulator26.2-23C57-e244bd9a5feaf902f95f61bf06266e52.sdkstatcache
+    cd /Users/runner/work/my-budget-app/my-budget-app/native/Upside.xcodeproj
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -o /Users/runner/work/my-budget-app/my-budget-app/native/build/SDKStatCaches.noindex/iphonesimulator26.2-23C57-e244bd9a5feaf902f95f61bf06266e52.sdkstatcache
+
+CreateBuildDirectory /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+    cd /Users/runner/work/my-budget-app/my-budget-app/native/Upside.xcodeproj
+    builtin-create-build-directory /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/ExplicitPrecompiledModules
+    cd /Users/runner/work/my-budget-app/my-budget-app/native/Upside.xcodeproj
+    builtin-create-build-directory /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/ExplicitPrecompiledModules
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside-f8af94c4bbb2c629133a579cec13f719-VFS-iphonesimulator/all-product-headers.yaml
+    cd /Users/runner/work/my-budget-app/my-budget-app/native/Upside.xcodeproj
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside-f8af94c4bbb2c629133a579cec13f719-VFS-iphonesimulator/all-product-headers.yaml
+
+CreateBuildDirectory /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator
+    cd /Users/runner/work/my-budget-app/my-budget-app/native/Upside.xcodeproj
+    builtin-create-build-directory /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator
+
+CreateBuildDirectory /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+    cd /Users/runner/work/my-budget-app/my-budget-app/native/Upside.xcodeproj
+    builtin-create-build-directory /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests.hmap (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests.hmap
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/empty-UpsideTests.plist (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/empty-UpsideTests.plist
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests.DependencyStaticMetadataFileList (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests.DependencyMetadataFileList (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-project-headers.hmap (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-project-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-own-target-headers.hmap (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-generated-files.hmap (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-generated-files.hmap
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-all-target-headers.hmap (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-all-non-framework-target-headers.hmap (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests_const_extract_protocols.json (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.SwiftFileList (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.SwiftFileList
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.SwiftConstValuesFileList (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.LinkFileList (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.LinkFileList
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests-OutputFileMap.json (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests-OutputFileMap.json
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside.hmap (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside.hmap
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside.DependencyStaticMetadataFileList (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside.DependencyMetadataFileList (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-project-headers.hmap (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-project-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-own-target-headers.hmap (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-own-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-generated-files.hmap (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-generated-files.hmap
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-all-target-headers.hmap (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-all-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-all-non-framework-target-headers.hmap (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-all-non-framework-target-headers.hmap
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-DebugDylibPath-normal-x86_64.txt (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-DebugDylibPath-normal-x86_64.txt
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-DebugDylibInstallName-normal-x86_64.txt (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-DebugDylibInstallName-normal-x86_64.txt
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside_const_extract_protocols.json (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.SwiftFileList (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.SwiftFileList
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.SwiftConstValuesFileList (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.LinkFileList (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.LinkFileList
+
+WriteAuxiliaryFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside-OutputFileMap.json (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    write-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside-OutputFileMap.json
+
+MkDir /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    /bin/mkdir -p /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest
+
+MkDir /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    /bin/mkdir -p /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns
+
+MkDir /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    /bin/mkdir -p /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks
+
+MkDir /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    /bin/mkdir -p /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app
+
+Ld /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/__preview.dylib normal (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target x86_64-apple-ios17.0-simulator -dynamiclib -isysroot /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -O0 -L/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -F/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -install_name @rpath/Upside.debug.dylib -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside_dependency_info.dat -o /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/__preview.dylib
+
+MkDir /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_output/unthinned (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    /bin/mkdir -p /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_output/unthinned
+
+MkDir /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_output/thinned (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    /bin/mkdir -p /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_output/thinned
+
+GenerateAssetSymbols /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Assets.xcassets (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    /Applications/Xcode_26.3.app/Contents/Developer/usr/bin/actool /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Assets.xcassets --compile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app --output-format human-readable-text --notices --warnings --export-dependency-info /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_dependencies --output-partial-info-plist /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_generated_info.plist --app-icon AppIcon --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --minimum-deployment-target 17.0 --platform iphonesimulator --bundle-identifier com.tejadar1.upside --generate-swift-asset-symbol-extensions NO --generate-swift-asset-symbols /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/DerivedSources/GeneratedAssetSymbols.swift --generate-objc-asset-symbols /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/DerivedSources/GeneratedAssetSymbols.h --generate-asset-symbol-index /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/* com.apple.actool.compilation-results */
+/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/DerivedSources/GeneratedAssetSymbols.h
+/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/DerivedSources/GeneratedAssetSymbols.swift
+
+
+Copy /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks/libXCTestSwiftSupport.dylib /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks
+
+Copy /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks/libXCTestBundleInject.dylib /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestBundleInject.dylib (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestBundleInject.dylib /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks
+
+Copy /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks/XCUnit.framework /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCUnit.framework (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCUnit.framework /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks
+
+Copy /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks/XCUIAutomation.framework /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCUIAutomation.framework (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCUIAutomation.framework /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks
+
+Copy /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks/XCTestSupport.framework /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestSupport.framework (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestSupport.framework /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks
+
+Copy /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks/XCTestCore.framework /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestCore.framework (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTestCore.framework /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks
+
+Copy /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks/XCTest.framework /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCTest.framework (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/XCTest.framework /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks
+
+Copy /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks/XCTAutomationSupport.framework /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTAutomationSupport.framework (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/PrivateFrameworks/XCTAutomationSupport.framework /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks
+
+Copy /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks/Testing.framework /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/Testing.framework (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -exclude Headers -exclude PrivateHeaders -exclude Modules -exclude \*.tbd -resolve-src-symlinks /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks/Testing.framework /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks
+
+CompileAssetCatalogVariant thinned /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Assets.xcassets (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    /Applications/Xcode_26.3.app/Contents/Developer/usr/bin/actool /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Assets.xcassets --compile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_dependencies_thinned --output-partial-info-plist /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_generated_info.plist_thinned --app-icon AppIcon --compress-pngs --enable-on-demand-resources YES --filter-for-thinning-device-configuration iPhone17,1 --filter-for-device-os-version 26.2 --development-region en --target-device iphone --minimum-deployment-target 17.0 --platform iphonesimulator
+/* com.apple.actool.compilation-results */
+/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_generated_info.plist_thinned
+/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_output/thinned/AppIcon60x60@2x.png
+/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_output/thinned/AppIcon76x76@2x~ipad.png
+/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_output/thinned/Assets.car
+
+
+SwiftDriver Upside normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-SwiftDriver -- /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Upside -Onone -enforce-exclusivity\=checked @/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target x86_64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -F /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -c -j4 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/my-budget-app/my-budget-app/native/build/SDKStatCaches.noindex/iphonesimulator26.2-23C57-e244bd9a5feaf902f95f61bf06266e52.sdkstatcache -output-file-map /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-generated-files.hmap -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-own-target-headers.hmap -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-project-headers.hmap -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/DerivedSources-normal/x86_64 -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/DerivedSources/x86_64 -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside-Swift.h -working-directory /Users/runner/work/my-budget-app/my-budget-app/native -experimental-emit-module-separately -disable-cmo
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/_SwiftConcurrencyShims-9ECAIH4E04SSY8Z7H6K4OXKN7.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/DeveloperToolsSupport-2WMLBWZ4ZDXV2QK8VPH2Y4GLC.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/_Builtin_float-7ZOD0TDW11GO1ZDRF27LMB67Y.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/_Builtin_stdbool-9HE0RKDR9LV49RKRNYMPKMJDO.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/ptrcheck-2QLJKC90QGA5RH0WFVKUYHRFX.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/ptrauth-BHCEWDV9EQXDN3HN4WZ3MQ90K.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/_Builtin_stdarg-3X3FFEDMFCNUZQ723SXAFADJW.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/_AvailabilityInternal-3NH20632O6FGVUHQ78CY73GTI.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/SwiftShims-3NAXVOG4TJJ50XZ4UGHMPFPAL.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/_Builtin_stddef-2W01VQXEBJUJSSXKTKLPY9MCW.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/_DarwinFoundation1-6G1UXKFUYY52GKFB59IL60PXM.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/_Builtin_limits-A74RFIUQAWSCCLO7N7J9WD2TL.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/_DarwinFoundation2-1C7IVB0CJAQ8PCWEQENGJ61NO.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/_Builtin_stdint-F813A8151XC9LRMZ6N3852L7.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/sys_types-9SZ565U9FJ7XWI3M08R2M2PTF.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/_Builtin_tgmath-VMB7SA551L8QQTZ3UEKGS5W8.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/_Builtin_stdatomic-2KZD7ZJDI12KSAM8A5R17HTNU.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/_DarwinFoundation3-5Y3ARJL8CNJUY1OSX57C05K4O.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/_Builtin_inttypes-5UNQXO8FMTOTPVKBGVOVBCAR9.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/_Builtin_intrinsics-5USRFXASP0RTA834XSI2DI8A8.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/Darwin-E1EU3V1BF1KD4GEJDVNUBTAK5.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/MachO-A2L379ZWTU4DEU9PD9OXZT6O6.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/ObjectiveC-9AHI0WDRE1TJR8DHOY1VTOM2B.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/os_object-CYPX538CM4Q12M0FGDNZLA8TN.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/os_workgroup-4FE79VOM5Y4MR44GK08602EXN.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/Dispatch-5K41440LQ2V8PHVDLPI7MZWBW.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/simd-9KG8FSMPL8QY175WPMHZI4AG5.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/XPC-9LLKSR3042ZJY85UZE3RLVC4T.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/CoreFoundation-6GEWTA7ME2B6CM9BW8AQ0GITL.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/os-CX951M26QTOTLDS3MJOE1ZMKU.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/CFNetwork-6PLCSIRPCXB98OU2Z6LXKQCAJ.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/Security-4U8071D3N38OQFEFJF22KJI5B.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/CoreGraphics-DCVTKI36F1LOW5QLU9T3WHTD8.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/Foundation-2UUT3AYN6BH69NRAO7YPBV8PX.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/ImageIO-21XMEBFKD0E09IAJL99QW8ZWT.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/CoreText-5C6BU8IMMDL987GL7M9XA4Q7I.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/IOSurface-46H8UEAIQCMCZQ3BV8CVEKB34.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/DataDetection-CXC6V9MNT0J71IRQ8VKULGCE0.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/LocalAuthentication-43JVQR27YK1DO5J42V184HNXN.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/OSLog-AQGZ7ST1N37O7IJ7M32RTVCB.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/_LocationEssentials-5ZHLS7BLCWARX36ATPQCZBPPW.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/UniformTypeIdentifiers-7V9Y1YIQFVWI9IEPP9STBJKLQ.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/OpenGLES-80VAMXIPZZ31TCI0T2EESJVZZ.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/UIUtilities-2VGFFL3VP0ISG1STRKLBXY8WN.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/Metal-PTFWR5N1YV8J5HOX11CMB64M.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/CoreTransferable-66YHBM33JATI7JQXQ4O789RVC.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/UserNotifications-B5Z1JD8G52SVV8ARTTE1Q7MUC.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/Spatial-ZBQ13J27AN4IW4HEQY45ION1.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/Symbols-7QXEATVK2O47SG29D6QE1T26I.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/FileProvider-8GEGVKRAEASFYYHS7IBNH4ODX.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/BackgroundTasks-717IMARIZTHXJAPEZWVG7XJHV.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/CoreVideo-3EAL8SV9AFQ5APUVUN0CJ88QM.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/Accessibility-6BIM0REJUDN9EUDIPJ8OWZJXM.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/CoreLocation-EEFFJDZVRZDCBDKWK7VBVPZUJ.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/CoreData-DLYO9COJ1D7EO7GXVUJ9J8RDS.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/QuartzCore-CXXQRCW0SMTJX4150R8329PF4.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/CoreImage-1OHKABZFYK5OYGI9BTBDUW1R8.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/CloudKit-19FUP541GWAC2CNJAI05L9OS6.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/SwiftUICore-5GCGR8K64Q4DZKJ38S2S5ZWH2.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/UIKit-9MIJKWM1AV1GVPNMXV8T94JVG.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/AuthenticationServices-8JXVHJ9O8F799KP8WHUUMB9QB.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/SwiftUI-3EC0QI93C8G29WQC3W95V3NK8.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/SafariServices-7WJL1RRQIB1K0PVMKTXI5I0A9.pcm
+
+SwiftEmitModule normal x86_64 Emitting\ module\ for\ Upside (in target 'Upside' from project 'Upside')
+EmitSwiftModule normal x86_64 (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 Compiling\ AccountsView.swift,\ AlertRules.swift,\ Alerts.swift,\ BankSync.swift,\ BillsView.swift,\ BudgetPage.swift,\ BudgetSheets.swift,\ BudgetStore.swift,\ BudgetView.swift,\ BusinessView.swift,\ CardsCheck.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Accounts/AccountsView.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/AlertRules.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Services/Alerts.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Services/BankSync.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/BillsView.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/BudgetPage.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/BudgetSheets.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/BudgetStore.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/BudgetView.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/BusinessView.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Accounts/CardsCheck.swift (in target 'Upside' from project 'Upside')
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Accounts/AccountsView.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/AlertRules.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Services/Alerts.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Services/BankSync.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/BillsView.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/BudgetPage.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/BudgetSheets.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/BudgetStore.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/BudgetView.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/BusinessView.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Accounts/CardsCheck.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 Compiling\ Merchant.swift,\ Merge.swift,\ Models.swift,\ MonthPlan.swift,\ MonthPlanCard.swift,\ PlanView.swift,\ RecapView.swift,\ Rollover.swift,\ SaveFirst.swift,\ SavingsCard.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/Merchant.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/Merge.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/Models.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/MonthPlan.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/MonthPlanCard.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/PlanView.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/RecapView.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/Rollover.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/SaveFirst.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/SavingsCard.swift (in target 'Upside' from project 'Upside')
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/Merchant.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/Merge.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/Models.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/MonthPlan.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/MonthPlanCard.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/PlanView.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/RecapView.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+/Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/RecapView.swift:91:13: warning: initialization of immutable value 'adjusted' was never used; consider replacing with assignment to '_' or removing it
+        let adjusted = store.totalLimit(in: month)
+        ~~~~^~~~~~~~
+        _
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/Rollover.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/SaveFirst.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/SavingsCard.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 Compiling\ CategoryDetailView.swift,\ CloudSync.swift,\ Components.swift,\ Cover.swift,\ DemoData.swift,\ Goals.swift,\ GoalsView.swift,\ Income.swift,\ Insights.swift,\ LockView.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/CategoryDetailView.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Services/CloudSync.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Design/Components.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/Cover.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/DemoData.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/Goals.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/GoalsView.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/Income.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/Insights.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Setup/LockView.swift (in target 'Upside' from project 'Upside')
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/CategoryDetailView.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+/Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/CategoryDetailView.swift:298:17: warning: result of call to 'withAnimation' is unused
+                withAnimation { store.addCategory(name, group: group) }
+                ^             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Services/CloudSync.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Design/Components.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/Cover.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/DemoData.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/Goals.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/GoalsView.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/Income.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Model/Insights.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Setup/LockView.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+LinkAssetCatalog /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Assets.xcassets (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-linkAssetCatalog --thinned /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_output/thinned --thinned-dependencies /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_dependencies_thinned --thinned-info-plist-content /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_generated_info.plist_thinned --unthinned /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_output/unthinned --unthinned-dependencies /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_dependencies_unthinned --unthinned-info-plist-content /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_generated_info.plist_unthinned --output /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app --plist-output /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_generated_info.plist
+note: Emplaced /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/AppIcon60x60@2x.png (in target 'Upside' from project 'Upside')
+note: Emplaced /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Assets.car (in target 'Upside' from project 'Upside')
+note: Emplaced /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/AppIcon76x76@2x~ipad.png (in target 'Upside' from project 'Upside')
+
+SwiftDriverJobDiscovery normal x86_64 Emitting module for Upside (in target 'Upside' from project 'Upside')
+
+SwiftDriver\ Compilation\ Requirements Upside normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Upside -Onone -enforce-exclusivity\=checked @/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target x86_64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -F /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -c -j4 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/my-budget-app/my-budget-app/native/build/SDKStatCaches.noindex/iphonesimulator26.2-23C57-e244bd9a5feaf902f95f61bf06266e52.sdkstatcache -output-file-map /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-generated-files.hmap -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-own-target-headers.hmap -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-project-headers.hmap -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/DerivedSources-normal/x86_64 -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/DerivedSources/x86_64 -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside-Swift.h -working-directory /Users/runner/work/my-budget-app/my-budget-app/native -experimental-emit-module-separately -disable-cmo
+
+ProcessInfoPlistFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Info.plist /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Info.plist (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-infoPlistUtility /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Info.plist -producttype com.apple.product-type.application -genpkginfo /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/assetcatalog_generated_info.plist -o /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Info.plist
+
+SwiftMergeGeneratedHeaders /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/DerivedSources/Upside-Swift.h /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside-Swift.h (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-swiftHeaderTool -arch x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside-Swift.h -o /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/DerivedSources/Upside-Swift.h
+
+Copy /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.swiftmodule/x86_64-apple-ios-simulator.swiftmodule /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.swiftmodule (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.swiftmodule /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.swiftmodule/x86_64-apple-ios-simulator.swiftmodule
+
+Copy /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.swiftmodule/x86_64-apple-ios-simulator.swiftdoc /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.swiftdoc (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.swiftdoc /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.swiftmodule/x86_64-apple-ios-simulator.swiftdoc
+
+Copy /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.swiftmodule/x86_64-apple-ios-simulator.abi.json /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.abi.json (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.abi.json /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.swiftmodule/x86_64-apple-ios-simulator.abi.json
+
+Copy /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.swiftmodule/Project/x86_64-apple-ios-simulator.swiftsourceinfo /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.swiftsourceinfo (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.swiftsourceinfo /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.swiftmodule/Project/x86_64-apple-ios-simulator.swiftsourceinfo
+
+SwiftCompile normal x86_64 Compiling\ SearchView.swift,\ SettingsView.swift,\ SetupViews.swift,\ SimpleFIN.swift,\ Theme.swift,\ TransactionSheet.swift,\ TransactionsView.swift,\ TripsView.swift,\ UpsideApp.swift,\ GeneratedAssetSymbols.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/SearchView.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Settings/SettingsView.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Setup/SetupViews.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Services/SimpleFIN.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Design/Theme.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/TransactionSheet.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Transactions/TransactionsView.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/TripsView.swift /Users/runner/work/my-budget-app/my-budget-app/native/Upside/App/UpsideApp.swift /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Upside' from project 'Upside')
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/SearchView.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Settings/SettingsView.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+/Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Settings/SettingsView.swift:299:46: warning: 'where' only applies to the second pattern match in this 'case'
+        case .failed(let why), .off(let why) where why != "Not started": return why
+                               ~~~~~~~~~~~~~ ^     ~~~~~~~~~~~~~~~~~~~~
+/Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Settings/SettingsView.swift:299:32: note: disambiguate by adding a line break between them if this is desired
+        case .failed(let why), .off(let why) where why != "Not started": return why
+                               ^
+/Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Settings/SettingsView.swift:299:14: note: duplicate the 'where' on both patterns to check both patterns
+        case .failed(let why), .off(let why) where why != "Not started": return why
+             ^~~~~~~~~~~~~~~~
+                              where why != "Not started"
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Setup/SetupViews.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Services/SimpleFIN.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Design/Theme.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/TransactionSheet.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Transactions/TransactionsView.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/Features/Budget/TripsView.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/Upside/App/UpsideApp.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftDriverJobDiscovery normal x86_64 Compiling SearchView.swift, SettingsView.swift, SetupViews.swift, SimpleFIN.swift, Theme.swift, TransactionSheet.swift, TransactionsView.swift, TripsView.swift, UpsideApp.swift, GeneratedAssetSymbols.swift (in target 'Upside' from project 'Upside')
+
+SwiftDriver UpsideTests normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-SwiftDriver -- /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name UpsideTests -Onone -enforce-exclusivity\=checked @/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.SwiftFileList -DDEBUG -plugin-path /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target x86_64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk/Developer/Library/Frameworks -parse-as-library -c -j4 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/my-budget-app/my-budget-app/native/build/SDKStatCaches.noindex/iphonesimulator26.2-23C57-e244bd9a5feaf902f95f61bf06266e52.sdkstatcache -output-file-map /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-generated-files.hmap -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-own-target-headers.hmap -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-project-headers.hmap -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/DerivedSources-normal/x86_64 -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/DerivedSources/x86_64 -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests-Swift.h -working-directory /Users/runner/work/my-budget-app/my-budget-app/native -experimental-emit-module-separately -disable-cmo
+
+SwiftDriverJobDiscovery normal x86_64 Compiling Merchant.swift, Merge.swift, Models.swift, MonthPlan.swift, MonthPlanCard.swift, PlanView.swift, RecapView.swift, Rollover.swift, SaveFirst.swift, SavingsCard.swift (in target 'Upside' from project 'Upside')
+
+SwiftDriverJobDiscovery normal x86_64 Compiling AccountsView.swift, AlertRules.swift, Alerts.swift, BankSync.swift, BillsView.swift, BudgetPage.swift, BudgetSheets.swift, BudgetStore.swift, BudgetView.swift, BusinessView.swift, CardsCheck.swift (in target 'Upside' from project 'Upside')
+
+SwiftDriverJobDiscovery normal x86_64 Compiling CategoryDetailView.swift, CloudSync.swift, Components.swift, Cover.swift, DemoData.swift, Goals.swift, GoalsView.swift, Income.swift, Insights.swift, LockView.swift (in target 'Upside' from project 'Upside')
+
+SwiftDriver\ Compilation Upside normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-Swift-Compilation -- /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Upside -Onone -enforce-exclusivity\=checked @/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.SwiftFileList -DDEBUG -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target x86_64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -F /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -c -j4 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/my-budget-app/my-budget-app/native/build/SDKStatCaches.noindex/iphonesimulator26.2-23C57-e244bd9a5feaf902f95f61bf06266e52.sdkstatcache -output-file-map /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-generated-files.hmap -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-own-target-headers.hmap -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-project-headers.hmap -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/DerivedSources-normal/x86_64 -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/DerivedSources/x86_64 -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside-Swift.h -working-directory /Users/runner/work/my-budget-app/my-budget-app/native -experimental-emit-module-separately -disable-cmo
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/XCUIAutomation-581K7KQ6GHWHOZONIYWQD92PM.pcm
+
+Ld /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Upside.debug.dylib normal (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target x86_64-apple-ios17.0-simulator -dynamiclib -isysroot /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -O0 -L/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -F/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -filelist /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.LinkFileList -install_name @rpath/Upside.debug.dylib -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker @executable_path/Frameworks -dead_strip -Xlinker -object_path_lto -Xlinker /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.swiftmodule @/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside-linker-args.resp -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -o /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Upside.debug.dylib
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/XCTest-253IC6GKTOCGLN131JIHGN73G.pcm
+
+SwiftExplicitDependencyCompileModuleFromInterface x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/XCUIAutomation-3G0TIWVA39GOI.swiftmodule
+
+SwiftExplicitDependencyCompileModuleFromInterface x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules/XCTest-33YRCCJAL7FKS.swiftmodule
+
+ConstructStubExecutorLinkFileList /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-ExecutorLinkFileList-normal-x86_64.txt (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    construct-stub-executor-link-file-list /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Upside.debug.dylib /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-ExecutorLinkFileList-normal-x86_64.txt
+note: Using stub executor library with Swift entry point. (in target 'Upside' from project 'Upside')
+
+Ld /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Upside normal (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target x86_64-apple-ios17.0-simulator -isysroot /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -O0 -L/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -F/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-DebugDylibPath-normal-x86_64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-DebugDylibInstallName-normal-x86_64.txt -Xlinker -filelist -Xlinker /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside-ExecutorLinkFileList-normal-x86_64.txt /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Upside.debug.dylib -o /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Upside
+
+CopySwiftLibs /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Upside.debug.dylib --scan-folder /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks --scan-folder /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns --scan-folder /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/SystemExtensions --scan-folder /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Extensions --platform iphonesimulator --toolchain /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+ExtractAppIntentsMetadata (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name Upside --sdk-root /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk --xcode-version 17C529 --platform-family iOS --deployment-target 17.0 --bundle-identifier com.tejadar1.upside --output /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app --target-triple x86_64-apple-ios17.0-simulator --binary-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Upside --dependency-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside_dependency_info.dat --stringsdata-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.SwiftFileList --metadata-file-list /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside.DependencyMetadataFileList --static-metadata-file-list /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside.DependencyStaticMetadataFileList --swift-const-vals-list /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Objects-normal/x86_64/Upside.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-11-14 16:59:59.302 appintentsmetadataprocessor[4615:16151] Starting appintentsmetadataprocessor export
+2026-11-14 16:59:59.314 appintentsmetadataprocessor[4615:16151] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+AppIntentsSSUTraining (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Info.plist --temp-dir-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/ssu --bundle-id com.tejadar1.upside --product-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app --extracted-metadata-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Metadata.appintents --metadata-file-list /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/Upside.build/Upside.DependencyMetadataFileList --archive-ssu-assets
+2026-11-14 16:59:59.400 appintentsnltrainingprocessor[4624:16171] Parsing options for appintentsnltrainingprocessor
+2026-11-14 16:59:59.403 appintentsnltrainingprocessor[4624:16171] No AppShortcuts found - Skipping.
+
+SwiftEmitModule normal x86_64 Emitting\ module\ for\ UpsideTests (in target 'UpsideTests' from project 'Upside')
+
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/UpsideTests/BudgetStoreTests.swift (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+SwiftCompile normal x86_64 Compiling\ BudgetStoreTests.swift /Users/runner/work/my-budget-app/my-budget-app/native/UpsideTests/BudgetStoreTests.swift (in target 'UpsideTests' from project 'Upside')
+SwiftCompile normal x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/UpsideTests/BudgetStoreTests.swift (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    
+
+ProcessInfoPlistFile /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest/Info.plist /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/empty-UpsideTests.plist (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-infoPlistUtility /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/empty-UpsideTests.plist -producttype com.apple.product-type.bundle.unit-test -expandbuildsettings -format binary -platform iphonesimulator -o /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest/Info.plist
+
+SwiftDriverJobDiscovery normal x86_64 Emitting module for UpsideTests (in target 'UpsideTests' from project 'Upside')
+
+SwiftDriver\ Compilation\ Requirements UpsideTests normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name UpsideTests -Onone -enforce-exclusivity\=checked @/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.SwiftFileList -DDEBUG -plugin-path /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target x86_64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk/Developer/Library/Frameworks -parse-as-library -c -j4 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/my-budget-app/my-budget-app/native/build/SDKStatCaches.noindex/iphonesimulator26.2-23C57-e244bd9a5feaf902f95f61bf06266e52.sdkstatcache -output-file-map /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-generated-files.hmap -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-own-target-headers.hmap -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-project-headers.hmap -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/DerivedSources-normal/x86_64 -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/DerivedSources/x86_64 -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests-Swift.h -working-directory /Users/runner/work/my-budget-app/my-budget-app/native -experimental-emit-module-separately -disable-cmo
+
+SwiftMergeGeneratedHeaders /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/DerivedSources/UpsideTests-Swift.h /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests-Swift.h (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-swiftHeaderTool -arch x86_64 /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests-Swift.h -o /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/DerivedSources/UpsideTests-Swift.h
+
+Copy /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/UpsideTests.swiftmodule/x86_64-apple-ios-simulator.swiftmodule /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.swiftmodule (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.swiftmodule /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/UpsideTests.swiftmodule/x86_64-apple-ios-simulator.swiftmodule
+
+Copy /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/UpsideTests.swiftmodule/x86_64-apple-ios-simulator.swiftdoc /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.swiftdoc (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.swiftdoc /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/UpsideTests.swiftmodule/x86_64-apple-ios-simulator.swiftdoc
+
+Copy /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/UpsideTests.swiftmodule/x86_64-apple-ios-simulator.abi.json /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.abi.json (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.abi.json /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/UpsideTests.swiftmodule/x86_64-apple-ios-simulator.abi.json
+
+Copy /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/UpsideTests.swiftmodule/Project/x86_64-apple-ios-simulator.swiftsourceinfo /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.swiftsourceinfo (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.swiftsourceinfo /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/UpsideTests.swiftmodule/Project/x86_64-apple-ios-simulator.swiftsourceinfo
+
+SwiftDriverJobDiscovery normal x86_64 Compiling BudgetStoreTests.swift (in target 'UpsideTests' from project 'Upside')
+
+SwiftDriver\ Compilation UpsideTests normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-Swift-Compilation -- /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name UpsideTests -Onone -enforce-exclusivity\=checked @/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.SwiftFileList -DDEBUG -plugin-path /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -target x86_64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk/Developer/Library/Frameworks -parse-as-library -c -j4 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/my-budget-app/my-budget-app/native/build/SDKStatCaches.noindex/iphonesimulator26.2-23C57-e244bd9a5feaf902f95f61bf06266e52.sdkstatcache -output-file-map /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/my-budget-app/my-budget-app/native/build/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests_const_extract_protocols.json -Xcc -iquote -Xcc /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-generated-files.hmap -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-own-target-headers.hmap -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-all-target-headers.hmap -Xcc -iquote -Xcc /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests-project-headers.hmap -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/DerivedSources-normal/x86_64 -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/DerivedSources/x86_64 -Xcc -I/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests-Swift.h -working-directory /Users/runner/work/my-budget-app/my-budget-app/native -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest/UpsideTests normal (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target x86_64-apple-ios17.0-simulator -bundle -isysroot /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk -O0 -L/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -L/Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk/Developer/Library/Frameworks -filelist /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.LinkFileList -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker @loader_path/Frameworks -Xlinker -rpath -Xlinker @executable_path/Frameworks -dead_strip -bundle_loader /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Upside -Xlinker -object_path_lto -Xlinker /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.swiftmodule @/Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests-linker-args.resp -Xlinker -needed_framework -Xlinker XCTest -framework XCTest -Xlinker -needed-lXCTestSwiftSupport -lXCTestSwiftSupport /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/Upside.debug.dylib -o /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest/UpsideTests
+
+CopySwiftLibs /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest/UpsideTests --scan-folder /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest/Frameworks --scan-folder /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest/PlugIns --scan-folder /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest/SystemExtensions --scan-folder /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest/Extensions --platform iphonesimulator --toolchain /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest/Frameworks --strip-bitcode --scan-executable /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libXCTestSwiftSupport.dylib --strip-bitcode-tool /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+Ignoring --strip-bitcode because --sign was not passed
+
+ExtractAppIntentsMetadata (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name UpsideTests --sdk-root /Applications/Xcode_26.3.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.2.sdk --xcode-version 17C529 --platform-family iOS --deployment-target 17.0 --bundle-identifier com.tejadar1.UpsideTests --output /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest --target-triple x86_64-apple-ios17.0-simulator --binary-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest/UpsideTests --dependency-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests_dependency_info.dat --stringsdata-file /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.SwiftFileList --metadata-file-list /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests.DependencyMetadataFileList --static-metadata-file-list /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests.DependencyStaticMetadataFileList --swift-const-vals-list /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/Objects-normal/x86_64/UpsideTests.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-11-14 17:00:06.657 appintentsmetadataprocessor[4776:16517] Starting appintentsmetadataprocessor export
+2026-11-14 17:00:06.662 appintentsmetadataprocessor[4776:16517] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+AppIntentsSSUTraining (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    /Applications/Xcode_26.3.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest/Info.plist --temp-dir-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/ssu --bundle-id com.tejadar1.UpsideTests --product-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest --extracted-metadata-path /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest/Metadata.appintents --metadata-file-list /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Intermediates.noindex/Upside.build/Debug-iphonesimulator/UpsideTests.build/UpsideTests.DependencyMetadataFileList --archive-ssu-assets
+2026-11-14 17:00:06.704 appintentsnltrainingprocessor[4781:16526] Parsing options for appintentsnltrainingprocessor
+2026-11-14 17:00:06.706 appintentsnltrainingprocessor[4781:16526] No AppShortcuts found - Skipping.
+
+RegisterExecutionPolicyException /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-RegisterExecutionPolicyException /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest
+
+Touch /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest (in target 'UpsideTests' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    /usr/bin/touch -c /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app/PlugIns/UpsideTests.xctest
+
+RegisterExecutionPolicyException /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-RegisterExecutionPolicyException /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app
+
+Validate /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    builtin-validationUtility /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app -shallow-bundle -infoplist-subpath Info.plist
+
+Touch /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app (in target 'Upside' from project 'Upside')
+    cd /Users/runner/work/my-budget-app/my-budget-app/native
+    /usr/bin/touch -c /Users/runner/work/my-budget-app/my-budget-app/native/build/Build/Products/Debug-iphonesimulator/Upside.app
+
+2026-11-14 17:11:28.367319+0000 Upside[13529:48436] [Client] XPC connection interrupted
+Test Suite 'All tests' started at 2026-11-14 17:11:31.261.
+Test Suite 'UpsideTests.xctest' started at 2026-11-14 17:11:31.276.
+Test Suite 'BudgetStoreTests' started at 2026-11-14 17:11:31.277.
+Test Case '-[UpsideTests.BudgetStoreTests testABankWithShortHistoryIsntCountedAsZero]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testABankWithShortHistoryIsntCountedAsZero]' passed (0.016 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testABillWithItsOwnGoalIsntCountedTwice]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testABillWithItsOwnGoalIsntCountedTwice]' passed (0.051 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testAccountFullNameSkipsRepeatedBank]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testAccountFullNameSkipsRepeatedBank]' passed (0.009 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testAlertsForBillsLowBalanceAndLargePurchases]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testAlertsForBillsLowBalanceAndLargePurchases]' passed (0.078 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testATripIsPaidForFromFirstPurchaseUntilAfterIt]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testATripIsPaidForFromFirstPurchaseUntilAfterIt]' passed (0.005 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testBankCategoryOrMerchantCodeSortsUnknownStores]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testBankCategoryOrMerchantCodeSortsUnknownStores]' passed (0.026 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testBankThatStopsSendingIsFlagged]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testBankThatStopsSendingIsFlagged]' passed (0.031 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testBarsFoldIntoDining]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testBarsFoldIntoDining]' passed (0.010 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testBillsCountAtLeastTheirUsualAmount]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testBillsCountAtLeastTheirUsualAmount]' passed (0.018 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testBiweeklyPayHasExtraPaychecksAndASteadyUsual]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testBiweeklyPayHasExtraPaychecksAndASteadyUsual]' passed (0.006 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testBudgetPageListsWhatNeedsYouAndMostUsedCategoriesFirst]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testBudgetPageListsWhatNeedsYouAndMostUsedCategoriesFirst]' passed (2.683 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testBuiltInCategories]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testBuiltInCategories]' passed (0.005 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testBusinessExpensesStayOutOfTheBudgetUntilPaidBack]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testBusinessExpensesStayOutOfTheBudgetUntilPaidBack]' passed (0.009 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testCategorizingRemembersTheStore]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testCategorizingRemembersTheStore]' passed (0.004 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testCollegeSavingsCountsAsSavedNotSpent]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testCollegeSavingsCountsAsSavedNotSpent]' passed (0.004 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testCommutingAndCarPayments]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testCommutingAndCarPayments]' passed (0.019 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testCoveringOverspendingMovesRoomForThisMonthOnly]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testCoveringOverspendingMovesRoomForThisMonthOnly]' passed (0.022 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testDemoDataLooksRealistic]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testDemoDataLooksRealistic]' passed (0.092 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testDepositsIntoAnInvestmentAccountCountEvenUnmatched]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testDepositsIntoAnInvestmentAccountCountEvenUnmatched]' passed (0.005 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testEmptyQuietAccountsTuckAway]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testEmptyQuietAccountsTuckAway]' passed (0.003 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testEveryCardIsRecognized]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testEveryCardIsRecognized]' passed (0.003 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testEverythingGetsSortedAndHunchesWaitForAQuickCheck]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testEverythingGetsSortedAndHunchesWaitForAQuickCheck]' passed (0.006 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testExtraIncomeWaitsForAJobAndSavingIsOfferedFirst]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testExtraIncomeWaitsForAJobAndSavingIsOfferedFirst]' passed (0.088 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testFindsBillsPriceIncreasesAndNewSubscriptions]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testFindsBillsPriceIncreasesAndNewSubscriptions]' passed (0.027 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testFindsSubscriptionsByPattern]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testFindsSubscriptionsByPattern]' passed (0.040 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testGoalsSetAsideAndTripsCanBeTurnedOff]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testGoalsSetAsideAndTripsCanBeTurnedOff]' passed (0.039 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testHiddenAccountLeavesTheBudget]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testHiddenAccountLeavesTheBudget]' passed (0.006 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testHomeFitnessAndPetsForCityOwners]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testHomeFitnessAndPetsForCityOwners]' passed (0.032 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testIncomeAndLeftOver]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testIncomeAndLeftOver]' passed (0.004 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testIncomePotAddsEachPersonAndDropsStoppedPay]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testIncomePotAddsEachPersonAndDropsStoppedPay]' passed (0.012 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testLastMonthsLeftoverCanGoToSavingsOrCards]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testLastMonthsLeftoverCanGoToSavingsOrCards]' passed (0.043 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testLastMonthsPlanIsKeptWhenThisMonthsReplacesIt]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testLastMonthsPlanIsKeptWhenThisMonthsReplacesIt]' passed (0.012 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testLimitAlertsFireOncePerLevel]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testLimitAlertsFireOncePerLevel]' passed (0.005 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testLimitsFromAveragesRoundUpToTenDollars]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testLimitsFromAveragesRoundUpToTenDollars]' passed (0.008 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testLimitsStepDownTowardTheGoalOnlyAfterAMonthWithinIt]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testLimitsStepDownTowardTheGoalOnlyAfterAMonthWithinIt]' passed (0.005 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testLiquorStoresAreGroceriesAndLiquor]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testLiquorStoresAreGroceriesAndLiquor]' passed (0.007 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testLoanPaymentsDontPairAsTransfers]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testLoanPaymentsDontPairAsTransfers]' passed (0.003 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testMarkingARobinhoodTransferAsInvestingCountsAsSavings]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testMarkingARobinhoodTransferAsInvestingCountsAsSavings]' passed (0.003 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testMaximizeSavedAndCardPayoffMinimizeFees]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testMaximizeSavedAndCardPayoffMinimizeFees]' passed (0.004 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testMoneyInAGoalsAccountIsntAlsoSavings]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testMoneyInAGoalsAccountIsntAlsoSavings]' passed (0.004 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testMonthEndCheckInCatchesUpWhatWasntMoved]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testMonthEndCheckInCatchesUpWhatWasntMoved]' passed (0.062 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testMonthlySpentStopsAtTheStartOfHistory]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testMonthlySpentStopsAtTheStartOfHistory]' passed (0.003 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testMonthPlanIsIncomeMinusBillsSavingsTripsThenSpending]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testMonthPlanIsIncomeMinusBillsSavingsTripsThenSpending]' passed (0.031 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testMoreRestaurantsAndCarCosts]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testMoreRestaurantsAndCarCosts]' passed (0.030 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testNotABillHidesItAndUndoesAPatternGuess]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testNotABillHidesItAndUndoesAPatternGuess]' passed (0.014 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testNotABillMovesSpendingToEverydayAndItsABillMovesItBack]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testNotABillMovesSpendingToEverydayAndItsABillMovesItBack]' passed (1.059 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testOneStoreBillingSeveralThingsFindsEachSubscription]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testOneStoreBillingSeveralThingsFindsEachSubscription]' passed (0.004 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testOverspendingAMonthMeansLessForTrips]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testOverspendingAMonthMeansLessForTrips]' passed (0.004 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testOwnerGuessing]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testOwnerGuessing]' passed (0.002 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testPaidOnTheFirstButDepositedEarlyCountsForTheRightMonth]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testPaidOnTheFirstButDepositedEarlyCountsForTheRightMonth]' passed (0.004 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testPartialFirstMonthIsLeftOutOfAveragesAndCharts]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testPartialFirstMonthIsLeftOutOfAveragesAndCharts]' passed (0.003 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testPaydayReminderMovesThisPaychecksShareOnce]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testPaydayReminderMovesThisPaychecksShareOnce]' passed (0.020 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testPayeeKeyIgnoresStoreNumbers]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testPayeeKeyIgnoresStoreNumbers]' passed (0.002 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testPlannedIncomeAndWhenMoreComesIn]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testPlannedIncomeAndWhenMoreComesIn]' passed (0.026 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testPrioritiesComeFirstAndLimitsFollow]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testPrioritiesComeFirstAndLimitsFollow]' passed (1.145 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testPurchasesDuringTripSkipRefundsTransfersAndOffBudget]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testPurchasesDuringTripSkipRefundsTransfersAndOffBudget]' passed (0.004 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testRecalculatingLimitsResetsFromTheLastThreeMonths]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testRecalculatingLimitsResetsFromTheLastThreeMonths]' passed (0.009 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testRecommendationsCoverWhatsSpentAndMonthEndUsesTheOriginalPlan]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testRecommendationsCoverWhatsSpentAndMonthEndUsesTheOriginalPlan]' passed (0.012 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testRecommendedCategoriesFromWhatYouBuy]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testRecommendedCategoriesFromWhatYouBuy]' passed (0.061 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testResortForgetsChoicesButKeepsTrips]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testResortForgetsChoicesButKeepsTrips]' passed (0.401 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testRolloverCarriesUnspentIntoNextMonth]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testRolloverCarriesUnspentIntoNextMonth]' passed (0.004 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testSafeToSpendKeepsSavingsAndTripsFirst]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testSafeToSpendKeepsSavingsAndTripsFirst]' passed (0.005 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testSavingThePlanKeepsCoversAndOnlyChangesEditedLimits]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testSavingThePlanKeepsCoversAndOnlyChangesEditedLimits]' passed (0.005 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testSearchByStoreOrAmount]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testSearchByStoreOrAmount]' passed (0.007 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testShortBankHistoryStillCountsPartnersPay]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testShortBankHistoryStillCountsPartnersPay]' passed (0.787 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testSixMonthsOfHistoryIsFetchedInPiecesUnder90Days]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testSixMonthsOfHistoryIsFetchedInPiecesUnder90Days]' passed (0.004 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testSortingOneOffersTheOthersWithTheSameName]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testSortingOneOffersTheOthersWithTheSameName]' passed (0.004 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testSpentThisMonthNetsRefundsAndIgnoresTransfersAndOffBudget]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testSpentThisMonthNetsRefundsAndIgnoresTransfersAndOffBudget]' passed (0.004 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testSplittingAPurchaseByCategoryAndPerson]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testSplittingAPurchaseByCategoryAndPerson]' passed (0.042 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testStoreNamesReadLikeApplesApps]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testStoreNamesReadLikeApplesApps]' passed (0.005 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testTaxes]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testTaxes]' passed (0.005 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testTicketsAndFinesAreMinimized]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testTicketsAndFinesAreMinimized]' passed (0.005 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testTopCategoriesSkipUnusedOnes]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testTopCategoriesSkipUnusedOnes]' passed (0.010 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testTransactionsTabFilters]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testTransactionsTabFilters]' passed (0.031 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testTrendNoteTellsATrendFromAOneOff]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testTrendNoteTellsATrendFromAOneOff]' passed (0.004 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testTripFundFillsMonthlyAndTripsDrawItDown]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testTripFundFillsMonthlyAndTripsDrawItDown]' passed (0.006 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testTripFundInARealAccountUsesItsBalanceAndIsntSavings]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testTripFundInARealAccountUsesItsBalanceAndIsntSavings]' passed (0.003 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testTripPurchasesLeaveTheirCategoryButStillCountAsSpent]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testTripPurchasesLeaveTheirCategoryButStillCountAsSpent]' passed (0.003 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testTuitionIsABillTheSavingsPlanLeavesAlone]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testTuitionIsABillTheSavingsPlanLeavesAlone]' passed (0.004 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testTwiceAMonthPayIsNotMistakenForBiweekly]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testTwiceAMonthPayIsNotMistakenForBiweekly]' passed (0.006 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testTwoPhonesMergeWithoutLosingEitherPersonsChanges]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testTwoPhonesMergeWithoutLosingEitherPersonsChanges]' passed (0.165 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testUsualIncome]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testUsualIncome]' passed (0.018 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testUsualIsThreeMonthAverage]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testUsualIsThreeMonthAverage]' passed (0.095 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testUsualPayIgnoresOvertimeAndTheSocialSecurityBump]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testUsualPayIgnoresOvertimeAndTheSocialSecurityBump]' passed (0.030 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testWeeklySummaryIsSundayEveningOnce]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testWeeklySummaryIsSundayEveningOnce]' passed (0.002 seconds).
+Test Case '-[UpsideTests.BudgetStoreTests testWhoSpent]' started.
+Test Case '-[UpsideTests.BudgetStoreTests testWhoSpent]' passed (0.003 seconds).
+Test Suite 'BudgetStoreTests' passed at 2026-11-14 17:11:40.692.
+	 Executed 86 tests, with 0 failures (0 unexpected) in 7.594 (9.414) seconds
+Test Suite 'CardTests' started at 2026-11-14 17:11:40.693.
+Test Case '-[UpsideTests.CardTests testCardChargedPaidAndGrowth]' started.
+Test Case '-[UpsideTests.CardTests testCardChargedPaidAndGrowth]' passed (0.003 seconds).
+Test Suite 'CardTests' passed at 2026-11-14 17:11:40.698.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.003 (0.005) seconds
+Test Suite 'CategoryTests' started at 2026-11-14 17:11:41.583.
+Test Case '-[UpsideTests.CategoryTests testSuggestionsAndCreatingCategories]' started.
+Test Case '-[UpsideTests.CategoryTests testSuggestionsAndCreatingCategories]' passed (0.011 seconds).
+Test Suite 'CategoryTests' passed at 2026-11-14 17:11:41.596.
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.011 (0.013) seconds
+Test Suite 'SavingsTests' started at 2026-11-14 17:11:41.597.
+Test Case '-[UpsideTests.SavingsTests testCardFeesAreSortedAndAimForZero]' started.
+Test Case '-[UpsideTests.SavingsTests testCardFeesAreSortedAndAimForZero]' passed (0.009 seconds).
+Test Case '-[UpsideTests.SavingsTests testCutsNeverExceedSixtyPercentUnlessSkipped]' started.
+Test Case '-[UpsideTests.SavingsTests testCutsNeverExceedSixtyPercentUnlessSkipped]' passed (0.007 seconds).
+Test Case '-[UpsideTests.SavingsTests testMostYouCanSaveIsTheCapOnFlexibleSpending]' started.
+Test Case '-[UpsideTests.SavingsTests testMostYouCanSaveIsTheCapOnFlexibleSpending]' passed (0.014 seconds).
+Test Case '-[UpsideTests.SavingsTests testPlanOnlyChangesItsMonth]' started.
+Test Case '-[UpsideTests.SavingsTests testPlanOnlyChangesItsMonth]' passed (0.003 seconds).
+Test Case '-[UpsideTests.SavingsTests testSuggestionsCutOnlyFlexibleSpendingAndMeetTheGoal]' started.
+Test Case '-[UpsideTests.SavingsTests testSuggestionsCutOnlyFlexibleSpendingAndMeetTheGoal]' passed (0.009 seconds).
+Test Suite 'SavingsTests' passed at 2026-11-14 17:11:41.663.
+	 Executed 5 tests, with 0 failures (0 unexpected) in 0.042 (0.065) seconds
+Test Suite 'TransferTests' started at 2026-11-14 17:11:41.663.
+Test Case '-[UpsideTests.TransferTests testCardPaymentsAreNotSpending]' started.
+Test Case '-[UpsideTests.TransferTests testCardPaymentsAreNotSpending]' passed (0.004 seconds).
+Test Case '-[UpsideTests.TransferTests testCardPaymentWordingFromBanks]' started.
+Test Case '-[UpsideTests.TransferTests testCardPaymentWordingFromBanks]' passed (0.010 seconds).
+Test Case '-[UpsideTests.TransferTests testNotSpendingChoiceIsRemembered]' started.
+Test Case '-[UpsideTests.TransferTests testNotSpendingChoiceIsRemembered]' passed (0.003 seconds).
+Test Case '-[UpsideTests.TransferTests testPaymentPairsEvenWhenTheCardSideIsAlreadyKnown]' started.
+Test Case '-[UpsideTests.TransferTests testPaymentPairsEvenWhenTheCardSideIsAlreadyKnown]' passed (0.003 seconds).
+Test Suite 'TransferTests' passed at 2026-11-14 17:11:41.808.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.020 (0.144) seconds
+Test Suite 'UpsideTests.xctest' passed at 2026-11-14 17:11:41.820.
+	 Executed 97 tests, with 0 failures (0 unexpected) in 7.670 (10.543) seconds
+Test Suite 'All tests' passed at 2026-11-14 17:11:41.821.
+	 Executed 97 tests, with 0 failures (0 unexpected) in 7.670 (10.560) seconds
+2026-11-14 17:11:49.480 xcodebuild[1845:8896] [MT] IDETestOperationsObserverDebug: 702.262 elapsed -- Testing started completed.
+2026-11-14 17:11:49.482 xcodebuild[1845:8896] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-14 17:11:49.482 xcodebuild[1845:8896] [MT] IDETestOperationsObserverDebug: 702.262 sec, +702.262 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/runner/work/my-budget-app/my-budget-app/native/build/Logs/Test/Test-Upside-2026.11.14_16-57-44-+0000.xcresult
+
+** TEST SUCCEEDED **
+
+Testing started
