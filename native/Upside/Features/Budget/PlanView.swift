@@ -201,17 +201,27 @@ struct PlanView: View {
                 Text("\(monthName)’s plan is set. Changes now are adjustments; your recap at the end of \(monthName) compares with the plan you started with.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
-            Button {
-                withAnimation { limits = dollars(n.recommended) }
-            } label: {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(adjusting ? "Rebalance the rest of \(monthName)" : "Use recommended limits").fontWeight(.semibold)
-                    if adjusting {
-                        Text("Covers what’s already spent and fits the rest to what’s left.")
-                            .font(.footnote).foregroundStyle(.secondary)
-                    }
+            // The main action of this section: a full-width filled button,
+            // with what it does underneath.
+            VStack(spacing: 8) {
+                Button {
+                    withAnimation { limits = dollars(n.recommended) }
+                } label: {
+                    Label(adjusting ? "Rebalance the rest of \(monthName)" : "Use recommended limits",
+                          systemImage: adjusting ? "arrow.left.arrow.right" : "wand.and.stars")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 44)
                 }
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.capsule)
+                .controlSize(.large)
+                .tint(Theme.accent)
+                Text(adjusting ? "Covers what’s already spent and fits the rest to what’s left."
+                               : "Based on what you usually spend, fit to what you have.")
+                    .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }
+            .padding(.vertical, 4)
+            .listRowSeparator(.hidden)
             ForEach(store.everydayCategories) { c in
                 LimitPlanRow(name: c.name,
                              usual: store.averageSpent(c.id, before: month) ?? 0,

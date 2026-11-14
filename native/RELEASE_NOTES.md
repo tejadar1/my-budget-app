@@ -2,6 +2,9 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.31.1)
+- Rebalance (and Use recommended limits) is now a big green button you can't miss, with what it does underneath.
+
 ## 0.31: Plan, adjust, look back
 - Plan the month at the start: the month-end wrap-up now ends with "Plan November". That save is the month's plan. Without it, changes on the 1st–5th still count as planning.
 - After that, changes are adjustments. Plan says so at the top, and "Use recommended limits" becomes "Rebalance the rest of November": it covers what's already spent and fits the rest to what's left.
