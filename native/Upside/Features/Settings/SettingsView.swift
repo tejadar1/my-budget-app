@@ -18,6 +18,7 @@ struct SettingsView: View {
     @AppStorage("alertsLowBalance") private var lowBalanceAlerts = true
     @AppStorage("alertsLowBalanceAt") private var lowBalanceAt = 500
     @AppStorage("alertsLarge") private var largeAlerts = true
+    @AppStorage("alertsPayday") private var paydayAlerts = true
     @AppStorage("alertsLargeAt") private var largeAt = 300
 
     var body: some View {
@@ -126,6 +127,10 @@ struct SettingsView: View {
                             ForEach([100, 200, 300, 500, 1_000], id: \.self) { Text(Money.short($0 * 100)).tag($0) }
                         }
                     }
+                    Toggle(isOn: $paydayAlerts) {
+                        row("Payday: move savings", icon: "banknote.fill", color: .green, chevron: false)
+                    }
+                    .tint(Theme.accent)
                     Toggle(isOn: $weeklySummary) {
                         row("Weekly summary", icon: "calendar", color: .blue, chevron: false)
                     }

@@ -101,6 +101,7 @@ jobs:
             shot $mode 1e-cover -demo -tab budget -open cover
             shot $mode 1f-savings -demo -tab budget -open savings
             shot $mode 1g-rebalance -demo -tab budget -open rebalance
+            shot $mode 1h-extra-income -demo -tab budget -open extra
             shot $mode 2-accounts -demo -tab accounts
             shot $mode 2b-transactions -demo -tab transactions
             shot $mode 3-settings -demo -tab settings

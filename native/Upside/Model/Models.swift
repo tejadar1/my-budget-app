@@ -169,6 +169,11 @@ struct Category: Identifiable, Codable, Hashable {
     var isHidden: Bool = false
     /// Unspent money carries into next month's limit, from this month on.
     var rolloverSince: Date? = nil
+    /// Where you want this limit to end up. The limit steps 10% a month
+    /// toward it, from close to what you really spend.
+    var goalLimit: Cents? = nil
+    /// The month the limit last stepped; it steps once for each month after.
+    var steppedThrough: Date? = nil
 
     /// The Minimize bundle: spending you want at $0 (fees, interest).
     var aimsForZero: Bool { group == Category.avoidGroup }
@@ -187,6 +192,9 @@ struct SavingsPlan: Codable, Equatable {
     /// Last month's unspent money given a job this month. It comes from
     /// last month, so it's added back: this month's spending money stays put.
     var carriedIn: Cents? = nil
+    /// Income above the plan that you've given a job (saved, cards or
+    /// spending). Extra income waits for a decision before it's spendable.
+    var extraIncomeUsed: Cents? = nil
 }
 
 struct CategoryGroup: Identifiable {
@@ -242,7 +250,17 @@ struct BudgetData: Codable {
     var trips: [Trip] = []
     var bankConnected = false
     var lastBankSync: Date?
-    var plan: SavingsPlan?
+    var plan: SavingsPlan? {
+        didSet {
+            // Keep last month's plan when this month's replaces it, so last
+            // month still adds up: its extra savings, covers and leftovers.
+            if let old = oldValue, let new = plan,
+               !Calendar.current.isDate(old.month, equalTo: new.month, toGranularity: .month) {
+                previousPlan = old
+            }
+        }
+    }
+    var previousPlan: SavingsPlan?
     /// Alerts already sent ("2026-11:dining:80"), so each goes out once.
     /// Optional so budgets saved by older versions still load.
     var alertsSent: [String]?

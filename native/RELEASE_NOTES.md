@@ -2,8 +2,15 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next (0.31.1)
-- Rebalance (and Use recommended limits) is now a big green button you can't miss, with what it does underneath.
+## 0.32: Save first, plan realistically
+- Extra income waits for a job. A bonus, overtime or a third paycheck no longer turns into spending money on its own. Needs attention says "$1,700 more came in than planned", and saving it is the first choice; you can also put it toward cards or add it to spending money.
+- Payday reminder: when a paycheck lands and this month's savings aren't done, you get "Payday: move $750 to savings", that paycheck's share. Turn it off in Settings › Alerts.
+- Savings is protected. Fix it for me trims trips and card paydown but no longer cuts savings; if that isn't enough, it says how much is still short.
+- Plan vs. what you usually spend: when your usual everyday spending is more than you have to spend, Plan says by how much and offers to put less toward trips.
+- Step down to a goal. A limit far under what you usually spend ("Usual $3,099: a big cut") can step down instead: it starts 10% under your usual and drops 10% each month you stay within it, until it reaches your goal. A month over repeats the step.
+- Clearer labels in Plan: "This month only" for covers and money already spent; "changed from here on" for changes that carry into next month.
+- Rebalance is a big green button.
+- Last month's plan is kept when this month's starts, so last month's extra savings, covers and leftovers still add up in its recap and wrap-up.
 
 ## 0.31: Plan, adjust, look back
 - Plan the month at the start: the month-end wrap-up now ends with "Plan November". That save is the month's plan. Without it, changes on the 1st–5th still count as planning.

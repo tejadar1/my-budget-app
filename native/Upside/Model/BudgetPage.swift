@@ -10,6 +10,8 @@ extension BudgetStore {
         case over(categoryId: String, amount: Cents)
         /// Several categories over: rebalance them in one go.
         case rebalance(categories: Int, amount: Cents)
+        /// Income above the plan waiting for a job.
+        case extraIncome(amount: Cents)
         /// Last month's check-in, with this many decisions left.
         case checkIn(decisions: Int)
         /// Purchases sorted on a hunch.
@@ -22,6 +24,7 @@ extension BudgetStore {
             case .bank: "bank"
             case .over(let id, _): "over-\(id)"
             case .rebalance: "rebalance"
+            case .extraIncome: "extra-income"
             case .checkIn: "checkin"
             case .toCheck: "check"
             case .limitsOver: "limits"
@@ -40,6 +43,8 @@ extension BudgetStore {
         } else if let one = overs.first {
             items.append(.over(categoryId: one.id, amount: one.over))
         }
+        let extra = monthPlan(currentMonth).extraIncome
+        if extra >= 5_000 { items.append(.extraIncome(amount: extra)) }
         if let check = monthCheckIn() {
             let decisions = [check.savingsShort, check.cardsShort, check.unspent, check.overspent].filter { $0 > 0 }.count
             items.append(.checkIn(decisions: decisions))

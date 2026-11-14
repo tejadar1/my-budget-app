@@ -28,6 +28,10 @@ struct PlanView: View {
     /// Limits a recommendation raised only to cover what's already spent:
     /// shown dollars → the standing limit to keep for next months.
     @State private var thisMonthOnly: [String: (shown: Int, standing: Cents?)] = [:]
+    /// Categories to start stepping down on Save: id → goal (dollars).
+    @State private var stepGoals: [String: Int] = [:]
+    /// Categories to stop stepping down on Save.
+    @State private var stopSteps: Set<String> = []
 
     private var month: Date { store.currentMonth }
 
@@ -88,6 +92,7 @@ struct PlanView: View {
                 overIncomeSection(n)
                 incomeSection(n)
                 prioritiesSection(n).id("priorities")
+                realitySection(n)
                 limitsSection(n)
                 shortSection(n)
                 spareSection(n)
@@ -230,6 +235,11 @@ struct PlanView: View {
                              covered: (limits[c.id] == loadedLimits[c.id] && store.plannedLimit(c, in: month) != c.limit)
                                 || (thisMonthOnly[c.id].map { $0.shown == limits[c.id] } ?? false),
                              planned: plannedLabel(c.id, snapshot),
+                             stepNote: stepNote(c),
+                             bigCut: stepGoal(c) == nil && store.isBigCut(limits[c.id] ?? 0, for: c)
+                                 ? "Usual \(Money.short(store.averageSpent(c.id, before: month) ?? 0)): a big cut" : nil,
+                             onStep: { startStep(c) },
+                             onStopStep: { stepGoals[c.id] = nil; stopSteps.insert(c.id) },
                              dollars: Binding(get: { limits[c.id] ?? 0 }, set: { limits[c.id] = max(0, $0) }))
             }
         } header: {
@@ -239,6 +249,57 @@ struct PlanView: View {
                 if let fixNote { Text(fixNote).foregroundStyle(Theme.accent) }
                 Text(limitsFooter(n))
                     .foregroundStyle(n.total <= n.toSpend ? Color.secondary : Theme.over)
+            }
+        }
+    }
+
+    /// The goal a category is stepping down to (dollars), counting
+    /// changes not saved yet.
+    private func stepGoal(_ c: Category) -> Int? {
+        if let staged = stepGoals[c.id] { return staged }
+        return stopSteps.contains(c.id) ? nil : c.goalLimit.map { $0 / 100 }
+    }
+
+    private func stepNote(_ c: Category) -> String? {
+        guard let goal = stepGoal(c) else { return nil }
+        var limit = (limits[c.id] ?? 0) * 100, months = 0
+        while limit > goal * 100 && months < 60 {
+            limit = max(goal * 100, BudgetStore.round10(Double(limit) * BudgetStore.stepShare))
+            months += 1
+        }
+        return months == 0 ? "At its goal" : "Steps down to \(Money.short(goal * 100)) · about \(months) month\(months == 1 ? "" : "s")"
+    }
+
+    /// Keep the goal you typed, but start this month near what you usually
+    /// spend; it drops 10% each month you stay within it.
+    private func startStep(_ c: Category) {
+        let goal = limits[c.id] ?? 0
+        let usual = store.averageSpent(c.id, before: month) ?? goal * 100
+        let start = max(goal * 100, BudgetStore.round10(Double(usual) * BudgetStore.stepShare), store.spentFloor(c, in: month))
+        stopSteps.remove(c.id)
+        withAnimation {
+            stepGoals[c.id] = goal
+            limits[c.id] = start / 100
+        }
+    }
+
+    /// With savings kept, does your usual spending fit? If not, say by how
+    /// much and offer the ways that don't touch savings.
+    @ViewBuilder private func realitySection(_ n: Numbers) -> some View {
+        let gap = store.realityGap(toSpend: n.toSpend)
+        if gap >= 5_000 && n.toSpend > 0 {
+            Section {
+                Text("You usually spend \(Money.short(gap)) more on everyday things than you have to spend, with savings kept at \(Money.short(savings * 100)).")
+                    .font(.subheadline)
+                if trips > 10 {
+                    let less = min(trips - 10, (gap + 99) / 100)
+                    Button("Put \(Money.short(less * 100)) less toward trips") { withAnimation { trips -= less } }
+                }
+                Text("Or step down the biggest cuts below: each starts near what you usually spend and drops 10% a month you stay within it.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            } header: {
+                Label("Plan vs. what you usually spend", systemImage: "scalemass.fill")
+                    .foregroundStyle(Theme.warning).textCase(nil).font(.subheadline.weight(.semibold))
             }
         }
     }
@@ -302,7 +363,8 @@ struct PlanView: View {
         }
         take(&trips, "for trips", keep: 10)
         take(&paydown, "on cards")
-        take(&savings, "saved")
+        // Savings is protected: say what's left instead of cutting it.
+        if gap > 0 { parts.append("still \(Money.short(gap * 100)) short: step down a big cut, or lower savings yourself") }
         withAnimation { limits = deeper }
         fixNote = parts.isEmpty ? nil : "Fixed: " + parts.joined(separator: ", ") + ". Tap Save to keep it."
     }
@@ -412,6 +474,8 @@ struct PlanView: View {
                                            plannedIncome: !useUsual && plannedIncome > 0 ? plannedIncome * 100 : nil)
         store.savePlanLimits(limits, loaded: loadedLimits, extra: extra * 100, in: month,
                              thisMonthOnly: thisMonthOnly, planning: mode == .planning)
+        for id in stopSteps { store.stopStepDown(id) }
+        for (id, goal) in stepGoals { store.stepDown(id, to: goal * 100) }
         if trips > 0 {
             let fund = store.data.tripFund
             store.data.tripFund = TripFund(monthly: trips * 100, start: fund?.start ?? month,
@@ -441,6 +505,12 @@ private struct LimitPlanRow: View {
     var covered = false
     /// What the month's plan had, when this month's limit was adjusted.
     var planned: String? = nil
+    /// "Steps down to $1,120 · about 9 months".
+    var stepNote: String? = nil
+    /// "Usual $3,099: a big cut", for a limit far under your usual.
+    var bigCut: String? = nil
+    var onStep: (() -> Void)? = nil
+    var onStopStep: (() -> Void)? = nil
     @Binding var dollars: Int
 
     var body: some View {
@@ -452,9 +522,26 @@ private struct LimitPlanRow: View {
                 Text(recommended.map { "\(base) → \(Money.short($0))" } ?? base)
                     .font(.caption).foregroundStyle(.secondary).monospacedDigit()
                 if let planned {
-                    Text("Planned \(planned) · adjusted for this month").font(.caption).foregroundStyle(Theme.accent)
+                    // Covers and raises for money already spent end with the
+                    // month; other changes carry into next month.
+                    Text(covered ? "Planned \(planned) · this month only" : "Planned \(planned) · changed from here on")
+                        .font(.caption).foregroundStyle(Theme.accent)
                 } else if covered {
-                    Text("Adjusted for this month").font(.caption).foregroundStyle(Theme.accent)
+                    Text("This month only").font(.caption).foregroundStyle(Theme.accent)
+                }
+                if let stepNote {
+                    HStack(spacing: 8) {
+                        Label(stepNote, systemImage: "chart.line.downtrend.xyaxis").font(.caption).foregroundStyle(Theme.accent)
+                        if let onStopStep {
+                            Button("Stop", action: onStopStep).font(.caption.weight(.semibold)).buttonStyle(.borderless)
+                        }
+                    }
+                } else if let bigCut {
+                    Text(bigCut).font(.caption).foregroundStyle(Theme.warning)
+                    if let onStep {
+                        Button("Step down to it instead", action: onStep)
+                            .font(.caption.weight(.semibold)).buttonStyle(.borderless).tint(Theme.accent)
+                    }
                 }
             }
             Spacer()

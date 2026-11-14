@@ -927,6 +927,74 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(Money.signed(2_000), "+$20.00", "money in has a plus")
     }
 
+    func testExtraIncomeWaitsForAJobAndSavingIsOfferedFirst() {
+        let store = makeStore()
+        let month = store.currentMonth
+        store.data.priorities = Priorities(savings: 100_000, cardPaydown: 0,
+                                           plannedIncome: store.income(in: month) + 100_000)
+        let before = store.monthPlan(month)
+        store.data.transactions.append(Transaction(id: "bonus", accountId: "r", date: date(2026, 10, 14), amount: 300_000,
+                                                   payee: "ACME BONUS", categoryId: "income"))
+        let waiting = store.monthPlan(month)
+        XCTAssertEqual(waiting.extraIncome, 200_000, "$3,000 in, $1,000 of it was expected")
+        XCTAssertEqual(waiting.toSpend, before.toSpend, "not spending money until it has a job")
+        XCTAssertTrue(store.attention().contains(.extraIncome(amount: 200_000)))
+
+        store.useExtraIncome(200_000, as: .savings)
+        let saved = store.monthPlan(month)
+        XCTAssertEqual(saved.extraIncome, 0)
+        XCTAssertEqual(saved.savings, before.savings + 200_000)
+        XCTAssertEqual(saved.toSpend, before.toSpend, "saving it leaves spending money as it was")
+
+        store.data.transactions.append(Transaction(id: "ot", accountId: "r", date: date(2026, 10, 14), amount: 50_000,
+                                                   payee: "ACME BONUS", categoryId: "income"))
+        store.useExtraIncome(50_000, as: .keep)
+        XCTAssertEqual(store.monthPlan(month).toSpend, before.toSpend + 50_000)
+    }
+
+    func testPaydayReminderMovesThisPaychecksShareOnce() {
+        let store = makeStore()
+        store.data.priorities = Priorities(savings: 1_000_000, cardPaydown: 0, plannedIncome: 4_000_000)
+        store.data.transactions.append(Transaction(id: "pay", accountId: "r", date: date(2026, 10, 14), amount: 2_000_000,
+                                                   payee: "ACME PAYROLL", categoryId: "income"))
+        // Half the month's income arrived: move half the month's savings.
+        let reminder = store.paydayReminder()
+        XCTAssertEqual(reminder?.title, "Payday: move $5,000 to savings")
+        store.markAlertsSent(reminder?.keys ?? [])
+        XCTAssertNil(store.paydayReminder(), "once per paycheck")
+    }
+
+    func testLimitsStepDownTowardTheGoalOnlyAfterAMonthWithinIt() {
+        let store = makeStore()
+        // Groceries usually $700; the goal is $300.
+        store.stepDown("groceries", to: 30_000)
+        XCTAssertEqual(store.category("groceries")!.limit, 63_000, "starts 10% under the usual")
+        XCTAssertEqual(store.stepsToGoal(store.category("groceries")!), 7)
+
+        // October stayed within $630 → November steps down 10%.
+        store.now = { self.date(2026, 11, 15) }
+        store.stepLimits()
+        XCTAssertEqual(store.category("groceries")!.limit, 57_000)
+
+        // November went over → December repeats the step.
+        store.data.transactions.append(Transaction(id: "big", accountId: "r", date: date(2026, 11, 20), amount: -60_000,
+                                                   payee: "Costco", categoryId: "groceries"))
+        store.now = { self.date(2026, 12, 15) }
+        store.stepLimits()
+        XCTAssertEqual(store.category("groceries")!.limit, 57_000)
+        XCTAssertEqual(store.category("groceries")!.goalLimit, 30_000)
+    }
+
+    func testLastMonthsPlanIsKeptWhenThisMonthsReplacesIt() {
+        let store = makeStore()
+        let october = store.currentMonth
+        store.data.plan = SavingsPlan(month: october, goal: 20_000, limits: ["dining": 10_000])
+        store.now = { self.date(2026, 11, 3) }
+        store.useExtraIncome(1, as: .keep)  // makes November's plan
+        XCTAssertEqual(store.monthPlan(october).savingsExtra, 20_000, "October's extra savings still counts for October")
+        XCTAssertEqual(store.plannedLimit(store.category("dining")!, in: october), 10_000)
+    }
+
     func testUsualPayIgnoresOvertimeAndTheSocialSecurityBump() {
         let store = makeStore()
         store.data.accounts.append(Account(id: "w", name: "Checking", institution: "Chase",

@@ -176,6 +176,58 @@ struct AnyPrimitiveButtonStyle: PrimitiveButtonStyle {
     func makeBody(configuration: Configuration) -> some View { make(configuration) }
 }
 
+// MARK: - Extra income
+
+/// More came in than planned (a bonus, overtime, a third paycheck). It
+/// isn't spending money until you say so; saving it is offered first.
+struct ExtraIncomeSheet: View {
+    @Environment(BudgetStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        let plan = store.monthPlan(store.currentMonth)
+        let amount = plan.extraIncome
+        let text = Money.short(amount)
+        let month = store.currentMonth.formatted(.dateTime.month(.wide))
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                Image(systemName: "dollarsign.circle").font(.system(size: 40)).foregroundStyle(Theme.accent)
+                Text("\(text) more came in than planned").font(.title2.bold())
+                Text("\(month)’s plan counted on \(Money.short(plan.income)). \(Money.short(plan.incomeReceived)) has come in so far. The extra isn’t in your spending money yet. Give it a job:")
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 12)
+                choice("Save \(text)", note: "Adds it to \(month)’s savings.", prominent: true) {
+                    store.useExtraIncome(amount, as: .savings)
+                }
+                if store.cardsOwed > 0 {
+                    choice("Put it toward cards", note: nil) { store.useExtraIncome(amount, as: .cards) }
+                }
+                choice("Add it to spending money", note: nil) { store.useExtraIncome(amount, as: .keep) }
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(Color(.systemGroupedBackground))
+            .navigationTitle("Extra income")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Later") { dismiss() } } }
+        }
+    }
+
+    private func choice(_ title: String, note: String?, prominent: Bool = false, action: @escaping () -> Void) -> some View {
+        VStack(spacing: 6) {
+            Button {
+                action()
+                dismiss()
+            } label: {
+                Text(title).font(.headline).frame(maxWidth: .infinity, minHeight: 34)
+            }
+            .buttonStyle(prominent ? AnyPrimitiveButtonStyle(.borderedProminent) : AnyPrimitiveButtonStyle(.bordered))
+            .tint(Theme.accent)
+            if let note { Text(note).font(.footnote).foregroundStyle(.secondary) }
+        }
+    }
+}
+
 // MARK: - Cover
 
 /// One category went over: move room from another for this month only.

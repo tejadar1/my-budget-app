@@ -124,7 +124,7 @@ extension BudgetStore {
         }
         // Keep what last month's leftover was put toward.
         let existing = data.plan.flatMap { isInMonth($0.month, month) ? $0 : nil }
-        let carried = (existing?.carriedIn ?? 0) > 0 || (existing?.cardExtra ?? 0) > 0
+        let carried = (existing?.carriedIn ?? 0) > 0 || (existing?.cardExtra ?? 0) > 0 || (existing?.extraIncomeUsed ?? 0) > 0
         if extra > 0 || !kept.isEmpty || carried {
             var plan = existing ?? SavingsPlan(month: month, goal: 0, limits: [:])
             plan.goal = extra

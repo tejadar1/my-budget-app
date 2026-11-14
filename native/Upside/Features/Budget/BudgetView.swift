@@ -106,6 +106,7 @@ struct BudgetView: View {
                 case .checkIn: CheckInSheet { then(.planning) }
                 case .cover(let id): CoverSheet(categoryId: id, month: store.currentMonth) { then(.plan) }
                 case .bank: BankSheet()
+                case .extraIncome: ExtraIncomeSheet()
                 case .recap(let month): RecapView(month: month)
                 case .purchase(let id): TransactionSheet(transactionId: id)
                 }
@@ -126,6 +127,7 @@ struct BudgetView: View {
         case .over(let id, _): sheet = .cover(id)
         case .rebalance: sheet = .rebalance
         case .checkIn: sheet = .checkIn
+        case .extraIncome: sheet = .extraIncome
         case .toCheck: path.append(Route.review)
         case .limitsOver: sheet = .plan
         }
@@ -152,6 +154,7 @@ struct BudgetView: View {
         case "savings": sheet = .savings(store.currentMonth)
         case "checkin": sheet = .checkIn
         case "bank": sheet = .bank
+        case "extra": sheet = .extraIncome
         case "cover":
             let id = open.id.isEmpty ? store.overruns(in: store.currentMonth).first?.id : open.id
             sheet = id.map { .cover($0) }
@@ -168,7 +171,7 @@ struct BudgetView: View {
 }
 
 enum BudgetSheet: Identifiable, Hashable {
-    case plan, limits, checkIn, bank
+    case plan, limits, checkIn, bank, extraIncome
     /// Plan opened from the month's wrap-up: saving makes the month's plan.
     case planning
     /// Plan opened to cover several overspent categories at once.
@@ -364,6 +367,11 @@ struct AttentionList: View {
             ListRow(title: "\(count) categories are \(Money.short(amount)) over",
                     subtitle: "Rebalance the rest of the month") {
                 SymbolIcon(symbol: "arrow.left.arrow.right", color: .red)
+            }
+        case .extraIncome(let amount):
+            ListRow(title: "\(Money.short(amount)) more came in than planned",
+                    subtitle: "Give it a job before it gets spent") {
+                SymbolIcon(symbol: "dollarsign.circle.fill", color: Theme.accent)
             }
         case .checkIn(let decisions):
             let name = store.month(-1, from: store.currentMonth).formatted(.dateTime.month(.wide))

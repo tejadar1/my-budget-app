@@ -30,6 +30,8 @@ struct MonthPlan: Equatable {
     var fundedByGoals: Cents = 0
     /// Last month's leftover put toward savings or cards this month.
     var carriedIn: Cents = 0
+    /// Income above the plan still waiting for a job. Not spendable yet.
+    var extraIncome: Cents = 0
 
     var bills: Cents { billsPaid + billsDue }
     var toSpend: Cents { income + carriedIn - bills + fundedByGoals - savings - cardPaydown - trips - goals + rolledIn }
@@ -89,16 +91,20 @@ extension BudgetStore {
             .map { limit($0, in: month) ?? averageSpent($0.id, before: month) ?? 0 }.reduce(0, +)
         let planned = isCurrent ? data.priorities?.plannedIncome : nil
         let expected = Self.incomeToPlanOn(planned: planned, usual: usualIncome)
+        let monthsPlan = plan(for: month)
+        // Pay yourself first: income above the plan isn't spending money
+        // until you give it a job (Needs attention asks).
+        let used = monthsPlan?.extraIncomeUsed ?? 0
         return MonthPlan(
-            income: isCurrent ? max(actualIncome, expected) : actualIncome,
+            income: isCurrent ? expected + min(used, max(0, actualIncome - expected)) : actualIncome,
             incomeIsUsual: isCurrent && planned == nil && usualIncome > actualIncome,
             incomePlanned: planned,
             incomeReceived: actualIncome,
             billsPaid: billsPaid,
             billsDue: billsDue,
-            savings: (data.priorities?.savings ?? 0) + (plan.map { isInMonth($0.month, month) ? $0.goal : 0 } ?? 0),
-            savingsExtra: plan.map { isInMonth($0.month, month) ? $0.goal : 0 } ?? 0,
-            cardPaydown: (data.priorities?.cardPaydown ?? 0) + (plan.flatMap { isInMonth($0.month, month) ? $0.cardExtra : nil } ?? 0),
+            savings: (data.priorities?.savings ?? 0) + (monthsPlan?.goal ?? 0),
+            savingsExtra: monthsPlan?.goal ?? 0,
+            cardPaydown: (data.priorities?.cardPaydown ?? 0) + (monthsPlan?.cardExtra ?? 0),
             trips: tripSetAside(in: month),
             everydaySpent: totalSpent(in: month) - billsPaid,
             everydayLimits: everydayLimits,
@@ -106,7 +112,8 @@ extension BudgetStore {
             rolledIn: everydayCategories.reduce(0) { $0 + rolledIn($1, to: month) },
             goals: goalsSetAside(in: month),
             fundedByGoals: goalFundedCategories.reduce(0) { $0 + spent($1, in: month) },
-            carriedIn: plan.flatMap { isInMonth($0.month, month) ? $0.carriedIn : nil } ?? 0)
+            carriedIn: monthsPlan?.carriedIn ?? 0,
+            extraIncome: isCurrent ? max(0, actualIncome - expected - used) : 0)
     }
 
     /// Lowers everyday limits so they fit what there is to spend, taking

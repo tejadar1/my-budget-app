@@ -364,9 +364,7 @@ final class BudgetStore {
 
     /// The limit as planned (yours, or this month's cover), before rollover.
     func plannedLimit(_ category: Category, in month: Date) -> Cents? {
-        if let plan = data.plan, isInMonth(plan.month, month), let lowered = plan.limits[category.id] {
-            return lowered
-        }
+        if let lowered = plan(for: month)?.limits[category.id] { return lowered }
         return category.limit
     }
 
@@ -526,9 +524,13 @@ final class BudgetStore {
     /// The most a plan will cut from a category without you choosing to skip it.
     static let maxCutShare = 0.6
 
-    var plan: SavingsPlan? {
-        guard let plan = data.plan, isInMonth(plan.month, currentMonth) else { return nil }
-        return plan
+    var plan: SavingsPlan? { plan(for: currentMonth) }
+
+    /// The plan for a month: this month's, or last month's kept copy.
+    func plan(for month: Date) -> SavingsPlan? {
+        if let plan = data.plan, isInMonth(plan.month, month) { return plan }
+        if let plan = data.previousPlan, isInMonth(plan.month, month) { return plan }
+        return nil
     }
 
     /// What a category normally gets: your usual spending, else its limit.

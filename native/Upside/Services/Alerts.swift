@@ -16,6 +16,7 @@ enum Alerts {
     static var billsOn: Bool { UserDefaults.standard.object(forKey: "alertsBills") as? Bool ?? true }
     static var lowBalanceOn: Bool { UserDefaults.standard.object(forKey: "alertsLowBalance") as? Bool ?? true }
     static var largeOn: Bool { UserDefaults.standard.object(forKey: "alertsLarge") as? Bool ?? true }
+    static var paydayOn: Bool { UserDefaults.standard.object(forKey: "alertsPayday") as? Bool ?? true }
     /// Dollars; picked in Settings.
     static var lowBalanceThreshold: Cents { (UserDefaults.standard.object(forKey: "alertsLowBalanceAt") as? Int ?? 500) * 100 }
     static var largeThreshold: Cents { (UserDefaults.standard.object(forKey: "alertsLargeAt") as? Int ?? 300) * 100 }
@@ -60,6 +61,11 @@ enum Alerts {
                            body: "A bigger purchase than usual, in \(category).")
             }
             store.markAlertsSent(large.map { "large-\($0.id)" })
+        }
+
+        if paydayOn, let payday = store.paydayReminder() {
+            await post(id: payday.keys[0], title: payday.title, body: payday.body)
+            store.markAlertsSent(payday.keys)
         }
 
         if weeklyOn, isSummaryDue(now: now, calendar: store.calendar) {

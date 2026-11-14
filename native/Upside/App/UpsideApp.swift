@@ -91,7 +91,7 @@ struct RootView: View {
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .active: Task {
-                if !store.isDemo { store.creditGoals() }
+                if !store.isDemo { store.creditGoals(); store.stepLimits() }
                 await autoSync()
                 // Pick up the other phone's changes each time Upside opens.
                 await CloudSync.shared.pull()
