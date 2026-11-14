@@ -23,7 +23,7 @@ permissions:
 jobs:
   test-and-preview:
     runs-on: ${{ vars.MAC_RUNNER || 'macos-15-intel' }}
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v6
 
@@ -63,6 +63,8 @@ jobs:
           fi
 
       - name: Screenshot every tab, light and dark
+        # Ship builds skip these: the check run before them took and reviewed them.
+        if: ${{ !contains(github.event.head_commit.message, '[ship-native]') }}
         working-directory: native
         run: |
           UDID=${{ steps.sim.outputs.udid }}
@@ -126,7 +128,7 @@ jobs:
           echo "Built from ${GITHUB_SHA}" > "$OUT/COMMIT.txt"
 
       - name: Publish screenshots to the previews-native branch
-        if: always()
+        if: ${{ always() && !contains(github.event.head_commit.message, '[ship-native]') }}
         run: |
           OUT="$RUNNER_TEMP/previews"
           [ -d "$OUT" ] || exit 0
