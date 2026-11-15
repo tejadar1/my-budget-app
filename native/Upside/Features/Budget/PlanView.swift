@@ -221,8 +221,7 @@ struct PlanView: View {
                         fixForMe(n)
                     }
                 } label: {
-                    Label(!fits ? "Make limits fit" : adjusting ? "Rebalance the rest of \(monthName)" : "Use recommended limits",
-                          systemImage: !fits ? "wand.and.stars" : adjusting ? "arrow.left.arrow.right" : "wand.and.stars")
+                    Text(!fits ? "Make limits fit" : adjusting ? "Rebalance the rest of \(monthName)" : "Use recommended limits")
                         .font(.headline)
                         .frame(maxWidth: .infinity, minHeight: 44)
                 }
