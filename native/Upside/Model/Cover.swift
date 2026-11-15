@@ -18,6 +18,58 @@ extension BudgetStore {
 
     static let unassigned = "unassigned"
 
+    struct CoverMove: Equatable {
+        var to: String
+        /// A category id, or `unassigned` for money no limit uses.
+        var from: String
+        var amount: Cents
+    }
+
+    /// Covers every category past its limit for this month only, the way
+    /// you'd do it by hand: from money no limit uses first, then from the
+    /// categories with the most room left. Nothing else changes: no other
+    /// limit, no savings, cards or trips. Covered categories end at $0 left,
+    /// so running it again does nothing. What can't be covered is reported,
+    /// not hidden: it's how far the month went past the plan.
+    static func coverOverspending(limits: [String: Cents], spent: [String: Cents], unused: Cents)
+        -> (limits: [String: Cents], moves: [CoverMove], uncovered: Cents) {
+        var limits = limits
+        var spare = max(0, unused)
+        var moves: [CoverMove] = []
+        var uncovered: Cents = 0
+        let overs = limits.compactMap { id, limit -> (String, Cents)? in
+            let over = (spent[id] ?? 0) - limit
+            return limit > 0 && over > 0 ? (id, (over + 99) / 100 * 100) : nil
+        }
+        .sorted { $0.1 != $1.1 ? $0.1 > $1.1 : $0.0 < $1.0 }
+        let overIds = Set(overs.map(\.0))
+        for (id, over) in overs {
+            var need = over
+            let fromSpare = min(spare, need)
+            if fromSpare > 0 {
+                spare -= fromSpare; need -= fromSpare
+                limits[id, default: 0] += fromSpare
+                moves.append(CoverMove(to: id, from: Self.unassigned, amount: fromSpare))
+            }
+            while need > 0 {
+                // Room is what's left in a limit, in whole dollars.
+                let rooms = limits.compactMap { sid, limit -> (String, Cents)? in
+                    guard !overIds.contains(sid), limit > 0 else { return nil }
+                    let room = (limit - (spent[sid] ?? 0)) / 100 * 100
+                    return room > 0 ? (sid, room) : nil
+                }
+                guard let (sid, room) = rooms.max(by: { $0.1 != $1.1 ? $0.1 < $1.1 : $0.0 > $1.0 }) else { break }
+                let take = min(room, need)
+                limits[sid, default: 0] -= take
+                limits[id, default: 0] += take
+                need -= take
+                moves.append(CoverMove(to: id, from: sid, amount: take))
+            }
+            uncovered += need
+        }
+        return (limits, moves, uncovered)
+    }
+
     /// The limit as planned before this month's adjustments (covers,
     /// re-balancing, edits once spending started), plus any rollover.
     /// Month-end looks at this.

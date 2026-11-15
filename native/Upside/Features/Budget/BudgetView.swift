@@ -365,7 +365,7 @@ struct AttentionList: View {
             }
         case .rebalance(let count, let amount):
             ListRow(title: "\(count) categories are \(Money.short(amount)) over",
-                    subtitle: "Rebalance the rest of the month") {
+                    subtitle: "Cover them for this month only") {
                 SymbolIcon(symbol: "arrow.left.arrow.right", color: .red)
             }
         case .extraIncome(let amount):

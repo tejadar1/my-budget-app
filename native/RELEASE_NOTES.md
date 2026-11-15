@@ -2,6 +2,13 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.32.3)
+- Plan works the way you budget: you set the limits; during the month you only cover overspending.
+- While planning the month (from the wrap-up, the first days of the month, or before anything's spent): "Start from what you usually spend" fills the limits, fit to what you have.
+- Once the month is underway, the one button is "Cover overspending", shown only when a category is over. It raises each one for this month only, from money not in a limit and then from categories with room left, and lists exactly what moved. Nothing else changes: not your other limits, not savings, cards or trips. Pressing it again does nothing.
+- If there isn't room to cover it all, it says how far the month is past the plan instead of trimming things you chose.
+- Gone: "Make limits fit" and "Rebalance the rest of the month", which recalculated every limit.
+
 ## 0.32.2: Better guesses
 - Better guesses for stores Upside doesn't know (your Robinhood card sends no categories). It reads the name: "Frankies Dogs" → Dining, "Etix Ticket" → Entertainment, "Zeffy" → Gifts, plus words from stores you've already sorted. Old "Shopping?" guesses get another look.
 - When there's truly nothing to go on, Check these asks "Choose a category" instead of guessing Shopping.

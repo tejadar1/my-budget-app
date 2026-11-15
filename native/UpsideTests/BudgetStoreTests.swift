@@ -1118,6 +1118,32 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertFalse(store.wasAdjusted(store.category("groceries")!, in: store.currentMonth))
     }
 
+    func testCoverOverspendingMovesOnlyWhatsNeededAndIsSafeToRepeat() {
+        // Dining $100 over, Kids $50 over (no room anywhere but groceries).
+        let limits: [String: Cents] = ["dining": 50_000, "kids": 10_000, "groceries": 60_000, "gas": 20_000]
+        let spent: [String: Cents] = ["dining": 60_000, "kids": 15_000, "groceries": 40_000, "gas": 19_950]
+        let first = BudgetStore.coverOverspending(limits: limits, spent: spent, unused: 3_000)
+        XCTAssertEqual(first.moves, [
+            .init(to: "dining", from: BudgetStore.unassigned, amount: 3_000),
+            .init(to: "dining", from: "groceries", amount: 7_000),
+            .init(to: "kids", from: "groceries", amount: 5_000),
+        ])
+        XCTAssertEqual(first.limits["dining"], 60_000)
+        XCTAssertEqual(first.limits["kids"], 15_000)
+        XCTAssertEqual(first.limits["groceries"], 48_000)
+        XCTAssertEqual(first.limits["gas"], 20_000, "categories not involved don't move")
+        XCTAssertEqual(first.uncovered, 0)
+
+        // Pressing it again changes nothing.
+        let again = BudgetStore.coverOverspending(limits: first.limits, spent: spent, unused: 0)
+        XCTAssertEqual(again.limits, first.limits)
+        XCTAssertTrue(again.moves.isEmpty)
+
+        // No room anywhere: say how far past the plan, don't hide it.
+        let stuck = BudgetStore.coverOverspending(limits: ["dining": 50_000], spent: ["dining": 60_000], unused: 0)
+        XCTAssertEqual(stuck.uncovered, 10_000)
+    }
+
     func testBudgetPageListsWhatNeedsYouAndMostUsedCategoriesFirst() {
         let store = makeStore()
         store.setLimit("shopping", 24_000)
