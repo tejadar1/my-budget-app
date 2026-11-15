@@ -25,6 +25,10 @@ struct PlanView: View {
     @State private var confirmOver = false
     /// What "Fix it for me" did, shown until the next change.
     @State private var fixNote: String?
+    /// Where the last fix was made (its result shows right there) and what
+    /// to put back on Undo.
+    @State private var fixAtTop = false
+    @State private var undo: (limits: [String: Int], trips: Int, paydown: Int)?
     /// Limits a recommendation raised only to cover what's already spent:
     /// shown dollars → the standing limit to keep for next months.
     @State private var thisMonthOnly: [String: (shown: Int, standing: Cents?)] = [:]
@@ -209,7 +213,13 @@ struct PlanView: View {
             let fits = n.total <= n.toSpend
             VStack(spacing: 8) {
                 Button {
-                    if fits { withAnimation { limits = dollars(n.recommended) } } else { fixForMe(n) }
+                    remember(atTop: false)
+                    if fits {
+                        withAnimation { limits = dollars(n.recommended) }
+                        fixNote = "Limits set from what you usually spend. Tap Save to keep it."
+                    } else {
+                        fixForMe(n)
+                    }
                 } label: {
                     Label(!fits ? "Make limits fit" : adjusting ? "Rebalance the rest of \(monthName)" : "Use recommended limits",
                           systemImage: !fits ? "wand.and.stars" : adjusting ? "arrow.left.arrow.right" : "wand.and.stars")
@@ -224,6 +234,7 @@ struct PlanView: View {
                      : adjusting ? "Covers what’s already spent and fits the rest to what’s left."
                      : "Based on what you usually spend, fit to what you have.")
                     .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                if !fixAtTop { fixResult(n) }
             }
             .padding(.vertical, 4)
             .listRowSeparator(.hidden)
@@ -250,7 +261,6 @@ struct PlanView: View {
             Text("Everyday limits")
         } footer: {
             VStack(alignment: .leading, spacing: 6) {
-                if let fixNote { Text(fixNote).foregroundStyle(Theme.accent) }
                 Text(limitsFooter(n))
                     .foregroundStyle(n.total <= n.toSpend ? Color.secondary : Theme.over)
             }
@@ -301,6 +311,7 @@ struct PlanView: View {
                         Label("Make it fit", systemImage: "wand.and.stars").fontWeight(.semibold)
                     }
                 }
+                if fixAtTop { fixResult(n) }
             } header: {
                 Label("\(Money.short(over * 100)) more than you make", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(Theme.over).textCase(nil).font(.subheadline.weight(.semibold))
@@ -325,9 +336,44 @@ struct PlanView: View {
         }
     }
 
+    private func remember(atTop: Bool) {
+        undo = (limits, trips, paydown)
+        fixAtTop = atTop
+    }
+
+    /// Right under the button you pressed: where you ended up, what
+    /// changed, and Undo.
+    @ViewBuilder private func fixResult(_ n: Numbers) -> some View {
+        if let fixNote {
+            let fits = n.toSpend >= 0 && n.total <= n.toSpend
+            VStack(alignment: .leading, spacing: 6) {
+                Label(fits ? "Fits: limits \(Money.short(n.total)) of \(Money.short(n.toSpend)) to spend"
+                           : n.toSpend < 0 ? "Still \(Money.short(-n.toSpend)) more than you make"
+                           : "Still \(Money.short(n.total - n.toSpend)) short",
+                      systemImage: fits ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(fits ? Theme.accent : Theme.warning)
+                Text(fixNote).font(.footnote).foregroundStyle(.secondary)
+                if undo != nil {
+                    Button("Undo") {
+                        guard let undo else { return }
+                        withAnimation { limits = undo.limits; trips = undo.trips; paydown = undo.paydown }
+                        self.undo = nil
+                        self.fixNote = nil
+                    }
+                    .font(.footnote.weight(.semibold)).buttonStyle(.borderless)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background(Theme.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+    }
+
     /// Over income: less toward trips first (keeping $10 so each trip still
     /// saves a share), then card paydown. Never savings.
     private func fitIncome(_ over: Int) {
+        remember(atTop: true)
         var gap = over
         var parts: [String] = []
         let fromTrips = min(max(0, trips - 10), gap)
