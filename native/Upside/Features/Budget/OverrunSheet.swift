@@ -78,6 +78,8 @@ struct OverrunSheet: View {
                                             .font(.footnote).foregroundStyle(.secondary).monospacedDigit()
                                     }
                                 }
+                                // A cost, not good news: plain, not the money-green accent.
+                                .tint(.primary)
                             }
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Spend less elsewhere").fontWeight(.semibold)
