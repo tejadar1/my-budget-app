@@ -2,6 +2,15 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.34): Overspending, called out
+- Going over a limit is called out instead of covered. Needs attention says "Dining & Bars is $100 over" and what it costs: "Comes out of cards or savings unless you spend less elsewhere". The category stays over all month; its limit isn't raised to hide it.
+- Tap it to see what drove it (purchases, the biggest one) and choose what gives, starting from the bottom of your plan: put less toward goals, trips, pay less on cards, or save less, for this month only. Savings comes last and is never chosen for you. Or spend less elsewhere: it shows which categories have room, and nothing changes.
+- Money not in any limit pays first, and it says so: "$100 less left at month end".
+- On pace: "Dining is on pace to go $80 over" after the first week, before it happens.
+- Plan shows what this month gave up ("This month you paid $100 less on cards"). "Cover overspending" is gone.
+- The month's recap names it: "To pay for it, you saved $100 less than planned."
+- Business purchases are never overspending: you'll be paid back, so nothing has to give. Business charges carried on a card no longer count toward card paydown.
+
 ## 0.33: Trends and year in review
 - Trends, under More: what you spent each month for the last year (with your income as a line), one sentence on how it's going ("About $4,300 a month lately, $210 less than the three months before"), what changed last month compared with usual, and every category's last six months side by side. Tap any category for its purchases.
 - Year in review, under More ("2026 so far"; in January, last year "in review"): money in and out for the year, where it went with each category's share, your highest and lowest months, how many months stayed within the plan, who spent what, the biggest purchases, and fees for the year. If your bank history starts mid-year, it says so.

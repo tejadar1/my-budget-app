@@ -102,11 +102,10 @@ struct BudgetView: View {
                 switch sheet {
                 case .plan: PlanView()
                 case .planning: PlanView(mode: .planning)
-                case .rebalance: PlanView(mode: .rebalance)
                 case .limits: LimitsView()
                 case .savings(let month): SavingsSheet(month: month, openPlan: isCurrentMonth ? { then(.plan) } : nil)
                 case .checkIn: CheckInSheet { then(.planning) }
-                case .cover(let id): CoverSheet(categoryId: id, month: store.currentMonth) { then(.plan) }
+                case .overrun(let id): OverrunSheet(month: store.currentMonth, focus: id)
                 case .bank: BankSheet()
                 case .extraIncome: ExtraIncomeSheet()
                 case .recap(let month): RecapView(month: month)
@@ -126,8 +125,9 @@ struct BudgetView: View {
     private func open(_ item: BudgetStore.Attention) {
         switch item {
         case .bank: sheet = .bank
-        case .over(let id, _): sheet = .cover(id)
-        case .rebalance: sheet = .rebalance
+        case .over(let id, _): sheet = .overrun(id)
+        case .rebalance: sheet = .overrun(nil)
+        case .onPace(let id, _): path.append(Route.category(id, store.currentMonth))
         case .checkIn: sheet = .checkIn
         case .extraIncome: sheet = .extraIncome
         case .toCheck: path.append(Route.review)
@@ -154,14 +154,28 @@ struct BudgetView: View {
         case "search": path.append(Route.search(open.id))
         case "limits", "recommended", "limit": sheet = .limits
         case "save", "priorities": sheet = .plan
-        case "rebalance": sheet = .rebalance
+        case "rebalance", "overrun":
+            // `-tight` (screenshots): savings takes up what no limit uses, so
+            // overspending has to come from somewhere.
+            if ProcessInfo.processInfo.arguments.contains("-tight") {
+                let month = store.currentMonth
+                let allowed = store.everydayCategories.reduce(0) {
+                    $0 + (store.limit($1, in: month) ?? store.averageSpent($1.id, before: month) ?? 0)
+                }
+                var priorities = store.data.priorities ?? Priorities()
+                priorities.savings += max(0, store.monthPlan(month).toSpend - allowed)
+                priorities.cardPaydown = max(priorities.cardPaydown, 20_000)
+                priorities.savings -= 20_000
+                store.data.priorities = priorities
+            }
+            sheet = .overrun(open.id.isEmpty ? nil : open.id)
         case "savings": sheet = .savings(store.currentMonth)
         case "checkin": sheet = .checkIn
         case "bank": sheet = .bank
         case "extra": sheet = .extraIncome
         case "cover":
             let id = open.id.isEmpty ? store.overruns(in: store.currentMonth).first?.id : open.id
-            sheet = id.map { .cover($0) }
+            sheet = .overrun(id)
         case "recap": sheet = .recap(store.month(-1, from: store.currentMonth))
         case "purchase":
             // Most recent purchase in the category named by the id.
@@ -178,10 +192,8 @@ enum BudgetSheet: Identifiable, Hashable {
     case plan, limits, checkIn, bank, extraIncome
     /// Plan opened from the month's wrap-up: saving makes the month's plan.
     case planning
-    /// Plan opened to cover several overspent categories at once.
-    case rebalance
     case savings(Date)
-    case cover(String)
+    case overrun(String?)
     case recap(Date)
     case purchase(String)
     var id: Self { self }
@@ -366,13 +378,20 @@ struct AttentionList: View {
             }
         case .over(let id, let amount):
             ListRow(title: "\(store.category(id)?.name ?? "A category") is \(Money.short(amount)) over",
-                    subtitle: "Cover it from another category") {
+                    subtitle: store.overrunNote(in: store.currentMonth)) {
                 CategoryIcon(categoryId: id, size: 30)
             }
         case .rebalance(let count, let amount):
             ListRow(title: "\(count) categories are \(Money.short(amount)) over",
-                    subtitle: "Cover them for this month only") {
-                SymbolIcon(symbol: "arrow.left.arrow.right", color: .red)
+                    subtitle: store.overrunNote(in: store.currentMonth)) {
+                SymbolIcon(symbol: "exclamationmark.circle.fill", color: .red)
+            }
+        case .onPace(let id, let amount):
+            ListRow(title: "\(store.category(id)?.name ?? "A category") is on pace to go \(Money.short(amount)) over",
+                    subtitle: store.spareCovers(amount, in: store.currentMonth)
+                        ? "Money not in a limit would cover it, leaving less at month end"
+                        : "That would come out of savings, cards or trips") {
+                CategoryIcon(categoryId: id, size: 30)
             }
         case .extraIncome(let amount):
             ListRow(title: "\(Money.short(amount)) more came in than planned",

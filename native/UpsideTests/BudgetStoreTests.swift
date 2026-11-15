@@ -1894,3 +1894,145 @@ final class TrendsTests: XCTestCase {
         XCTAssertEqual(YearReviewView.title(2027, current: s.currentMonth, calendar: s.calendar), "2027 so far")
     }
 }
+
+/// Overspending is called out and paid for on purpose, never hidden.
+final class OverrunTests: XCTestCase {
+    private var calendar: Calendar = {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "America/New_York")!
+        return c
+    }()
+
+    private func date(_ y: Int, _ m: Int, _ d: Int) -> Date {
+        calendar.date(from: DateComponents(year: y, month: m, day: d, hour: 12))!
+    }
+
+    /// July–October: $5,000 pay on the 10th, dining $500 and shopping $300
+    /// a month. October's plan: save $3,900 and pay $300 extra on cards,
+    /// leaving exactly $800 for the $500 dining and $300 shopping limits.
+    /// By Oct 20 dining is at $600 ($100 over), shopping at $50.
+    private func store(savings: Cents = 390_000) -> BudgetStore {
+        var data = BudgetData()
+        data.people = People(p1: "Ron", p2: "Ana")
+        data.accounts = [Account(id: "r", name: "Ron Checking", institution: "Chase", kind: .checking, balance: 0, owner: .p1)]
+        var n = 0
+        func add(_ m: Int, _ d: Int, _ amount: Cents, _ payee: String, _ category: String) {
+            n += 1
+            data.transactions.append(Transaction(id: "t\(n)", accountId: "r", date: date(2026, m, d), amount: amount,
+                                                 payee: payee, categoryId: category))
+        }
+        for m in 7...10 { add(m, 10, 500_000, "Payroll", "income") }
+        for m in 7...9 {
+            add(m, 5, -50_000, "Chipotle", "dining")
+            add(m, 6, -30_000, "Target", "shopping")
+        }
+        add(10, 3, -40_000, "Chipotle", "dining")
+        add(10, 15, -20_000, "Nobu", "dining")
+        add(10, 6, -5_000, "Target", "shopping")
+        let s = BudgetStore(data: data, isDemo: true)
+        s.calendar = calendar
+        s.now = { self.date(2026, 10, 20) }
+        s.setLimit("dining", 50_000)
+        s.setLimit("shopping", 30_000)
+        s.data.priorities = Priorities(savings: savings, cardPaydown: 30_000, plannedIncome: 500_000)
+        return s
+    }
+
+    func testOverspendingSaysWhatHasToGiveBottomOfThePlanFirst() {
+        let s = store()
+        let october = s.currentMonth
+        let cost = s.overrunCost(in: october)
+        XCTAssertEqual(cost.overruns.map(\.id), ["dining"])
+        XCTAssertEqual(cost.total, 10_000)
+        XCTAssertEqual(cost.fromUnassigned, 0, "every dollar after savings and cards is in a limit")
+        XCTAssertEqual(cost.needed, 10_000)
+        XCTAssertEqual(cost.options.map(\.source), [.cards, .savings], "cards before savings; nothing set for trips or goals")
+        XCTAssertEqual(cost.options.map(\.amount), [10_000, 10_000])
+        XCTAssertEqual(cost.room.map(\.id), ["shopping"])
+        XCTAssertEqual(cost.room.first?.room, 25_000)
+        XCTAssertEqual(s.overrunNote(in: october), "Comes out of cards or savings unless you spend less elsewhere")
+        XCTAssertTrue(s.attention().contains(.over(categoryId: "dining", amount: 10_000)))
+    }
+
+    func testPayingWithCardsChangesThisMonthOnlyAndDiningStaysOver() {
+        let s = store()
+        let october = s.currentMonth
+        let before = s.monthPlan(october)
+        s.payForOverspending(from: .cards, amount: 10_000, categoryId: "dining", in: october)
+
+        let after = s.monthPlan(october)
+        XCTAssertEqual(after.cardPaydown, 20_000)
+        XCTAssertEqual(after.savings, before.savings, "savings untouched")
+        XCTAssertEqual(after.toSpend, before.toSpend + 10_000)
+        XCTAssertEqual(s.data.priorities?.cardPaydown, 30_000, "the standing amount stays")
+        XCTAssertEqual(s.limit(s.category("dining")!, in: october), 50_000, "the limit isn't raised")
+        XCTAssertEqual(s.overruns(in: october).first?.over, 10_000, "over stays over")
+
+        let cost = s.overrunCost(in: october)
+        XCTAssertEqual(cost.paid, 10_000)
+        XCTAssertEqual(cost.needed, 0)
+        XCTAssertTrue(cost.options.isEmpty)
+        XCTAssertEqual(s.cutsSummary(in: october), "paid \(Money.short(10_000)) less on cards")
+        XCTAssertEqual(s.overrunNote(in: october), "Paid for: paid \(Money.short(10_000)) less on cards")
+
+        // Undo puts it back.
+        s.undoOverspendingCut(cost.cuts[0].id, in: october)
+        XCTAssertEqual(s.monthPlan(october).cardPaydown, 30_000)
+        XCTAssertEqual(s.overrunCost(in: october).needed, 10_000)
+
+        // Two choices read as one sentence, savings last.
+        s.payForOverspending(from: .savings, amount: 5_000, categoryId: "dining", in: october)
+        s.payForOverspending(from: .cards, amount: 5_000, categoryId: "dining", in: october)
+        XCTAssertEqual(s.cutsSummary(in: october), "saved \(Money.short(5_000)) less than planned and paid \(Money.short(5_000)) less on cards")
+
+        // November is back to the plan.
+        s.now = { self.date(2026, 11, 3) }
+        XCTAssertEqual(s.monthPlan(s.currentMonth).cardPaydown, 30_000)
+        XCTAssertEqual(s.monthPlan(s.currentMonth).savings, 390_000)
+        XCTAssertEqual(s.cutsSummary(in: october), "saved \(Money.short(5_000)) less than planned and paid \(Money.short(5_000)) less on cards", "October's recap keeps it")
+    }
+
+    func testMoneyNotInALimitCoversItFirst() {
+        let s = store(savings: 380_000)   // $100 not in any limit
+        let october = s.currentMonth
+        let cost = s.overrunCost(in: october)
+        XCTAssertEqual(cost.fromUnassigned, 10_000)
+        XCTAssertEqual(cost.needed, 0)
+        XCTAssertEqual(s.overrunNote(in: october), "Money not in a limit covers it: \(Money.short(10_000)) less left at month end")
+    }
+
+    func testBusinessPurchasesAreNeverOverspending() {
+        let s = store()
+        let october = s.currentMonth
+        // Nobu was a work dinner: it leaves Dining, so nothing is over.
+        let nobu = s.data.transactions.first { $0.payee == "Nobu" }!.id
+        s.setBusiness(nobu, true)
+        XCTAssertTrue(s.overruns(in: october).isEmpty)
+        XCTAssertEqual(s.overrunCost(in: october).needed, 0)
+    }
+
+    func testBusinessCarriedOnACardIsntCardPaydown() {
+        let s = store()
+        s.data.accounts.append(Account(id: "c", name: "Card", institution: "Chase", kind: .credit, balance: -50_000, owner: .p1))
+        s.data.transactions.append(Transaction(id: "b", accountId: "c", date: date(2026, 9, 12), amount: -20_000,
+                                               payee: "Delta", categoryId: "travel"))
+        s.setBusiness("b", true)
+        XCTAssertEqual(s.businessOnCards, 20_000)
+        XCTAssertEqual(s.cardsCarried, 30_000, "the $200 work flight is paid back, not paid down")
+    }
+
+    func testOnPaceToGoOverIsCalledOutBeforeItHappens() {
+        let s = store()
+        s.data.transactions.removeAll { $0.payee == "Nobu" }
+        s.now = { self.date(2026, 10, 10) }
+        // $400 of dining by the 10th: about $1,240 by month end.
+        let pace = s.onPaceToGoOver(in: s.currentMonth)
+        XCTAssertEqual(pace.first?.id, "dining")
+        XCTAssertEqual(pace.first?.over, 74_000)
+        XCTAssertTrue(s.attention().contains(.onPace(categoryId: "dining", amount: 74_000)))
+        XCTAssertFalse(s.spareCovers(74_000, in: s.currentMonth))
+        // The first week is too early to call a pace.
+        s.now = { self.date(2026, 10, 5) }
+        XCTAssertTrue(s.onPaceToGoOver(in: s.currentMonth).isEmpty)
+    }
+}

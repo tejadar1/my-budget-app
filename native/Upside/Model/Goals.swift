@@ -79,20 +79,35 @@ extension BudgetStore {
 
     /// At each new month, goals you track by hand get what the plan set
     /// aside for them in the months since (linked accounts track themselves).
+    /// A month that paid for overspending with goals puts that much less in:
+    /// goals without a date first, then the one due last.
     func creditGoals() {
         var list = goals
         var changed = false
-        for i in list.indices where list[i].accountId == nil {
-            var month = monthStart(list[i].creditedThrough ?? currentMonth)
-            while month < currentMonth {
-                list[i].saved = min(list[i].target, list[i].saved + goalMonthly(list[i], in: month))
-                month = self.month(1, from: month)
+        let byHand = list.indices.filter { list[$0].accountId == nil }
+        let order = byHand.sorted { a, b in
+            switch (list[a].due, list[b].due) {
+            case (nil, nil): return a < b
+            case (nil, _): return true
+            case (_, nil): return false
+            case let (x?, y?): return x > y
+            }
+        }
+        var month = byHand.map { monthStart(list[$0].creditedThrough ?? currentMonth) }.min() ?? currentMonth
+        while month < currentMonth {
+            var cutLeft = cut(.goals, in: month)
+            for i in order where monthStart(list[i].creditedThrough ?? currentMonth) <= month {
+                let credit = goalMonthly(list[i], in: month)
+                let take = min(cutLeft, credit)
+                cutLeft -= take
+                list[i].saved = min(list[i].target, list[i].saved + credit - take)
                 changed = true
             }
-            if list[i].creditedThrough.map(monthStart) != currentMonth {
-                list[i].creditedThrough = currentMonth
-                changed = true
-            }
+            month = self.month(1, from: month)
+        }
+        for i in byHand where list[i].creditedThrough.map(monthStart) != currentMonth {
+            list[i].creditedThrough = currentMonth
+            changed = true
         }
         if changed { data.goals = list }
     }

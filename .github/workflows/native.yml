@@ -100,9 +100,8 @@ jobs:
             shot $mode 1b-budget-categories -demo -tab budget -scrollTo categories
             shot $mode 1c-budget-more -demo -tab budget -scrollTo more
             shot $mode 1d-checkin -demo -tab budget -open checkin
-            shot $mode 1e-cover -demo -tab budget -open cover
+            shot $mode 1e-overrun -demo -tab budget -open overrun -tight
             shot $mode 1f-savings -demo -tab budget -open savings
-            shot $mode 1g-rebalance -demo -tab budget -open rebalance
             shot $mode 1h-extra-income -demo -tab budget -open extra
             shot $mode 2-accounts -demo -tab accounts
             shot $mode 2b-transactions -demo -tab transactions

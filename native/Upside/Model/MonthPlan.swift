@@ -105,15 +105,15 @@ extension BudgetStore {
             incomeReceived: actualIncome,
             billsPaid: billsPaid,
             billsDue: billsDue,
-            savings: (data.priorities?.savings ?? 0) + (monthsPlan?.goal ?? 0),
+            savings: max(0, (data.priorities?.savings ?? 0) + (monthsPlan?.goal ?? 0) - cut(.savings, in: month)),
             savingsExtra: monthsPlan?.goal ?? 0,
-            cardPaydown: (data.priorities?.cardPaydown ?? 0) + (monthsPlan?.cardExtra ?? 0),
-            trips: tripSetAside(in: month),
+            cardPaydown: max(0, (data.priorities?.cardPaydown ?? 0) + (monthsPlan?.cardExtra ?? 0) - cut(.cards, in: month)),
+            trips: max(0, tripSetAside(in: month) - cut(.trips, in: month)),
             everydaySpent: totalSpent(in: month) - billsPaid,
             everydayLimits: everydayLimits,
             daysLeft: isCurrent ? daysLeftInMonth : nil,
             rolledIn: everydayCategories.reduce(0) { $0 + rolledIn($1, to: month) },
-            goals: goalsSetAside(in: month),
+            goals: max(0, goalsSetAside(in: month) - cut(.goals, in: month)),
             fundedByGoals: goalFundedCategories.reduce(0) { $0 + spent($1, in: month) },
             carriedIn: monthsPlan?.carriedIn ?? 0,
             extraIncome: extra)
@@ -136,7 +136,19 @@ extension BudgetStore {
     /// charges, which normal payments cover. Paydown targets this.
     var cardsCarried: Cents {
         let charged = creditCards.reduce(0) { $0 + cardMonth($1, currentMonth).charged }
-        return max(0, cardsOwed - charged)
+        return max(0, cardsOwed - charged - businessOnCards)
+    }
+
+    /// Business purchases carried on cards from earlier months, not paid
+    /// back yet. You're only fronting that money, so card paydown doesn't
+    /// plan to pay it from the budget. (This month's charges are already
+    /// left out of what's carried.)
+    var businessOnCards: Cents {
+        let cards = Set(creditCards.map(\.id))
+        let charged = -businessTransactions
+            .filter { $0.amount < 0 && cards.contains($0.accountId) && $0.date < currentMonth }
+            .reduce(0) { $0 + $1.amount }
+        return min(businessOwed, charged)
     }
 
     /// Everyday categories: the ones with limits you control day to day.

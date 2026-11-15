@@ -43,11 +43,13 @@ extension BudgetStore {
         var total = 0
         var month = start
         while month <= currentMonth {
+            // Less goes in a month you chose to pay for overspending with trips.
+            let monthly = max(0, fund.monthly - cut(.trips, in: month))
             if month == currentMonth {
-                total += fund.monthly
+                total += monthly
             } else {
                 let left = income(in: month) - totalSpent(in: month)
-                total += min(fund.monthly, max(0, left))
+                total += min(monthly, max(0, left))
             }
             month = self.month(1, from: month)
         }

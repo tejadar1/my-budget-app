@@ -197,6 +197,9 @@ struct SavingsPlan: Codable, Equatable {
     /// Income above the plan that you've given a job (saved, cards or
     /// spending). Extra income waits for a decision before it's spendable.
     var extraIncomeUsed: Cents? = nil
+    /// Overspending paid for this month by putting less toward savings,
+    /// cards, trips or goals. The overspending itself stays on show.
+    var cuts: [OverrunCut]? = nil
 }
 
 struct CategoryGroup: Identifiable {

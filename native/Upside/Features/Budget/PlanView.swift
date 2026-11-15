@@ -3,12 +3,11 @@ import SwiftUI
 /// The one place to plan the month: savings, card paydown and trips come
 /// off the top, and everyday limits are recommended to fit what's left.
 struct PlanView: View {
-    enum Mode { case normal, planning, rebalance }
+    enum Mode { case normal, planning }
 
     @Environment(BudgetStore.self) private var store
     @Environment(\.dismiss) private var dismiss
-    /// `.planning` from the month's wrap-up (this save makes the plan);
-    /// `.rebalance` opens with limits already rebalanced to cover overruns.
+    /// `.planning` from the month's wrap-up (this save makes the plan).
     var mode: Mode = .normal
     @State private var plannedIncome = 0
     @State private var savings = 0
@@ -56,6 +55,9 @@ struct PlanView: View {
         /// Limits plus usual spending for categories without one.
         var total: Cents
         var owed: Cents
+        /// Overspending paid for this month, by what gave.
+        var cuts: [PlanPriority: Cents]
+        func cut(_ p: PlanPriority) -> Cents { cuts[p] ?? 0 }
     }
 
     private func numbers() -> Numbers {
@@ -66,16 +68,22 @@ struct PlanView: View {
         let extraSavings = extra * 100
         // $0 for trips means each trip saves its own share.
         let tripCost = store.data.tripsOff == true ? 0 : trips > 0 ? trips * 100 : store.tripScheduleSetAside(in: month)
-        let goals = store.goalsSetAside(in: month)
+        let cuts = Dictionary(grouping: store.overrunCuts(in: month), by: \.source).mapValues { $0.reduce(0) { $0 + $1.amount } }
+        // Paid-for overspending lowers this month's amounts, not the sliders.
+        let goals = max(0, store.goalsSetAside(in: month) - (cuts[.goals] ?? 0))
         // Leftover from last month given a job adds back what it takes off.
         let leftoverCards = store.plan.flatMap { store.isInMonth($0.month, month) ? $0.cardExtra : nil } ?? 0
-        let toSpend = income + base.carriedIn - base.bills + base.fundedByGoals - (savings * 100 + extraSavings) - paydown * 100 - leftoverCards
-            - tripCost - goals + base.rolledIn
+        let thisSavings = max(0, savings * 100 + extraSavings - (cuts[.savings] ?? 0))
+        let thisCards = max(0, paydown * 100 + leftoverCards - (cuts[.cards] ?? 0))
+        let thisTrips = max(0, tripCost - (cuts[.trips] ?? 0))
+        let toSpend = income + base.carriedIn - base.bills + base.fundedByGoals - thisSavings - thisCards
+            - thisTrips - goals + base.rolledIn
         let total = limitsTotal(limits)
         return Numbers(base: base, usualIncome: usualIncome, income: income, extraSavings: extraSavings,
                        extraCards: leftoverCards, carried: base.carriedIn + base.rolledIn + base.fundedByGoals,
                        tripCost: tripCost, toSpend: toSpend,
-                       recommended: store.recommendedLimits(toSpend: toSpend), total: total, owed: store.cardsCarried)
+                       recommended: store.recommendedLimits(toSpend: toSpend), total: total, owed: store.cardsCarried,
+                       cuts: cuts)
     }
 
     var body: some View {
@@ -86,10 +94,10 @@ struct PlanView: View {
                 Section {
                     PlanSplit(parts: [
                         .init(name: "Bills", amount: n.base.bills - n.base.fundedByGoals, color: .gray),
-                        .init(name: "Savings", amount: savings * 100 + n.extraSavings, color: Theme.accent),
-                        .init(name: "Cards", amount: paydown * 100 + n.extraCards, color: .orange),
-                        .init(name: "Trips", amount: n.tripCost, color: .cyan),
-                        .init(name: "Goals", amount: store.goalsSetAside(in: month), color: .purple),
+                        .init(name: "Savings", amount: max(0, savings * 100 + n.extraSavings - n.cut(.savings)), color: Theme.accent),
+                        .init(name: "Cards", amount: max(0, paydown * 100 + n.extraCards - n.cut(.cards)), color: .orange),
+                        .init(name: "Trips", amount: max(0, n.tripCost - n.cut(.trips)), color: .cyan),
+                        .init(name: "Goals", amount: max(0, store.goalsSetAside(in: month) - n.cut(.goals)), color: .purple),
                         .init(name: "To spend", amount: n.toSpend, color: .blue),
                     ], income: n.income, carried: n.carried)
                 }
@@ -174,6 +182,13 @@ struct PlanView: View {
                     Text(Money.short(store.goalsSetAside(in: month))).monospacedDigit()
                 }
             }
+            if let summary = store.cutsSummary(in: month) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Paid for overspending").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.over)
+                    Text("This month you \(summary). Next month is back to the amounts above.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+            }
             LabeledContent("To spend") {
                 Text(Money.short(n.toSpend)).fontWeight(.bold)
                     .foregroundStyle(n.toSpend >= 0 ? Theme.accent : Theme.over)
@@ -215,15 +230,13 @@ struct PlanView: View {
             // overspending (this month only, nothing else moves).
             let overs = overCount()
             VStack(spacing: 8) {
-                if !adjusting || overs > 0 {
+                if !adjusting {
                     Button {
                         remember(atTop: false)
-                        if adjusting { coverAll(n) } else {
-                            withAnimation { limits = dollars(n.recommended) }
-                            fixNote = "Limits set from what you usually spend, fit to what you have. Change any of them, then tap Save."
-                        }
+                        withAnimation { limits = dollars(n.recommended) }
+                        fixNote = "Limits set from what you usually spend, fit to what you have. Change any of them, then tap Save."
                     } label: {
-                        Text(adjusting ? "Cover overspending" : "Start from what you usually spend")
+                        Text("Start from what you usually spend")
                             .font(.headline)
                             .frame(maxWidth: .infinity, minHeight: 44)
                     }
@@ -231,9 +244,12 @@ struct PlanView: View {
                     .buttonBorderShape(.capsule)
                     .controlSize(.large)
                     .tint(Theme.accent)
-                    Text(adjusting ? "\(overs) categor\(overs == 1 ? "y is" : "ies are") over. Raises \(overs == 1 ? "it" : "them") for \(monthName) only, from money not in a limit, then from categories with room left. Nothing else changes."
-                                   : "Fills every limit from what you usually spend, fit to what you have.")
+                    Text("Fills every limit from what you usually spend, fit to what you have.")
                         .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                } else if overs > 0 {
+                    Label("\(overs) categor\(overs == 1 ? "y is" : "ies are") over. Limits aren't raised to hide it: Needs attention on Budget shows what it costs and what has to give.",
+                          systemImage: "exclamationmark.circle.fill")
+                        .font(.footnote).foregroundStyle(Theme.over)
                 } else if fixNote == nil {
                     Text("Nothing is over its limit. To change a limit, type in it.")
                         .font(.footnote).foregroundStyle(.secondary).frame(maxWidth: .infinity)
@@ -424,31 +440,6 @@ struct PlanView: View {
         }.count
     }
 
-    /// Covers every category over its limit, this month only. Pressing it
-    /// again does nothing: covered categories end at $0 left.
-    private func coverAll(_ n: Numbers) {
-        let cents = limits.mapValues { $0 * 100 }
-        let spent = Dictionary(uniqueKeysWithValues: store.everydayCategories.map { ($0.id, store.spent($0.id, in: month)) })
-        let result = BudgetStore.coverOverspending(limits: cents, spent: spent, unused: n.toSpend - limitsTotal(limits))
-        var lines: [String] = []
-        for move in result.moves {
-            let to = store.category(move.to)?.name ?? "?"
-            let from = move.from == BudgetStore.unassigned ? "money not in a limit" : store.category(move.from)?.name ?? "?"
-            lines.append("\(to) +\(Money.short(move.amount)) from \(from)")
-        }
-        withAnimation {
-            for (id, value) in result.limits where value / 100 != limits[id] {
-                limits[id] = value / 100
-                // This month only: the standing limit stays as you set it.
-                thisMonthOnly[id] = (value / 100, store.category(id)?.limit)
-            }
-        }
-        if result.uncovered > 0 {
-            lines.append("\(Money.short(result.uncovered)) couldn’t be covered: no category has room left. That’s how far \(month.formatted(.dateTime.month(.wide))) is past the plan")
-        }
-        fixNote = lines.joined(separator: "\n") + "\nFor this month only. Tap Save to keep it."
-    }
-
     private func limitsFooter(_ n: Numbers) -> String {
         let fits = n.total <= n.toSpend
         let head = fits ? "Limits add up to \(Money.short(n.total)) of \(Money.short(n.toSpend)) to spend."
@@ -468,10 +459,6 @@ struct PlanView: View {
             ($0.id, (store.plannedLimit($0, in: month) ?? 0) / 100)
         })
         loadedLimits = limits
-        if mode == .rebalance {
-            remember(atTop: false)
-            coverAll(numbers())
-        }
     }
 
     private func save() {

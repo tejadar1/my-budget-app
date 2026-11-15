@@ -151,6 +151,10 @@ struct RecapView: View {
                                 Text(offPlanDetail(item)).font(.footnote).foregroundStyle(.secondary)
                             }
                         }
+                        if let summary = store.cutsSummary(in: month) {
+                            Text("To pay for it, you \(summary).")
+                                .font(.footnote.weight(.semibold)).foregroundStyle(Theme.over)
+                        }
                         if !off.under.isEmpty {
                             Text("Went well: " + off.under.prefix(3).map { "\($0.category.name) \(Money.short(-$0.over)) under" }.joined(separator: ", "))
                                 .font(.footnote).foregroundStyle(Theme.accent)
