@@ -1118,6 +1118,62 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertFalse(store.wasAdjusted(store.category("groceries")!, in: store.currentMonth))
     }
 
+    /// A whole month the way Ron budgets: set the limits on the 2nd,
+    /// overspend, cover it for the month, and check what month end and
+    /// next month see.
+    func testAMonthOfPlanningOverspendingAndCovering() {
+        let store = makeStore()
+        let october = date(2026, 10, 1)
+        func spend(_ id: String, _ day: Int, _ amount: Cents, _ category: String) {
+            store.data.transactions.append(Transaction(id: id, accountId: "r", date: date(2026, 10, day), amount: -amount,
+                                                       payee: "STORE \(id)", categoryId: category))
+        }
+        func limit(_ id: String, _ month: Date) -> Cents? { store.limit(store.category(id)!, in: month) }
+
+        // Oct 2: making the plan.
+        store.now = { self.date(2026, 10, 2) }
+        XCTAssertTrue(store.isPlanningWindow(october))
+        store.savePlanLimits(["dining": 500, "shopping": 300, "entertainment": 100], loaded: [:], extra: 0, in: october)
+        let toSpendPlanned = store.monthPlan(october).toSpend
+
+        // Oct 20: dining $100 over, shopping has $250 left.
+        store.now = { self.date(2026, 10, 20) }
+        XCTAssertFalse(store.isPlanningWindow(october))
+        spend("d1", 10, 60_000, "dining")
+        spend("s1", 12, 5_000, "shopping")
+        spend("e1", 14, 2_000, "entertainment")
+        let shown = ["dining": 500, "shopping": 300, "entertainment": 100]
+        let spent = ["dining": 60_000, "shopping": 5_000, "entertainment": 2_000]
+        let cover = BudgetStore.coverOverspending(limits: shown.mapValues { $0 * 100 }, spent: spent, unused: 0)
+        XCTAssertEqual(cover.moves, [.init(to: "dining", from: "shopping", amount: 10_000)], "from the most room")
+        XCTAssertEqual(cover.limits["entertainment"], 10_000, "not involved, not moved")
+        let covered = cover.limits.mapValues { $0 / 100 }
+        let thisMonthOnly = covered.filter { shown[$0.key] != $0.value }
+            .mapValues { (shown: $0, standing: Optional<Cents>.none) }
+            .reduce(into: [String: (shown: Int, standing: Cents?)]()) { r, e in r[e.key] = (e.value.shown, store.category(e.key)!.limit) }
+        store.savePlanLimits(covered, loaded: shown, extra: 0, in: october, thisMonthOnly: thisMonthOnly)
+
+        // October now: dining covered, shopping lowered, for this month only.
+        XCTAssertEqual(limit("dining", october), 60_000)
+        XCTAssertEqual(limit("shopping", october), 20_000)
+        XCTAssertEqual(store.category("dining")!.limit, 50_000, "your plan is unchanged")
+        XCTAssertEqual(store.category("shopping")!.limit, 30_000)
+        XCTAssertEqual(store.monthPlan(october).toSpend, toSpendPlanned, "covering never changes spending money")
+        XCTAssertTrue(store.overruns(in: october).isEmpty)
+
+        // Month end judges against the plan made on the 2nd.
+        XCTAssertEqual(store.originalLimit(store.category("dining")!, in: october), 50_000)
+        XCTAssertTrue(store.wasAdjusted(store.category("dining")!, in: october))
+
+        // November starts from the plan again, and October still adds up.
+        store.now = { self.date(2026, 11, 3) }
+        let november = store.currentMonth
+        store.useExtraIncome(1, as: .keep)  // anything that makes November's plan
+        XCTAssertEqual(limit("dining", november), 50_000)
+        XCTAssertEqual(limit("shopping", november), 30_000)
+        XCTAssertEqual(limit("dining", october), 60_000, "October keeps its cover")
+    }
+
     func testCoverOverspendingMovesOnlyWhatsNeededAndIsSafeToRepeat() {
         // Dining $100 over, Kids $50 over (no room anywhere but groceries).
         let limits: [String: Cents] = ["dining": 50_000, "kids": 10_000, "groceries": 60_000, "gas": 20_000]
