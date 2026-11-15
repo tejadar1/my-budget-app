@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next (0.32.2)
+## 0.32.2: Better guesses
 - Better guesses for stores Upside doesn't know (your Robinhood card sends no categories). It reads the name: "Frankies Dogs" → Dining, "Etix Ticket" → Entertainment, "Zeffy" → Gifts, plus words from stores you've already sorted. Old "Shopping?" guesses get another look.
 - When there's truly nothing to go on, Check these asks "Choose a category" instead of guessing Shopping.
 
