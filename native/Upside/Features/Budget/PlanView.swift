@@ -89,13 +89,10 @@ struct PlanView: View {
                         .init(name: "To spend", amount: n.toSpend, color: .blue),
                     ], income: n.income, carried: n.carried)
                 }
-                overIncomeSection(n)
+                statusSection(n)
                 incomeSection(n)
                 prioritiesSection(n).id("priorities")
-                realitySection(n)
                 limitsSection(n)
-                shortSection(n)
-                spareSection(n)
             }
             .onAppear {
                 // `-planScroll` opens at the sliders (used for screenshots).
@@ -208,12 +205,14 @@ struct PlanView: View {
             }
             // The main action of this section: a full-width filled button,
             // with what it does underneath.
+            // The one action for limits; what it says depends on the situation.
+            let fits = n.total <= n.toSpend
             VStack(spacing: 8) {
                 Button {
-                    withAnimation { limits = dollars(n.recommended) }
+                    if fits { withAnimation { limits = dollars(n.recommended) } } else { fixForMe(n) }
                 } label: {
-                    Label(adjusting ? "Rebalance the rest of \(monthName)" : "Use recommended limits",
-                          systemImage: adjusting ? "arrow.left.arrow.right" : "wand.and.stars")
+                    Label(!fits ? "Make limits fit" : adjusting ? "Rebalance the rest of \(monthName)" : "Use recommended limits",
+                          systemImage: !fits ? "wand.and.stars" : adjusting ? "arrow.left.arrow.right" : "wand.and.stars")
                         .font(.headline)
                         .frame(maxWidth: .infinity, minHeight: 44)
                 }
@@ -221,8 +220,9 @@ struct PlanView: View {
                 .buttonBorderShape(.capsule)
                 .controlSize(.large)
                 .tint(Theme.accent)
-                Text(adjusting ? "Covers what’s already spent and fits the rest to what’s left."
-                               : "Based on what you usually spend, fit to what you have.")
+                Text(!fits ? "Limits are \(Money.short(n.total - n.toSpend)) more than you have. This trims them, then trips and card paydown. Never savings."
+                     : adjusting ? "Covers what’s already spent and fits the rest to what’s left."
+                     : "Based on what you usually spend, fit to what you have.")
                     .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }
             .padding(.vertical, 4)
@@ -241,6 +241,10 @@ struct PlanView: View {
                              onStep: { startStep(c) },
                              onStopStep: { stepGoals[c.id] = nil; stopSteps.insert(c.id) },
                              dollars: Binding(get: { limits[c.id] ?? 0 }, set: { limits[c.id] = max(0, $0) }))
+            }
+            let spare = (n.toSpend - n.total) / 1000 * 10
+            if spare >= 10 {
+                Button("Save the \(Money.short(spare * 100)) not in any limit") { withAnimation { savings += spare } }
             }
         } header: {
             Text("Everyday limits")
@@ -283,25 +287,57 @@ struct PlanView: View {
         }
     }
 
-    /// With savings kept, does your usual spending fit? If not, say by how
-    /// much and offer the ways that don't touch savings.
-    @ViewBuilder private func realitySection(_ n: Numbers) -> some View {
+    /// The one thing that doesn't fit, if any, with one way to fix it.
+    /// Savings is never the fix: only its own slider changes it.
+    @ViewBuilder private func statusSection(_ n: Numbers) -> some View {
         let gap = store.realityGap(toSpend: n.toSpend)
-        if gap >= 5_000 && n.toSpend > 0 {
+        if n.toSpend < 0 {
+            let over = (-n.toSpend + 99) / 100
             Section {
-                Text("You usually spend \(Money.short(gap)) more on everyday things than you have to spend, with savings kept at \(Money.short(savings * 100)).")
+                Text("Bills, savings, card paydown and trips add up to more than you make, so nothing’s left for everyday spending.")
+                    .font(.subheadline)
+                if trips > 10 || paydown > 0 {
+                    Button { fitIncome(over) } label: {
+                        Label("Make it fit", systemImage: "wand.and.stars").fontWeight(.semibold)
+                    }
+                }
+            } header: {
+                Label("\(Money.short(over * 100)) more than you make", systemImage: "exclamationmark.triangle.fill")
+                    .foregroundStyle(Theme.over).textCase(nil).font(.subheadline.weight(.semibold))
+            } footer: {
+                Text(trips > 10 || paydown > 0 ? "Puts less toward trips, then card paydown. Savings stays as you set it."
+                                               : "Lower savings with its slider, or plan on more income.")
+            }
+        } else if gap >= 5_000 {
+            Section {
+                Text("You usually spend \(Money.short(gap)) more on everyday things than you have to spend.")
                     .font(.subheadline)
                 if trips > 10 {
                     let less = min(trips - 10, (gap + 99) / 100)
                     Button("Put \(Money.short(less * 100)) less toward trips") { withAnimation { trips -= less } }
                 }
-                Text("Or step down the biggest cuts below: each starts near what you usually spend and drops 10% a month you stay within it.")
-                    .font(.footnote).foregroundStyle(.secondary)
             } header: {
                 Label("Plan vs. what you usually spend", systemImage: "scalemass.fill")
                     .foregroundStyle(Theme.warning).textCase(nil).font(.subheadline.weight(.semibold))
+            } footer: {
+                Text("Or step down the big cuts in Everyday limits: each starts near what you usually spend and drops 10% a month.")
             }
         }
+    }
+
+    /// Over income: less toward trips first (keeping $10 so each trip still
+    /// saves a share), then card paydown. Never savings.
+    private func fitIncome(_ over: Int) {
+        var gap = over
+        var parts: [String] = []
+        let fromTrips = min(max(0, trips - 10), gap)
+        let fromCards = min(paydown, gap - fromTrips)
+        withAnimation { trips -= fromTrips; paydown -= fromCards }
+        gap -= fromTrips + fromCards
+        if fromTrips > 0 { parts.append("\(Money.short(fromTrips * 100)) less for trips") }
+        if fromCards > 0 { parts.append("\(Money.short(fromCards * 100)) less on cards") }
+        if gap > 0 { parts.append("still \(Money.short(gap * 100)) over: lower savings with its slider if you need to") }
+        fixNote = "Changed: " + parts.joined(separator: ", ") + ". Tap Save to keep it."
     }
 
     /// The month's plan for a category when its limit now differs from it.
@@ -344,29 +380,35 @@ struct PlanView: View {
         }
     }
 
-    /// Closes the gap the least painful way: trim flexible limits further
-    /// (up to 40%), then take from trips, then card paydown, and savings
-    /// only as a last resort, since those come first in the plan.
+    /// Makes limits fit what there is to spend, most realistic way first:
+    /// the usual trims (up to 25%), then less toward trips and card
+    /// paydown, then deeper trims (up to 40%). Never savings, and never
+    /// below what's already spent.
     private func fixForMe(_ n: Numbers) {
         let before = limitsTotal(limits)
-        let deeper = lowerOf(store.recommendedLimits(toSpend: n.toSpend, cap: 0.4))
-        var gap = (limitsTotal(deeper) - n.toSpend + 999) / 1000 * 10
+        var next = lowerOf(store.recommendedLimits(toSpend: n.toSpend))
+        var gap = (limitsTotal(next) - n.toSpend + 999) / 1000 * 10
         var parts: [String] = []
-        let trimmed = (before - limitsTotal(deeper)) / 100
-        if trimmed > 0 { parts.append("trimmed limits \(Money.short(trimmed * 100))") }
-        // Trips at $0 means each trip saves its own share, so keep $10.
-        func take(_ value: inout Int, _ label: String, keep: Int = 0) {
-            guard gap > 0, value > keep else { return }
-            let amount = min(value - keep, gap)
-            value -= amount; gap -= amount
-            parts.append("\(Money.short(amount * 100)) less \(label)")
+        let fromTrips = min(max(0, trips - 10), max(0, gap))
+        gap -= fromTrips
+        let fromCards = min(paydown, max(0, gap))
+        gap -= fromCards
+        if gap > 0 {
+            let room = n.toSpend + (fromTrips + fromCards) * 100
+            next = lowerOf(store.recommendedLimits(toSpend: room, cap: 0.4))
+            gap = max(0, (limitsTotal(next) - room + 999) / 1000 * 10)
         }
-        take(&trips, "for trips", keep: 10)
-        take(&paydown, "on cards")
-        // Savings is protected: say what's left instead of cutting it.
-        if gap > 0 { parts.append("still \(Money.short(gap * 100)) short: step down a big cut, or lower savings yourself") }
-        withAnimation { limits = deeper }
-        fixNote = parts.isEmpty ? nil : "Fixed: " + parts.joined(separator: ", ") + ". Tap Save to keep it."
+        let trimmed = (before - limitsTotal(next)) / 100
+        if trimmed > 0 { parts.append("trimmed limits \(Money.short(trimmed * 100))") }
+        if fromTrips > 0 { parts.append("\(Money.short(fromTrips * 100)) less for trips") }
+        if fromCards > 0 { parts.append("\(Money.short(fromCards * 100)) less on cards") }
+        if gap > 0 { parts.append("still \(Money.short(gap * 100)) short: step down a big cut below") }
+        withAnimation {
+            trips -= fromTrips
+            paydown -= fromCards
+            limits = next
+        }
+        fixNote = parts.isEmpty ? nil : "Changed: " + parts.joined(separator: ", ") + ". Tap Save to keep it."
     }
 
     private func limitsFooter(_ n: Numbers) -> String {
@@ -374,81 +416,6 @@ struct PlanView: View {
         let head = fits ? "Limits add up to \(Money.short(n.total)) of \(Money.short(n.toSpend)) to spend."
                         : "Limits add up to \(Money.short(n.total)), \(Money.short(n.total - n.toSpend)) more than you have."
         return head + " No limit counts as usual."
-    }
-
-    /// Savings, cards, trips and goals more than income after bills: say so
-    /// plainly and offer the ways out, lowest priority first.
-    @ViewBuilder private func overIncomeSection(_ n: Numbers) -> some View {
-        if n.toSpend < 0 {
-            let over = (-n.toSpend + 99) / 100
-            Section {
-                if trips > 0 {
-                    Button("Put \(Money.short(min(trips, over) * 100)) less toward trips") { withAnimation { trips -= min(trips, over) } }
-                }
-                if paydown > 0 {
-                    Button("Pay \(Money.short(min(paydown, over) * 100)) less on cards") { withAnimation { paydown -= min(paydown, over) } }
-                }
-                if savings > 0 {
-                    Button("Save \(Money.short(min(savings, over) * 100)) less") { withAnimation { savings -= min(savings, over) } }
-                }
-            } header: {
-                Label("\(Money.short(over * 100)) more than you make", systemImage: "exclamationmark.triangle.fill")
-                    .foregroundStyle(Theme.over).textCase(nil).font(.subheadline.weight(.semibold))
-            } footer: {
-                Text("After bills, savings, card paydown and trips don’t fit in your income. Lower one, or there’s nothing left for everyday spending.")
-            }
-        }
-    }
-
-    /// Limits still more than there is to spend: a small cut can't close
-    /// it, so offer the trade-offs: give a little from a priority, or cut
-    /// limits deeper than the usual 25% for this month.
-    @ViewBuilder private func shortSection(_ n: Numbers) -> some View {
-        if n.total > n.toSpend {
-            let gap = (n.total - n.toSpend + 999) / 1000 * 10
-            Section {
-                if paydown >= gap {
-                    Button("Pay \(Money.short(gap * 100)) less on cards") { withAnimation { paydown -= gap } }
-                }
-                if trips > gap {
-                    Button("Put \(Money.short(gap * 100)) less toward trips") { withAnimation { trips -= gap } }
-                }
-                if savings >= gap {
-                    Button("Save \(Money.short(gap * 100)) less") { withAnimation { savings -= gap } }
-                }
-                Button("Cut limits deeper this month") {
-                    withAnimation { limits = lowerOf(store.recommendedLimits(toSpend: n.toSpend, cap: 0.5)) }
-                }
-                Button { fixForMe(n) } label: {
-                    Label("Fix it for me", systemImage: "wand.and.stars")
-                        .fontWeight(.semibold).frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .listRowBackground(Color.clear)
-            } header: {
-                Text("\(Money.short(gap * 100)) short")
-            } footer: {
-                Text("Fix it for me trims limits, then trips, then cards, and savings last.")
-            }
-        }
-    }
-
-    /// Money the limits don't use: put it toward savings or cards.
-    @ViewBuilder private func spareSection(_ n: Numbers) -> some View {
-        if n.toSpend - n.total >= 1000 {
-            let spare = (n.toSpend - n.total) / 1000 * 10
-            Section {
-                Button("Add \(Money.short(spare * 100)) to savings") { withAnimation { savings += spare } }
-                    .fontWeight(.semibold)
-                if n.owed > 0 {
-                    Button("Add \(Money.short(spare * 100)) to card paydown") { withAnimation { paydown += spare } }
-                }
-            } header: {
-                Text("Your limits leave \(Money.short(n.toSpend - n.total)) unassigned")
-            } footer: {
-                Text("Put money your limits don't use to work.")
-            }
-        }
     }
 
     private func load() {

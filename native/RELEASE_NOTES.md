@@ -2,6 +2,12 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.32.1)
+- Plan has fewer, clearer buttons. At the top, only when something doesn't fit, one sentence and one button: "Make it fit" when the plan is more than your income, or "Put $X less toward trips" when you usually spend more than you have.
+- Everyday limits has one big button that says what it will do: "Make limits fit" (trims limits, then trips and card paydown), "Rebalance the rest of November", or "Use recommended limits".
+- No button lowers savings anymore; only its own slider does.
+- Money no limit uses: one "Save the $X not in any limit" button at the end of the limits.
+
 ## 0.32: Save first, plan realistically
 - Extra income waits for a job. A bonus, overtime or a third paycheck no longer turns into spending money on its own. Needs attention says "$1,700 more came in than planned", and saving it is the first choice; you can also put it toward cards or add it to spending money.
 - Payday reminder: when a paycheck lands and this month's savings aren't done, you get "Payday: move $750 to savings", that paycheck's share. Turn it off in Settings › Alerts.
