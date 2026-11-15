@@ -1775,4 +1775,112 @@ final class SavingsTests: XCTestCase {
         XCTAssertFalse(s.topCategories(in: s.currentMonth).contains { $0.id == "fees" })
     }
 
+    // MARK: - Trends and year in review
+
+    /// June–November 2026: groceries $400 a month then $700 in October,
+    /// dining $100, rent $2,000, $5,000 pay, and a $900 trip in August.
+    private func trendStore() -> BudgetStore {
+        var data = BudgetData()
+        data.people = People(p1: "Ron", p2: "Ana")
+        data.accounts = [
+            Account(id: "r", name: "Ron Checking", institution: "Chase", kind: .checking, balance: 0, owner: .p1),
+            Account(id: "a", name: "Ana Checking", institution: "BofA", kind: .checking, balance: 0, owner: .p2),
+        ]
+        var n = 0
+        func add(_ account: String, _ m: Int, _ d: Int, _ amount: Cents, _ payee: String, _ category: String, trip: String? = nil) {
+            n += 1
+            data.transactions.append(Transaction(id: "t\(n)", accountId: account, date: date(2026, m, d), amount: amount,
+                                                 payee: payee, categoryId: category, tripId: trip))
+        }
+        for m in 6...11 {
+            add("r", m, 3, -200_000, "Parkview Apts", "housing")
+            add("r", m, 10, 500_000, "Payroll", "income")
+        }
+        for m in 6...9 { add("r", m, 6, -40_000, "Kroger", "groceries") }
+        add("r", 10, 6, -70_000, "Costco", "groceries")
+        add("r", 11, 6, -10_000, "Kroger", "groceries")
+        for m in 6...10 { add("a", m, 5, -10_000, "Chipotle", "dining") }
+        add("r", 8, 20, -90_000, "JetBlue", "travel", trip: "miami")
+        let store = BudgetStore(data: data, isDemo: true)
+        store.calendar = calendar
+        store.now = { self.date(2026, 11, 15) }
+        return store
+    }
+
+    func testTrendsCompareMonthsWithoutTrips() {
+        let s = trendStore()
+        let totals = s.monthTotals(endingAt: s.currentMonth)
+        // Nothing before the history starts; the trip stays out of August.
+        XCTAssertEqual(totals.map(\.spent), [250_000, 250_000, 250_000, 250_000, 280_000, 210_000])
+        XCTAssertEqual(totals.first?.month, s.monthStart(date(2026, 6, 1)))
+        XCTAssertEqual(totals.last?.income, 500_000)
+
+        // October: groceries $300 over their usual $400; steady dining and rent aren't news.
+        let changes = s.categoryChanges(in: s.lastFinishedMonth)
+        XCTAssertEqual(changes.map(\.category.id), ["groceries"])
+        XCTAssertEqual(changes.first?.usual, 40_000)
+        XCTAssertEqual(changes.first?.diff, 30_000)
+
+        // Five finished months: the last three average $2,600.
+        let note = BudgetStore.spendingNote(totals.filter { $0.month < s.currentMonth })
+        XCTAssertEqual(note, "About \(Money.short(260_000)) a month over the last 3 months.")
+
+        let trends = s.categoryTrends(endingAt: s.lastFinishedMonth)
+        XCTAssertEqual(trends.map(\.category.id), ["housing", "groceries", "dining"])
+        XCTAssertEqual(trends.first { $0.category.id == "dining" }?.average, 10_000)
+    }
+
+    func testSpendingNoteComparesWithTheThreeMonthsBefore() {
+        let months = (0..<6).map { i in MonthTotal(month: date(2026, 1 + i, 1), spent: i < 3 ? 300_000 : 270_000, income: 0) }
+        XCTAssertEqual(BudgetStore.spendingNote(months),
+                       "About \(Money.short(270_000)) a month lately, \(Money.short(30_000)) less than the three months before.")
+        let steady = months.map { MonthTotal(month: $0.month, spent: 300_000, income: 0) }
+        XCTAssertEqual(BudgetStore.spendingNote(steady),
+                       "About \(Money.short(300_000)) a month lately, steady with the three months before.")
+        XCTAssertNil(BudgetStore.spendingNote(Array(months.prefix(1))))
+    }
+
+    func testYearInReviewAddsUpTheYearSoFar() {
+        let s = trendStore()
+        // October's plan was $650 and $800 went; September's was kept too.
+        let plan: [String: Cents] = ["groceries": 50_000, "dining": 15_000]
+        s.data.originalLimits = [BudgetStore.monthKey(s.month(-1, from: s.currentMonth)): plan,
+                                 BudgetStore.monthKey(s.month(-2, from: s.currentMonth)): plan]
+        XCTAssertEqual(s.reviewYears, [2026])
+        XCTAssertEqual(s.defaultReviewYear, 2026)
+
+        let year = s.yearReview(2026)
+        XCTAssertFalse(year.isOver)
+        XCTAssertEqual(year.months.count, 6)          // June (history starts) through November
+        XCTAssertEqual(year.finishedMonths.count, 5)
+        XCTAssertEqual(year.income, 3_000_000)
+        XCTAssertEqual(year.spent, 1_580_000)         // bills, everyday and the trip
+        XCTAssertEqual(year.trips, 90_000)
+        XCTAssertEqual(year.leftOver, 1_420_000)
+        XCTAssertEqual(year.monthlyAverage, 256_000)  // finished months, no trips
+        XCTAssertEqual(year.categories.map(\.category.id), ["housing", "groceries", "dining"])
+        XCTAssertEqual(year.categories.map(\.spent), [1_200_000, 240_000, 50_000])
+        XCTAssertEqual(year.highest?.month, s.monthStart(date(2026, 10, 1)))
+        XCTAssertEqual(year.highest?.spent, 280_000)
+        XCTAssertEqual(year.lowest?.spent, 250_000)
+        XCTAssertEqual(year.monthsWithPlan, 2)
+        XCTAssertEqual(year.monthsOnPlan, 1)
+        XCTAssertEqual(year.byOwner[.p2], 50_000)
+        XCTAssertEqual(year.fees, 0)
+        // Biggest purchases skip bills: rent would always win.
+        XCTAssertEqual(year.biggest.map(\.payee), ["JetBlue", "Costco", "Kroger"])
+    }
+
+    func testJanuaryOpensLastYearAsFinished() {
+        let s = trendStore()
+        s.now = { self.date(2027, 1, 10) }
+        XCTAssertEqual(s.reviewYears, [2026, 2027])
+        XCTAssertEqual(s.defaultReviewYear, 2026)
+        let year = s.yearReview(2026)
+        XCTAssertTrue(year.isOver)
+        XCTAssertEqual(year.months.count, 7)          // June–December
+        XCTAssertEqual(year.finishedMonths.count, 7)
+        XCTAssertEqual(YearReviewView.title(2026, current: s.currentMonth, calendar: s.calendar), "2026 in review")
+        XCTAssertEqual(YearReviewView.title(2027, current: s.currentMonth, calendar: s.calendar), "2027 so far")
+    }
 }

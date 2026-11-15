@@ -92,6 +92,8 @@ struct BudgetView: View {
                 case .search(let query): SearchView(query: query)
                 case .business: BusinessView()
                 case .cards: CardsView()
+                case .trends: TrendsView()
+                case .year(let year): YearReviewView(year: year)
                 }
             }
             .sheet(item: $sheet, onDismiss: {
@@ -146,6 +148,8 @@ struct BudgetView: View {
         case "trip": path.append(Route.trip(open.id))
         case "bills": path.append(Route.bills)
         case "cards": path.append(Route.cards)
+        case "trends": path.append(Route.trends)
+        case "year": path.append(Route.year(Int(open.id) ?? store.defaultReviewYear))
         case "business": path.append(Route.business)
         case "search": path.append(Route.search(open.id))
         case "limits", "recommended", "limit": sheet = .limits
@@ -197,6 +201,8 @@ enum Route: Hashable {
     case search(String)
     case business
     case cards
+    case trends
+    case year(Int)
 }
 
 // MARK: - Month switcher
@@ -570,6 +576,24 @@ struct MoreList: View {
                         ListRow(title: "\(recapMonth.formatted(.dateTime.month(.wide))) recap",
                                 subtitle: "How the month went and who spent what") {
                             SymbolIcon(symbol: "chart.bar.fill", color: .purple)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+                if store.lastFinishedMonth >= store.firstFullMonth {
+                    RowDivider()
+                    NavigationLink(value: Route.trends) {
+                        ListRow(title: "Trends", subtitle: "Compare months and categories") {
+                            SymbolIcon(symbol: "chart.line.uptrend.xyaxis", color: .teal)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    RowDivider()
+                    let year = store.defaultReviewYear
+                    NavigationLink(value: Route.year(year)) {
+                        ListRow(title: YearReviewView.title(year, current: store.currentMonth, calendar: store.calendar),
+                                subtitle: "Where the year's money went") {
+                            SymbolIcon(symbol: "calendar", color: .orange)
                         }
                     }
                     .buttonStyle(.plain)

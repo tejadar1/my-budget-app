@@ -13,6 +13,6 @@ CI (`.github/workflows/native.yml`) runs the tests, builds for the iPhone
 simulator and screenshots every screen in light and dark mode to the
 `previews-native` branch. Launch arguments used there:
 `-demo` (sample data), `-tab budget|accounts|settings`,
-`-open category:<id> | review | trip:<id> | limits | account:<id>`.
+`-open category:<id> | review | trip:<id> | limits | account:<id> | trends | year[:<year>]`.
 
 Local build (Mac): `brew install xcodegen && cd native && xcodegen && open Upside.xcodeproj`

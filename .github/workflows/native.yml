@@ -123,6 +123,8 @@ jobs:
             shot $mode 8b-reorder -demo -tab accounts -open reorder
             shot $mode 7j-cards -demo -tab budget -open cards
             shot $mode 7k-business -demo -tab budget -open business
+            shot $mode 7m-trends -demo -tab budget -open trends
+            shot $mode 7n-year -demo -tab budget -open year
             shot $mode 9-first-run -tab budget
           done
           echo "Built from ${GITHUB_SHA}" > "$OUT/COMMIT.txt"
