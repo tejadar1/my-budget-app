@@ -84,7 +84,7 @@ extension BudgetStore {
     /// wrap-up, it's the 1st–5th, or nothing's been spent yet. Changes then
     /// make the plan; later ones are adjustments.
     func isPlanningWindow(_ month: Date) -> Bool {
-        month == currentMonth && (calendar.component(.day, from: now()) <= 5 || totalSpent(in: month) == 0)
+        isInMonth(month, currentMonth) && (calendar.component(.day, from: now()) <= 5 || totalSpent(in: month) == 0)
     }
 
     /// Saves this month's plan as it stands, once: before the first

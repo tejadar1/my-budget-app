@@ -1123,7 +1123,8 @@ final class BudgetStoreTests: XCTestCase {
     /// next month see.
     func testAMonthOfPlanningOverspendingAndCovering() {
         let store = makeStore()
-        let october = date(2026, 10, 1)
+        store.now = { self.date(2026, 10, 2) }
+        let october = store.currentMonth
         func spend(_ id: String, _ day: Int, _ amount: Cents, _ category: String) {
             store.data.transactions.append(Transaction(id: id, accountId: "r", date: date(2026, 10, day), amount: -amount,
                                                        payee: "STORE \(id)", categoryId: category))
