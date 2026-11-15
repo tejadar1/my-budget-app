@@ -449,23 +449,93 @@ final class BudgetStore {
         }
     }
 
-    /// Every purchase gets a category. Ones nothing matched get a hunch:
-    /// the category you've used most for stores starting with the same
-    /// word, otherwise Shopping. Hunches show up in Check these.
+    /// Every purchase gets a category. Ones no list matched get a hunch,
+    /// best clue first: the category you use for stores starting with the
+    /// same word; a word in the name that says what it sells ("dogs",
+    /// "ticket", "salon"); a word you've seen in your other stores. With no
+    /// clue at all it's counted as Shopping but marked "unknown", so Check
+    /// these asks instead of guessing. Earlier hunches are re-guessed too.
     static func fillHunches(_ data: inout BudgetData) {
+        let known = Set(data.categories.map(\.id))
         var byFirstWord: [String: [String: Int]] = [:]
+        var byWord: [String: [String: Int]] = [:]
         for t in data.transactions where !t.isTransfer && !t.isHunch && t.amount < 0 {
-            guard let c = t.categoryId, let word = payeeKey(t.payee).split(separator: " ").first else { continue }
-            byFirstWord[String(word), default: [:]][c, default: 0] += 1
+            guard let c = t.categoryId else { continue }
+            let words = nameWords(t.payee)
+            if let first = words.first { byFirstWord[first, default: [:]][c, default: 0] += 1 }
+            for w in Set(words) where w.count >= 4 && !genericWords.contains(w) { byWord[w, default: [:]][c, default: 0] += 1 }
+        }
+        func best(_ counts: [String: Int]?, atLeast: Int) -> String? {
+            guard let top = counts?.max(by: { $0.value < $1.value }), top.value >= atLeast, known.contains(top.key) else { return nil }
+            return top.key
         }
         for i in data.transactions.indices {
             let t = data.transactions[i]
-            guard t.categoryId == nil, !t.isTransfer, t.amount < 0 else { continue }
-            let word = payeeKey(t.payee).split(separator: " ").first.map(String.init) ?? ""
-            let guess = byFirstWord[word]?.max { $0.value < $1.value }?.key ?? "shopping"
-            data.transactions[i].categoryId = guess
-            data.transactions[i].autoSort = "hunch"
+            guard !t.isTransfer, t.amount < 0 else { continue }
+            // New purchases, and earlier hunches that fell back to Shopping.
+            guard t.categoryId == nil || (t.isHunch && t.categoryId == "shopping") else { continue }
+            let words = nameWords(t.payee)
+            let guess = best(words.first.flatMap { byFirstWord[$0] }, atLeast: 1)
+                ?? clueCategory(words).flatMap { known.contains($0) ? $0 : nil }
+                ?? words.lazy.compactMap { best(byWord[$0], atLeast: 2) }.first
+            data.transactions[i].categoryId = guess ?? "shopping"
+            data.transactions[i].autoSort = guess == nil ? "unknown" : "hunch"
         }
+    }
+
+    /// The words of a store's name, lowercased, without numbers.
+    static func nameWords(_ payee: String) -> [String] {
+        payee.lowercased().components(separatedBy: CharacterSet.letters.inverted).filter { $0.count > 1 }
+    }
+
+    /// Words too common to say anything about a store.
+    static let genericWords: Set<String> = ["the", "and", "inc", "llc", "corp", "company", "store", "stores",
+                                            "shop", "online", "www", "com", "pos", "debit", "purchase", "card",
+                                            "payment", "sq", "tst", "sp", "paypal", "on", "go", "of", "new", "york"]
+
+    /// Words in a name that say what a place sells. Hunches only: a
+    /// "Press" could be a café or a dry cleaner, so these stay in Check these.
+    static let clueWords: [(String, [String])] = [
+        ("dining", ["dog", "dogs", "hotdog", "pizza", "pizzeria", "taco", "tacos", "taqueria", "burger", "burgers",
+                    "grill", "bbq", "barbecue", "sushi", "ramen", "pho", "kitchen", "cafe", "coffee", "espresso",
+                    "bakery", "bagel", "bagels", "deli", "diner", "bistro", "tavern", "pub", "brewing", "brewery",
+                    "wings", "chicken", "eatery", "cantina", "noodle", "noodles", "smokehouse", "steakhouse",
+                    "restaurant", "trattoria", "osteria", "food", "foods", "kabob", "gyro", "halal", "dumpling",
+                    "boba", "tea", "juice", "donut", "donuts", "creamery", "gelato", "icecream", "sandwich",
+                    "subs", "wine", "bar", "lounge", "saloon", "cocktail"]),
+        ("entertainment", ["ticket", "tickets", "tix", "etix", "ticketmaster", "stubhub", "seatgeek", "axs",
+                           "eventbrite", "cinema", "cinemas", "theatre", "theater", "movies", "bowling", "arcade",
+                           "museum", "zoo", "aquarium", "concert", "stadium", "arena", "fair", "festival",
+                           "golf", "karaoke", "escape", "trampoline"]),
+        ("gifts", ["zeffy", "donation", "donations", "donate", "gofundme", "charity", "foundation", "church",
+                   "ministries", "fundraiser", "givebutter", "florist", "flowers"]),
+        ("commute", ["parking", "garage", "transit", "metro", "mta", "toll", "tolls", "ezpass", "lyft",
+                     "uber", "taxi", "cab", "rail"]),
+        ("health", ["pharmacy", "drug", "dental", "dentist", "clinic", "medical", "urgent", "optical",
+                    "vision", "pediatrics", "hospital", "lab", "labs", "therapy", "chiropractic"]),
+        ("personal", ["salon", "barber", "barbershop", "nail", "nails", "spa", "beauty", "lash", "brow", "wax",
+                      "cosmetics", "laundromat", "laundry", "cleaners"]),
+        ("pets", ["pet", "pets", "vet", "veterinary", "animal", "grooming", "kennel"]),
+        ("kids", ["kids", "daycare", "toys", "school", "tutoring", "camp", "preschool", "academy"]),
+        ("fitness", ["gym", "fitness", "yoga", "pilates", "crossfit", "cycle", "climbing", "athletic", "boxing"]),
+        ("home", ["hardware", "lumber", "plumbing", "hvac", "garden", "nursery", "furniture",
+                  "mattress", "appliance", "locksmith", "cleaning"]),
+        ("gas", ["gas", "fuel", "petro", "petroleum", "oil", "auto", "tire", "tires", "carwash", "wash",
+                 "lube", "mechanic", "collision"]),
+        ("groceries", ["market", "grocery", "groceries", "supermarket", "liquor", "wines", "spirits", "farm",
+                       "butcher", "produce", "bodega"]),
+        ("shopping", ["fanshop", "outlet", "boutique", "apparel", "clothing", "shoes", "jewelry", "books"]),
+    ]
+
+    /// The first category whose clue words appear in the name. Long joined
+    /// names count too ("teamfanshop" ends in "shop").
+    static func clueCategory(_ words: [String]) -> String? {
+        for (category, clues) in clueWords {
+            for w in words where clues.contains(where: { w == $0 || (w.count >= 7 && $0.count >= 4 && w.hasSuffix($0)) }) {
+                return category
+            }
+        }
+        return nil
     }
 
     /// Bank transactions that still need a category.

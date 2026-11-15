@@ -148,7 +148,9 @@ struct Transaction: Identifiable, Codable, Hashable {
     /// Whose this is, when not the account's owner (set on split parts).
     var owner: Owner? = nil
 
-    var isHunch: Bool { autoSort == "hunch" }
+    var isHunch: Bool { autoSort == "hunch" || autoSort == "unknown" }
+    /// Upside had no clue what this was (counted as Shopping meanwhile).
+    var isUnknown: Bool { autoSort == "unknown" }
     var isBusiness: Bool { business == true }
 }
 

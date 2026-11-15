@@ -440,6 +440,30 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(data.transactions.first { $0.id == "out" }?.isTransfer, false)
     }
 
+    func testHunchesReadTheStoreNameAndRetryOldShoppingGuesses() {
+        let store = makeStore()
+        func add(_ id: String, _ payee: String, _ category: String? = nil, _ sort: String? = nil) {
+            store.data.transactions.append(Transaction(id: id, accountId: "r", date: date(2026, 10, 5), amount: -1_000,
+                                                       payee: payee, categoryId: category, autoSort: sort))
+        }
+        add("dogs", "FRANKIES DOGS ON THE GO")
+        add("etix", "ETIX TICKET", "shopping", "hunch")  // an old fallback guess
+        add("fan", "TEAMFANSHOP")
+        add("zeffy", "ZEFFY* DONATION")
+        add("press", "PRESS")
+        add("mine", "PRESS COFFEE", "shopping")           // you sorted this one: left alone
+        BudgetStore.fillHunches(&store.data)
+        let category = { (id: String) in store.data.transactions.first { $0.id == id }?.categoryId }
+        XCTAssertEqual(category("dogs"), "dining")
+        XCTAssertEqual(category("etix"), "entertainment", "old Shopping hunches get another look")
+        XCTAssertEqual(category("fan"), "shopping")
+        XCTAssertEqual(category("zeffy"), "gifts")
+        XCTAssertEqual(category("mine"), "shopping")
+        // "Press" alone: the store you sorted starts with the same word.
+        XCTAssertEqual(category("press"), "shopping")
+        XCTAssertEqual(store.data.transactions.first { $0.id == "press" }?.isUnknown, false)
+    }
+
     func testEverythingGetsSortedAndHunchesWaitForAQuickCheck() {
         let store = makeStore()
         store.data.transactions += [
@@ -452,6 +476,7 @@ final class BudgetStoreTests: XCTestCase {
                       "every purchase has a category")
         XCTAssertEqual(store.data.transactions.first { $0.id == "l2" }?.categoryId, "dining", "same store, sorted like before")
         XCTAssertEqual(store.data.transactions.first { $0.id == "z" }?.categoryId, "shopping", "nothing to go on")
+        XCTAssertEqual(store.data.transactions.first { $0.id == "z" }?.isUnknown, true, "so Check these asks")
         XCTAssertTrue(Set(store.toCheck.map(\.id)).isSuperset(of: ["l2", "z"]))
 
         store.confirm("l2")

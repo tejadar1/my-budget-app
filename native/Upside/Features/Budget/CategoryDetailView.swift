@@ -570,7 +570,8 @@ private struct CheckRow: View {
 
     var body: some View {
         let t = transaction
-        let guess = store.category(t.categoryId)
+        // No clue at all: ask instead of offering Shopping as a guess.
+        let guess = t.isUnknown ? nil : store.category(t.categoryId)
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
                 Text(Merchant.clean(t.payee)).font(.headline).lineLimit(1)
@@ -585,8 +586,7 @@ private struct CheckRow: View {
                 Spacer()
                 if guess != nil {
                     Button(action: onConfirm) {
-                        Label("Right", systemImage: "checkmark")
-                            .font(.subheadline.weight(.semibold))
+                        Text("Right").font(.subheadline.weight(.semibold))
                     }
                     .buttonStyle(.borderedProminent)
                     .accessibilityLabel("\(guess?.name ?? "") is right")
