@@ -1164,6 +1164,12 @@ final class BudgetStoreTests: XCTestCase {
         // Month end judges against the plan made on the 2nd.
         XCTAssertEqual(store.originalLimit(store.category("dining")!, in: october), 50_000)
         XCTAssertTrue(store.wasAdjusted(store.category("dining")!, in: october))
+        // The recap says where it went wrong: dining, $100 past the plan.
+        let off = store.offPlan(in: october)
+        XCTAssertEqual(off.over.first?.category.id, "dining")
+        XCTAssertEqual(off.over.first?.over, 10_000)
+        XCTAssertEqual(off.over.first?.purchases, 1)
+        XCTAssertTrue(off.under.contains { $0.category.id == "shopping" }, "shopping went well")
 
         // November starts from the plan again, and October still adds up.
         store.now = { self.date(2026, 11, 3) }

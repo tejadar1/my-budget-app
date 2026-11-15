@@ -7,6 +7,7 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 - While planning the month (from the wrap-up, the first days of the month, or before anything's spent): "Start from what you usually spend" fills the limits, fit to what you have.
 - Once the month is underway, the one button is "Cover overspending", shown only when a category is over. It raises each one for this month only, from money not in a limit and then from categories with room left, and lists exactly what moved. Nothing else changes: not your other limits, not savings, cards or trips. Pressing it again does nothing.
 - If there isn't room to cover it all, it says how far the month is past the plan instead of trimming things you chose.
+- The month's recap starts with where it went off plan, compared with the plan you started the month with: "October went $490 past the plan. Most of it: Dining & Bars (+$310) and Shopping (+$180)." Each line says what drove it: "Planned $500 · spent $810 · 14 purchases, biggest $95 at Nobu". Categories under plan are listed as "Went well".
 - Gone: "Make limits fit" and "Rebalance the rest of the month", which recalculated every limit.
 
 ## 0.32.2: Better guesses

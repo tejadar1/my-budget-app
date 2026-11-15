@@ -99,7 +99,6 @@ struct RecapView: View {
             .map { ($0, store.spent($0.id, in: month)) }
             .filter { $0.1 > 0 }
             .sorted { $0.1 > $1.1 }
-        let overs = categories.filter { c, s in (store.originalLimit(c, in: month) ?? 0) > 0 && s > (store.originalLimit(c, in: month) ?? 0) }
         // Everyday spending the plan had no limit for.
         let everydayIds = Set(store.everydayCategories.map(\.id))
         let unplanned = categories.filter { c, _ in everydayIds.contains(c.id) && store.originalLimit(c, in: month) == nil }
@@ -129,6 +128,33 @@ struct RecapView: View {
                     .padding(.vertical, 6)
                 }
 
+                let off = store.offPlan(in: month)
+                if !off.over.isEmpty {
+                    let total = off.over.reduce(0) { $0 + $1.over }
+                    let top = off.over.prefix(2).map { "\($0.category.name) (+\(Money.short($0.over)))" }
+                    Section {
+                        Text("\(monthName) went \(Money.short(total)) past the plan. Most of it: \(top.joined(separator: " and ")).")
+                            .font(.subheadline.weight(.semibold))
+                        ForEach(off.over) { item in
+                            VStack(alignment: .leading, spacing: 3) {
+                                HStack {
+                                    CategoryIcon(categoryId: item.category.id, size: 26)
+                                    Text(item.category.name)
+                                    Spacer()
+                                    Text("+\(Money.short(item.over))").fontWeight(.semibold).foregroundStyle(Theme.over)
+                                }
+                                Text(offPlanDetail(item)).font(.footnote).foregroundStyle(.secondary)
+                            }
+                        }
+                        if !off.under.isEmpty {
+                            Text("Went well: " + off.under.prefix(3).map { "\($0.category.name) \(Money.short(-$0.over)) under" }.joined(separator: ", "))
+                                .font(.footnote).foregroundStyle(Theme.accent)
+                        }
+                    } header: {
+                        Text("Where it went off plan")
+                    }
+                }
+
                 if income > 0 {
                     Section("Money in and out") {
                         LabeledContent("Income", value: Money.short(income))
@@ -150,18 +176,6 @@ struct RecapView: View {
                         ForEach(categories.prefix(5), id: \.0.id) { category, amount in
                             LabeledContent(category.name, value: Money.short(amount))
                         }
-                    }
-                }
-
-                if !overs.isEmpty {
-                    Section {
-                        ForEach(overs, id: \.0.id) { category, amount in
-                            PlanVsSpentRow(category: category, month: month, spent: amount)
-                        }
-                    } header: {
-                        Text("Over the plan")
-                    } footer: {
-                        Text("Compared with the plan \(month.formatted(.dateTime.month(.wide))) started with, before any adjustments.")
                     }
                 }
 
@@ -215,26 +229,20 @@ struct RecapView: View {
     }
 }
 
-/// Planned · adjusted to · spent for one category.
-private struct PlanVsSpentRow: View {
-    @Environment(BudgetStore.self) private var store
-    let category: Category
-    let month: Date
-    let spent: Cents
+extension RecapView {
+    var monthName: String { month.formatted(.dateTime.month(.wide)) }
 
-    var body: some View {
-        let planned = store.originalLimit(category, in: month) ?? 0
-        let adjusted = store.limit(category, in: month) ?? 0
-        // Only this month's (or a still-open month's) adjustments are kept.
-        let knowsAdjusted = month == store.currentMonth || (store.plan.map { store.isInMonth($0.month, month) } ?? false)
-        VStack(alignment: .leading, spacing: 2) {
-            LabeledContent(category.name) {
-                Text("\(Money.short(spent - planned)) over plan").foregroundStyle(Theme.over)
+    /// "Planned $500 · spent $810 · 14 purchases, biggest $95 at Nobu"
+    func offPlanDetail(_ item: BudgetStore.OffPlan) -> String {
+        var parts = [item.hadLimit ? "Planned \(Money.short(item.planned))" : "Usually \(Money.short(item.planned))",
+                     "spent \(Money.short(item.spent))"]
+        if item.purchases > 0 {
+            var line = "\(item.purchases) purchase\(item.purchases == 1 ? "" : "s")"
+            if let big = item.biggest, item.purchases > 1 {
+                line += ", biggest \(Money.short(-big.amount)) at \(Merchant.clean(big.payee))"
             }
-            Text(knowsAdjusted && adjusted != planned
-                 ? "Planned \(Money.short(planned)) · adjusted to \(Money.short(adjusted)) · spent \(Money.short(spent))"
-                 : "Planned \(Money.short(planned)) · spent \(Money.short(spent))")
-                .font(.footnote).foregroundStyle(.secondary).monospacedDigit()
+            parts.append(line)
         }
+        return parts.joined(separator: " · ")
     }
 }
