@@ -1774,8 +1774,18 @@ final class SavingsTests: XCTestCase {
         XCTAssertTrue(s.category("fees")!.aimsForZero)
         XCTAssertFalse(s.topCategories(in: s.currentMonth).contains { $0.id == "fees" })
     }
+}
 
-    // MARK: - Trends and year in review
+final class TrendsTests: XCTestCase {
+    private var calendar: Calendar = {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "America/New_York")!
+        return c
+    }()
+
+    private func date(_ y: Int, _ m: Int, _ d: Int) -> Date {
+        calendar.date(from: DateComponents(year: y, month: m, day: d, hour: 12))!
+    }
 
     /// June–November 2026: groceries $400 a month then $700 in October,
     /// dining $100, rent $2,000, $5,000 pay, and a $900 trip in August.
