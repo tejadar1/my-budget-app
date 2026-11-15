@@ -133,7 +133,12 @@ struct RecapView: View {
                     let total = off.over.reduce(0) { $0 + $1.over }
                     let top = off.over.prefix(2).map { "\($0.category.name) (+\(Money.short($0.over)))" }
                     Section {
-                        Text("\(monthName) went \(Money.short(total)) past the plan. Most of it: \(top.joined(separator: " and ")).")
+                        // Under overall, a category or two over isn't "the month went past the plan".
+                        Text(limit > 0 && spent <= limit
+                             ? (off.over.count == 1
+                                ? "One category went past its plan: \(top[0])."
+                                : "\(off.over.count) categories went \(Money.short(total)) past their plans. Most of it: \(top.joined(separator: " and ")).")
+                             : "\(monthName) went \(Money.short(total)) past the plan. Most of it: \(top.joined(separator: " and ")).")
                             .font(.subheadline.weight(.semibold))
                         ForEach(off.over) { item in
                             VStack(alignment: .leading, spacing: 3) {

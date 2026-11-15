@@ -6,6 +6,7 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 - Trends, under More: what you spent each month for the last year (with your income as a line), one sentence on how it's going ("About $4,300 a month lately, $210 less than the three months before"), what changed last month compared with usual, and every category's last six months side by side. Tap any category for its purchases.
 - Year in review, under More ("2026 so far"; in January, last year "in review"): money in and out for the year, where it went with each category's share, your highest and lowest months, how many months stayed within the plan, who spent what, the biggest purchases, and fees for the year. If your bank history starts mid-year, it says so.
 - Trips stay out of the month-to-month comparisons, so a vacation doesn't look like a trend; the year counts them separately.
+- Recap: when the month came in under the plan overall, it no longer says the month went past the plan; it says which category went past its own ("One category went past its plan: Entertainment (+$74).").
 
 ## 0.32.3: Plan the way you budget
 - Plan works the way you budget: you set the limits; during the month you only cover overspending.
