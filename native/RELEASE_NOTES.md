@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next (0.32.1)
+## 0.32.1: Clearer Plan buttons
 - Plan has fewer, clearer buttons. At the top, only when something doesn't fit, one sentence and one button: "Make it fit" when the plan is more than your income, or "Put $X less toward trips" when you usually spend more than you have.
 - Everyday limits has one big button that says what it will do: "Make limits fit" (trims limits, then trips and card paydown), "Rebalance the rest of November", or "Use recommended limits".
 - You see where you ended up right under the button you pressed: "Fits: limits $3,950 of $3,992 to spend" (or how much is still short), what changed, and Undo.
