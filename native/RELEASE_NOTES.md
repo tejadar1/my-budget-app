@@ -2,6 +2,13 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.34.1): Clear about what to do
+- When limits add up to more than you have, Plan says so once, in one sentence, with one button: "Choose what gives". Before, it only said it in red at the bottom, with nothing to press.
+- Choose what gives now starts with lowering limits that still have room this month ("Shopping $300 → $200"), then the bottom of your plan: goals, trips, cards, savings. What went over stays over; your standing limits don't change.
+- The same goes for Needs attention: "Limits are $2,769 more than you have" opens those choices instead of Plan.
+- Quieter limit rows: what's spent and your usual in gray, and at most one short note ("November only", "Changed from $50") in gray instead of green. Suggested amounts show only while you're planning the month, where a button uses them.
+- Fixed: a small limit stepping down (Gifts $30 → $20) said "about 60 months" and never moved. Each step is now at least $10.
+
 ## 0.34: Overspending, called out
 - Going over a limit is called out instead of covered. Needs attention says "Dining & Bars is $100 over" and what it costs: "Comes out of cards or savings unless you spend less elsewhere". The category stays over all month; its limit isn't raised to hide it.
 - Tap it to see what drove it (purchases, the biggest one) and choose what gives, starting from the bottom of your plan: put less toward goals, trips, pay less on cards, or save less, for this month only. Savings comes last and is never chosen for you. Or spend less elsewhere: it shows which categories have room, and nothing changes.

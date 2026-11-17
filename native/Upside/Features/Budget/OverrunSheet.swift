@@ -20,9 +20,15 @@ struct OverrunSheet: View {
                 Section {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(overs.count == 1 ? "\(overs[0].category.name) is \(Money.short(cost.total)) over"
-                             : overs.isEmpty ? "Nothing is over" : "\(overs.count) categories are \(Money.short(cost.total)) over")
+                             : !overs.isEmpty ? "\(overs.count) categories are \(Money.short(cost.total)) over"
+                             : cost.needed > 0 ? "Limits are \(Money.short(cost.needed)) more than you have"
+                             : "Nothing is over")
                             .font(.title2.bold())
-                        Text("Past the limits you set for \(monthName). It stays that way: the limit isn't raised to hide it.")
+                        Text(!overs.isEmpty
+                             ? "Past the limits you set for \(monthName). It stays that way: the limit isn't raised to hide it."
+                             : cost.needed > 0
+                             ? "With what's already spent, \(monthName)'s limits use \(Money.short(cost.committed)). After bills, savings, cards and trips there's \(Money.short(cost.toSpend))."
+                             : "Everything fits in \(monthName)'s plan.")
                             .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 4)
@@ -43,7 +49,7 @@ struct OverrunSheet: View {
                     }
                 }
 
-                if cost.total > 0 {
+                if cost.total > 0 || cost.needed > 0 || !cost.cuts.isEmpty {
                     Section {
                         if cost.fromUnassigned > 0 {
                             Label("Money not in a limit covers \(Money.short(cost.fromUnassigned)) of it. That's \(Money.short(cost.fromUnassigned)) less left at the end of \(monthName).",
@@ -60,9 +66,11 @@ struct OverrunSheet: View {
                             }
                         }
                         if cost.needed > 0 {
-                            Text(cost.fromUnassigned > 0 || cost.paid > 0
-                                 ? "\(Money.short(cost.needed)) still has to come from somewhere."
-                                 : "Your limits already use everything left after savings, cards and trips. To cover \(Money.short(cost.needed)) this month, something has to give:")
+                            Text(cost.fromUnassigned > 0 || !cost.cuts.isEmpty
+                                 ? "\(Money.short(cost.needed)) still has to come from somewhere. Pick one:"
+                                 : overs.isEmpty
+                                 ? "To make \(monthName) add up, something has to give. Pick one:"
+                                 : "Your limits already use everything left after savings, cards and trips. To cover \(Money.short(cost.needed)) this month, something has to give. Pick one:")
                                 .font(.subheadline.weight(.semibold))
                             ForEach(cost.options) { option in
                                 Button {
@@ -74,17 +82,13 @@ struct OverrunSheet: View {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(option.source.action(option.amount) + (option.amount < cost.needed ? " (all of it)" : ""))
                                             .fontWeight(.semibold)
-                                        Text("\(Money.short(option.planned)) → \(Money.short(option.planned - option.amount)) this month")
+                                        Text(option.source == .room ? roomPreview(option.amount)
+                                             : "\(Money.short(option.planned)) → \(Money.short(option.planned - option.amount)) this month")
                                             .font(.footnote).foregroundStyle(.secondary).monospacedDigit()
                                     }
                                 }
                                 // A cost, not good news: plain, not the money-green accent.
                                 .tint(.primary)
-                            }
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Spend less elsewhere").fontWeight(.semibold)
-                                Text(elsewhere(cost.room))
-                                    .font(.footnote).foregroundStyle(.secondary)
                             }
                         } else if cost.paid > 0 || cost.fromUnassigned > 0 {
                             Text("It's paid for. It still shows as over, and the recap will name it.")
@@ -94,7 +98,7 @@ struct OverrunSheet: View {
                         Text("What it costs")
                     } footer: {
                         Text(cost.needed > 0
-                             ? "Starts from the bottom of your plan: \(names.joined(separator: ", ")). Savings comes last and is never chosen for you. Only \(monthName) changes."
+                             ? "Starts with limits that still have room, then the bottom of your plan: \(names.filter { $0 != PlanPriority.room.noun }.joined(separator: ", ")). Savings comes last and is never chosen for you. Only \(monthName) changes; your standing limits and amounts stay as you set them."
                              : "Only \(monthName) changes; next month is back to your plan.")
                     }
                 }
@@ -125,9 +129,12 @@ struct OverrunSheet: View {
         return line
     }
 
-    private func elsewhere(_ room: [BudgetStore.CoverSource]) -> String {
-        guard !room.isEmpty else { return "No category has room left this month. Nothing changes; it stays called out." }
-        let list = room.prefix(3).map { "\($0.name) has \(Money.short($0.room)) left" }
-        return list.joined(separator: ", ") + ". Nothing changes; it stays called out."
+    /// "Shopping $300 → $200, Groceries $600 → $560 this month"
+    private func roomPreview(_ amount: Cents) -> String {
+        let parts = store.roomToLower(amount, in: month).compactMap { room, take -> String? in
+            guard let c = store.category(room.id), let limit = store.limit(c, in: month) else { return nil }
+            return "\(room.name) \(Money.short(limit)) → \(Money.short(limit - take))"
+        }
+        return parts.prefix(3).joined(separator: ", ") + (parts.count > 3 ? " and \(parts.count - 3) more" : "") + " this month"
     }
 }

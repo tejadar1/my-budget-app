@@ -2,13 +2,16 @@ import Foundation
 
 /// The plan's order: savings, then cards, then trips, then goals, then
 /// limits. Paying for overspending starts from the bottom of that order.
+/// `room` isn't in the plan's order: it's lowering this month's limits
+/// that still have room, the first thing to try.
 enum PlanPriority: String, Codable, CaseIterable, Identifiable {
-    case goals, trips, cards, savings
+    case room, goals, trips, cards, savings
     var id: String { rawValue }
 
     /// "Save $100 less"
     func action(_ amount: Cents) -> String {
         switch self {
+        case .room: return "Lower limits with room left by \(Money.short(amount))"
         case .savings: return "Save \(Money.short(amount)) less"
         case .cards: return "Pay \(Money.short(amount)) less on cards"
         case .trips: return "Put \(Money.short(amount)) less toward trips"
@@ -19,6 +22,7 @@ enum PlanPriority: String, Codable, CaseIterable, Identifiable {
     /// "saved $100 less than planned"
     func done(_ amount: Cents) -> String {
         switch self {
+        case .room: return "lowered limits with room left by \(Money.short(amount))"
         case .savings: return "saved \(Money.short(amount)) less than planned"
         case .cards: return "paid \(Money.short(amount)) less on cards"
         case .trips: return "put \(Money.short(amount)) less toward trips"
@@ -28,6 +32,7 @@ enum PlanPriority: String, Codable, CaseIterable, Identifiable {
 
     var noun: String {
         switch self {
+        case .room: return "limits with room left"
         case .savings: return "savings"
         case .cards: return "cards"
         case .trips: return "trips"
@@ -43,6 +48,8 @@ struct OverrunCut: Codable, Equatable, Identifiable {
     var amount: Cents
     /// The category that went over, when the choice was made for one.
     var categoryId: String?
+    /// For `room`: how much each limit was lowered, to put back on Undo.
+    var lowered: [String: Cents]? = nil
 }
 
 /// Overspending isn't covered by quietly moving limits around. Everything
@@ -57,11 +64,15 @@ extension BudgetStore {
         var fromUnassigned: Cents
         /// Already paid for this month with less savings, cards, trips or goals.
         var paid: Cents
+        /// How far the limits alone (what's spent where it's more) go past
+        /// what there is to spend, before any choice.
+        var committed: Cents
+        var toSpend: Cents
         /// Still has to come from somewhere (whole dollars).
         var needed: Cents
         /// What each can still give this month, bottom of the order first.
         var options: [Option]
-        /// Categories with room left: where spending less would make up for it.
+        /// Categories with room left this month, most first.
         var room: [CoverSource]
         var cuts: [OverrunCut]
 
@@ -86,42 +97,89 @@ extension BudgetStore {
         let overs = overruns(in: month)
         let total = overs.reduce(0) { $0 + $1.over }
         let cuts = overrunCuts(in: month)
-        let paid = cuts.reduce(0) { $0 + $1.amount }
-        // What the limits use (your usual where there's no limit), and the
-        // money left over before anything was paid for.
-        let allowed = everydayCategories.reduce(0) { $0 + (limit($1, in: month) ?? averageSpent($1.id, before: month) ?? 0) }
-        let spare = max(0, plan.toSpend - paid - allowed)
+        // Less savings, cards, trips or goals adds to what there is to spend;
+        // lowering limits with room lowers what the limits use instead.
+        let paid = cuts.filter { $0.source != .room }.reduce(0) { $0 + $1.amount }
+        let allowed = everydayCategories.map { c in (c, limit(c, in: month) ?? averageSpent(c.id, before: month) ?? 0) }
+        let allowedTotal = allowed.reduce(0) { $0 + $1.1 }
+        // What the month will use if the rest of the limits get spent:
+        // each limit, or what's spent where that's more.
+        let committed = allowed.reduce(0) { $0 + max($1.1, spent($1.0.id, in: month)) }
+        let spare = max(0, plan.toSpend - paid - allowedTotal)
         let fromUnassigned = min(total, spare)
-        let needed = (max(0, total - fromUnassigned - paid) + 99) / 100 * 100
-        let available: [(PlanPriority, Cents)] = [(.goals, plan.goals), (.trips, plan.trips),
-                                                  (.cards, plan.cardPaydown), (.savings, plan.savings)]
-        let options = needed > 0
-            ? available.filter { $0.1 >= 100 }.map { OverrunCost.Option(source: $0.0, planned: $0.1, amount: min(needed, $0.1 / 100 * 100)) }
-            : []
-        let overIds = Set(overs.map(\.id))
-        let room = everydayCategories.compactMap { c -> CoverSource? in
-            guard !overIds.contains(c.id), let limit = limit(c, in: month) else { return nil }
-            let left = (limit - spent(c.id, in: month)) / 100 * 100
-            return left >= 1_000 ? CoverSource(id: c.id, name: c.name, room: left) : nil
+        let needed = (max(0, committed - plan.toSpend) + 99) / 100 * 100
+        let room = roomLeft(in: month, excluding: Set(overs.map(\.id)))
+        let roomTotal = room.reduce(0) { $0 + $1.room }
+        var options: [OverrunCost.Option] = []
+        if needed > 0 {
+            if roomTotal > 0 {
+                options.append(.init(source: .room, planned: roomTotal, amount: min(needed, roomTotal)))
+            }
+            for (source, amount) in [(PlanPriority.goals, plan.goals), (.trips, plan.trips),
+                                     (.cards, plan.cardPaydown), (.savings, plan.savings)] where amount >= 100 {
+                options.append(.init(source: source, planned: amount, amount: min(needed, amount / 100 * 100)))
+            }
         }
-        .sorted { $0.room > $1.room }
         return OverrunCost(overruns: overs, total: total, fromUnassigned: fromUnassigned, paid: paid,
+                           committed: committed, toSpend: plan.toSpend,
                            needed: needed, options: options, room: room, cuts: cuts)
     }
 
-    /// Pays for overspending this month with less savings, cards, trips or
-    /// goals. Your standing amounts don't change; next month is as planned.
+    /// Limits with room not spent yet this month (whole $10s), most first.
+    func roomLeft(in month: Date, excluding: Set<String> = []) -> [CoverSource] {
+        everydayCategories.compactMap { c -> CoverSource? in
+            guard !excluding.contains(c.id), let limit = limit(c, in: month) else { return nil }
+            let left = (limit - spent(c.id, in: month)) / 1_000 * 1_000
+            return left >= 1_000 ? CoverSource(id: c.id, name: c.name, room: left) : nil
+        }
+        .sorted { $0.room != $1.room ? $0.room > $1.room : $0.id < $1.id }
+    }
+
+    /// Which limits lowering `amount` of room would touch, most room first,
+    /// in $10s. Never below what's spent.
+    func roomToLower(_ amount: Cents, in month: Date) -> [(CoverSource, Cents)] {
+        var need = amount
+        var result: [(CoverSource, Cents)] = []
+        for source in roomLeft(in: month, excluding: Set(overruns(in: month).map(\.id))) where need > 0 {
+            let take = min(source.room, (need + 999) / 1_000 * 1_000)
+            result.append((source, take))
+            need -= take
+        }
+        return result
+    }
+
+    /// Pays for overspending this month: less savings, cards, trips or
+    /// goals, or lower limits that still have room. Standing amounts and
+    /// limits don't change; next month is as planned. What went over stays over.
     func payForOverspending(from source: PlanPriority, amount: Cents, categoryId: String?, in month: Date) {
         guard amount > 0 else { return }
         if !isPlanningWindow(month) { keepOriginalPlan(for: month) }
         var plan = data.plan.flatMap { isInMonth($0.month, month) ? $0 : nil }
             ?? SavingsPlan(month: month, goal: 0, limits: [:])
-        plan.cuts = (plan.cuts ?? []) + [OverrunCut(id: UUID().uuidString, source: source, amount: amount, categoryId: categoryId)]
+        var cut = OverrunCut(id: UUID().uuidString, source: source, amount: amount, categoryId: categoryId)
+        if source == .room {
+            var lowered: [String: Cents] = [:]
+            for (room, take) in roomToLower(amount, in: month) {
+                guard let c = category(room.id) else { continue }
+                plan.limits[room.id] = (plannedLimit(c, in: month) ?? 0) - take
+                lowered[room.id] = take
+            }
+            guard !lowered.isEmpty else { return }
+            cut.lowered = lowered
+            cut.amount = lowered.values.reduce(0, +)
+        }
+        plan.cuts = (plan.cuts ?? []) + [cut]
         data.plan = plan
     }
 
     func undoOverspendingCut(_ id: String, in month: Date) {
-        guard var plan = data.plan, isInMonth(plan.month, month) else { return }
+        guard var plan = data.plan, isInMonth(plan.month, month),
+              let cut = plan.cuts?.first(where: { $0.id == id }) else { return }
+        for (categoryId, amount) in cut.lowered ?? [:] {
+            let standing = category(categoryId)?.limit
+            let restored = (plan.limits[categoryId] ?? standing ?? 0) + amount
+            plan.limits[categoryId] = restored == standing ? nil : restored
+        }
         plan.cuts = (plan.cuts ?? []).filter { $0.id != id }
         if plan.cuts?.isEmpty == true { plan.cuts = nil }
         data.plan = plan
@@ -143,10 +201,13 @@ extension BudgetStore {
     func overrunNote(in month: Date) -> String {
         let cost = overrunCost(in: month)
         if cost.needed > 0 {
-            let names = cost.options.map(\.source.noun)
-            guard !names.isEmpty else { return "Nothing left to take it from: it's past the plan" }
+            let names = cost.options.filter { $0.source != .room }.map(\.source.noun)
+            let room = cost.options.contains { $0.source == .room }
+            guard !names.isEmpty else {
+                return room ? "Choose which limits with room left to lower" : "Nothing left to take it from: it's past the plan"
+            }
             let list = names.count > 1 ? names.dropLast().joined(separator: ", ") + " or " + names.last! : names[0]
-            return "Comes out of \(list) unless you spend less elsewhere"
+            return "Comes out of \(list)" + (room ? ", or lower limits with room left" : ""
         }
         if let summary = cutsSummary(in: month) { return "Paid for: " + summary }
         return "Money not in a limit covers it: \(Money.short(cost.fromUnassigned)) less left at month end"

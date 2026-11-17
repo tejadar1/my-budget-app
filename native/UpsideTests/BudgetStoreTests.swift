@@ -1946,11 +1946,12 @@ final class OverrunTests: XCTestCase {
         XCTAssertEqual(cost.total, 10_000)
         XCTAssertEqual(cost.fromUnassigned, 0, "every dollar after savings and cards is in a limit")
         XCTAssertEqual(cost.needed, 10_000)
-        XCTAssertEqual(cost.options.map(\.source), [.cards, .savings], "cards before savings; nothing set for trips or goals")
-        XCTAssertEqual(cost.options.map(\.amount), [10_000, 10_000])
+        XCTAssertEqual(cost.options.map(\.source), [.room, .cards, .savings],
+                       "room in other limits, then cards before savings; nothing set for trips or goals")
+        XCTAssertEqual(cost.options.map(\.amount), [10_000, 10_000, 10_000])
         XCTAssertEqual(cost.room.map(\.id), ["shopping"])
         XCTAssertEqual(cost.room.first?.room, 25_000)
-        XCTAssertEqual(s.overrunNote(in: october), "Comes out of cards or savings unless you spend less elsewhere")
+        XCTAssertEqual(s.overrunNote(in: october), "Comes out of cards or savings, or lower limits with room left")
         XCTAssertTrue(s.attention().contains(.over(categoryId: "dining", amount: 10_000)))
     }
 
@@ -2034,5 +2035,49 @@ final class OverrunTests: XCTestCase {
         // The first week is too early to call a pace.
         s.now = { self.date(2026, 10, 5) }
         XCTAssertTrue(s.onPaceToGoOver(in: s.currentMonth).isEmpty)
+    }
+
+    func testLoweringRoomLeftKeepsTheOverrunAndUndoPutsItBack() {
+        let s = store()
+        let october = s.currentMonth
+        let shopping = s.category("shopping")!
+        XCTAssertEqual(s.roomToLower(10_000, in: october).map { $0.1 }, [10_000])
+        s.payForOverspending(from: .room, amount: 10_000, categoryId: "dining", in: october)
+        XCTAssertEqual(s.limit(shopping, in: october), 20_000, "lowered for October")
+        XCTAssertEqual(shopping.limit, 30_000, "the standing limit stays")
+        XCTAssertEqual(s.overruns(in: october).first?.over, 10_000, "dining stays over")
+        XCTAssertEqual(s.overrunCost(in: october).needed, 0)
+        XCTAssertEqual(s.monthPlan(october).savings, 390_000, "savings untouched")
+        XCTAssertEqual(s.cutsSummary(in: october), "lowered limits with room left by \(Money.short(10_000))")
+
+        s.undoOverspendingCut(s.overrunCuts(in: october)[0].id, in: october)
+        XCTAssertEqual(s.limit(shopping, in: october), 30_000)
+        XCTAssertNil(s.plan(for: october)?.limits["shopping"])
+        XCTAssertEqual(s.overrunCost(in: october).needed, 10_000)
+    }
+
+    func testLimitsPastWhatYouHaveSayWhatHasToGiveWithNothingOver() {
+        let s = store()
+        let october = s.currentMonth
+        s.data.transactions.removeAll { $0.payee == "Nobu" }   // dining $400 of $500
+        s.setLimit("groceries", 20_000)                        // $200 more than there is
+        XCTAssertTrue(s.overruns(in: october).isEmpty)
+        let cost = s.overrunCost(in: october)
+        XCTAssertEqual(cost.needed, 20_000)
+        XCTAssertEqual(cost.committed, 100_000)
+        XCTAssertEqual(cost.options.first?.source, .room)
+        XCTAssertEqual(cost.options.first?.amount, 20_000)
+        XCTAssertTrue(s.attention().contains(.limitsOver(amount: 20_000)))
+    }
+
+    func testSmallLimitsStillStepDown() {
+        // 10% off $30 rounds back to $30; a step is always at least $10.
+        XCTAssertEqual(BudgetStore.stepOnce(3_000, toward: 2_000), 2_000)
+        XCTAssertEqual(BudgetStore.stepOnce(100_000, toward: 50_000), 90_000)
+        XCTAssertEqual(BudgetStore.stepOnce(52_000, toward: 50_000), 50_000)
+        var gifts = Category(id: "gifts", name: "Gifts", group: "Everyday")
+        gifts.limit = 3_000
+        gifts.goalLimit = 2_000
+        XCTAssertEqual(store().stepsToGoal(gifts), 1)
     }
 }

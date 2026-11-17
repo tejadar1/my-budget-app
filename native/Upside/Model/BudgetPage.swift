@@ -56,8 +56,12 @@ extension BudgetStore {
             items.append(.checkIn(decisions: decisions))
         }
         if !toCheck.isEmpty { items.append(.toCheck(count: toCheck.count)) }
-        let plan = monthPlan(currentMonth)
-        if plan.limitsOverBy > 0 { items.append(.limitsOver(amount: plan.limitsOverBy)) }
+        // Limits past what there is to spend (what's spent counted where it's
+        // more): one row, unless an overspending row already says it.
+        if overs.isEmpty {
+            let needed = overrunCost(in: currentMonth).needed
+            if needed > 0 { items.append(.limitsOver(amount: needed)) }
+        }
         return items
     }
 

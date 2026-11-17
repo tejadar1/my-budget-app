@@ -77,7 +77,7 @@ extension BudgetStore {
             var month = monthStart(through)
             while month < currentMonth {
                 if spent(data.categories[i].id, in: month) <= limit {
-                    limit = max(goal, Self.round10(Double(limit) * Self.stepShare))
+                    limit = Self.stepOnce(limit, toward: goal)
                 }
                 month = self.month(1, from: month)
             }
@@ -92,7 +92,7 @@ extension BudgetStore {
         guard let goal = category.goalLimit, var limit = category.limit, limit > goal else { return nil }
         var steps = 0
         while limit > goal && steps < 60 {
-            limit = max(goal, Self.round10(Double(limit) * Self.stepShare))
+            limit = Self.stepOnce(limit, toward: goal)
             steps += 1
         }
         return steps
@@ -114,4 +114,10 @@ extension BudgetStore {
     }
 
     static func round10(_ cents: Double) -> Cents { Int((cents / 1000).rounded()) * 1000 }
+
+    /// One month's step: 10% down, at least $10 (so a small limit like $30
+    /// doesn't round back to itself and never move), never below the goal.
+    static func stepOnce(_ limit: Cents, toward goal: Cents) -> Cents {
+        max(goal, min(limit - 1_000, round10(Double(limit) * stepShare)))
+    }
 }

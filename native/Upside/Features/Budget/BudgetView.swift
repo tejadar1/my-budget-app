@@ -131,7 +131,7 @@ struct BudgetView: View {
         case .checkIn: sheet = .checkIn
         case .extraIncome: sheet = .extraIncome
         case .toCheck: path.append(Route.review)
-        case .limitsOver: sheet = .plan
+        case .limitsOver: sheet = .overrun(nil)
         }
     }
 
@@ -411,7 +411,7 @@ struct AttentionList: View {
             }
         case .limitsOver(let amount):
             ListRow(title: "Limits are \(Money.short(amount)) more than you have",
-                    subtitle: "Fix it in Plan") {
+                    subtitle: store.overrunNote(in: store.currentMonth)) {
                 SymbolIcon(symbol: "slider.horizontal.3", color: .red)
             }
         }

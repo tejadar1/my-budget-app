@@ -35,6 +35,8 @@ struct PlanView: View {
     @State private var stepGoals: [String: Int] = [:]
     /// Categories to stop stepping down on Save.
     @State private var stopSteps: Set<String> = []
+    /// What has to give, for limits past what there is (opened from Plan).
+    @State private var showWhatGives = false
 
     private var month: Date { store.currentMonth }
 
@@ -129,6 +131,7 @@ struct PlanView: View {
                 }
             }
             .onAppear(perform: load)
+            .sheet(isPresented: $showWhatGives) { OverrunSheet(month: month, focus: nil) }
         }
     }
 
@@ -246,10 +249,30 @@ struct PlanView: View {
                     .tint(Theme.accent)
                     Text("Fills every limit from what you usually spend, fit to what you have.")
                         .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                } else if overs > 0 {
-                    Label("\(overs) categor\(overs == 1 ? "y is" : "ies are") over. Limits aren't raised to hide it: Needs attention on Budget shows what it costs and what has to give.",
-                          systemImage: "exclamationmark.circle.fill")
-                        .font(.footnote).foregroundStyle(Theme.over)
+                } else if overs > 0 || n.total > n.toSpend {
+                    // One problem, one sentence, one button.
+                    let edited = limits != loadedLimits
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label(n.total > n.toSpend
+                              ? "Limits are \(Money.short(n.total - n.toSpend)) more than you have"
+                              : "\(overs) categor\(overs == 1 ? "y is" : "ies are") over",
+                              systemImage: "exclamationmark.circle.fill")
+                            .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.over)
+                        Text("Part of it is already spent, so something has to give this month: lower limits that still have room, or put less toward trips, cards or savings. You choose; nothing's raised to hide it.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                        Button {
+                            showWhatGives = true
+                        } label: {
+                            Text("Choose what gives").font(.headline).frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .buttonStyle(.borderedProminent).buttonBorderShape(.capsule).controlSize(.large)
+                        .tint(Theme.accent)
+                        .disabled(edited)
+                        if edited {
+                            Text("Save your changes first, then come back to choose.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
                 } else if fixNote == nil {
                     Text("Nothing is over its limit. To change a limit, type in it.")
                         .font(.footnote).foregroundStyle(.secondary).frame(maxWidth: .infinity)
@@ -262,7 +285,10 @@ struct PlanView: View {
                 LimitPlanRow(name: c.name,
                              usual: store.averageSpent(c.id, before: month) ?? 0,
                              spentSoFar: store.spent(c.id, in: month),
-                             recommended: n.recommended[c.id],
+                             // Suggestions only while planning, where a button applies them.
+                             recommended: adjusting ? nil : n.recommended[c.id],
+                             monthName: monthName,
+                             underway: adjusting,
                              covered: (limits[c.id] == loadedLimits[c.id] && store.plannedLimit(c, in: month) != c.limit)
                                 || (thisMonthOnly[c.id].map { $0.shown == limits[c.id] } ?? false),
                              planned: plannedLabel(c.id, snapshot),
@@ -298,7 +324,7 @@ struct PlanView: View {
         guard let goal = stepGoal(c) else { return nil }
         var limit = (limits[c.id] ?? 0) * 100, months = 0
         while limit > goal * 100 && months < 60 {
-            limit = max(goal * 100, BudgetStore.round10(Double(limit) * BudgetStore.stepShare))
+            limit = BudgetStore.stepOnce(limit, toward: goal * 100)
             months += 1
         }
         return months == 0 ? "At its goal" : "Steps down to \(Money.short(goal * 100)) · about \(months) month\(months == 1 ? "" : "s")"
@@ -493,6 +519,9 @@ private struct LimitPlanRow: View {
     let usual: Cents
     var spentSoFar: Cents = 0
     let recommended: Cents?
+    var monthName = ""
+    /// The month is underway: show what's spent rather than a suggestion.
+    var underway = false
     /// Changed for this month by Cover or Save extra.
     var covered = false
     /// What the month's plan had, when this month's limit was adjusted.
@@ -509,17 +538,19 @@ private struct LimitPlanRow: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(name)
-                // Spent more than usual already: say so, since that's why it's higher.
-                let base = spentSoFar > usual ? "\(Money.short(spentSoFar)) spent so far" : "usual \(Money.short(usual))"
+                // Underway: what's spent (and the usual, for scale). Planning: the
+                // usual, and what Start from usual would set.
+                let base = underway && spentSoFar > 0
+                    ? "spent \(Money.short(spentSoFar))" + (usual > 0 ? " · usual \(Money.short(usual))" : "")
+                    : spentSoFar > usual ? "\(Money.short(spentSoFar)) spent so far" : "usual \(Money.short(usual))"
                 Text(recommended.map { "\(base) → \(Money.short($0))" } ?? base)
                     .font(.caption).foregroundStyle(.secondary).monospacedDigit()
-                if let planned {
-                    // Covers and raises for money already spent end with the
-                    // month; other changes carry into next month.
-                    Text(covered ? "Planned \(planned) · this month only" : "Planned \(planned) · changed from here on")
-                        .font(.caption).foregroundStyle(Theme.accent)
-                } else if covered {
-                    Text("This month only").font(.caption).foregroundStyle(Theme.accent)
+                // At most one short tag, in gray: notes, not warnings.
+                if covered {
+                    Text(planned.map { "\(monthName) only · planned \($0)" } ?? "\(monthName) only")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else if let planned {
+                    Text("Changed from \(planned)").font(.caption).foregroundStyle(.secondary)
                 }
                 if let stepNote {
                     HStack(spacing: 8) {
