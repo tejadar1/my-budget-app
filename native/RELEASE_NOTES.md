@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next (0.34.1): Clear about what to do
+## 0.34.1: Clear about what to do
 - When limits add up to more than you have, Plan says so once, in one sentence, with one button: "Choose what gives". Before, it only said it in red at the bottom, with nothing to press.
 - Choose what gives now starts with lowering limits that still have room this month ("Shopping $300 → $200"), then the bottom of your plan: goals, trips, cards, savings. What went over stays over; your standing limits don't change.
 - The same goes for Needs attention: "Limits are $2,769 more than you have" opens those choices instead of Plan.
