@@ -273,9 +273,12 @@ struct PlanView: View {
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }
-                } else if overs > 0, let summary = store.cutsSummary(in: month) {
-                    // Already chosen: say so quietly, no button.
-                    Label("\(overs) categor\(overs == 1 ? "y is" : "ies are") over, and it's paid for: this month you \(summary). Nothing else to do.",
+                } else if overs > 0 {
+                    // Already paid for, or money no limit uses covers it: say so quietly, no button.
+                    let summary = store.cutsSummary(in: month)
+                    Label("\(overs) categor\(overs == 1 ? "y is" : "ies are") over, and it's paid for: "
+                          + (summary.map { "this month you \($0)." } ?? "money not in any limit covers it.")
+                          + " Nothing else to do.",
                           systemImage: "checkmark.circle.fill")
                         .font(.footnote).foregroundStyle(.secondary)
                 } else if fixNote == nil {

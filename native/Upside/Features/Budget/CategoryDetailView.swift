@@ -399,7 +399,7 @@ struct LimitDetailView: View {
                     Text("Limit")
                 } footer: {
                     // Plan is the one place limits change, so they always fit the month.
-                    Text(explanation(category, usual: usual, suggested: suggested) + " Change it in Plan."
+                    Text(explanation(category, usual: usual, suggested: suggested) + " Change it with Adjust limit on the category, or in Plan."
                          + (category.rolloverSince != nil ? " What you don’t spend adds to next month’s limit." : ""))
                 }
 
