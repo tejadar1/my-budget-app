@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next (0.34.2): Nothing left to do
+## 0.34.2: Nothing left to do
 - Plan no longer asks you to "Choose what gives" for overspending you've already paid for. It says "2 categories are over, and it's paid for: … Nothing else to do."
 - "A big cut · Step down to it instead" shows only while planning the month, not on limits you lowered for this month only.
 
