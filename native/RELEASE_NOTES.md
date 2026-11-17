@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next (0.34): Overspending, called out
+## 0.34: Overspending, called out
 - Going over a limit is called out instead of covered. Needs attention says "Dining & Bars is $100 over" and what it costs: "Comes out of cards or savings unless you spend less elsewhere". The category stays over all month; its limit isn't raised to hide it.
 - Tap it to see what drove it (purchases, the biggest one) and choose what gives, starting from the bottom of your plan: put less toward goals, trips, pay less on cards, or save less, for this month only. Savings comes last and is never chosen for you. Or spend less elsewhere: it shows which categories have room, and nothing changes.
 - Money not in any limit pays first, and it says so: "$100 less left at month end".
