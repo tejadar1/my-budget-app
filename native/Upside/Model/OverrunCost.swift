@@ -207,7 +207,7 @@ extension BudgetStore {
                 return room ? "Choose which limits with room left to lower" : "Nothing left to take it from: it's past the plan"
             }
             let list = names.count > 1 ? names.dropLast().joined(separator: ", ") + " or " + names.last! : names[0]
-            return "Comes out of \(list)" + (room ? ", or lower limits with room left" : ""
+            return "Comes out of \(list)" + (room ? ", or lower limits with room left" : "")
         }
         if let summary = cutsSummary(in: month) { return "Paid for: " + summary }
         return "Money not in a limit covers it: \(Money.short(cost.fromUnassigned)) less left at month end"
