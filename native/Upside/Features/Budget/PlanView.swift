@@ -249,7 +249,7 @@ struct PlanView: View {
                     .tint(Theme.accent)
                     Text("Fills every limit from what you usually spend, fit to what you have.")
                         .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                } else if overs > 0 || n.total > n.toSpend {
+                } else if n.total > n.toSpend || store.overrunCost(in: month).needed > 0 {
                     // One problem, one sentence, one button.
                     let edited = limits != loadedLimits
                     VStack(alignment: .leading, spacing: 8) {
@@ -273,6 +273,11 @@ struct PlanView: View {
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }
+                } else if overs > 0, let summary = store.cutsSummary(in: month) {
+                    // Already chosen: say so quietly, no button.
+                    Label("\(overs) categor\(overs == 1 ? "y is" : "ies are") over, and it's paid for: this month you \(summary). Nothing else to do.",
+                          systemImage: "checkmark.circle.fill")
+                        .font(.footnote).foregroundStyle(.secondary)
                 } else if fixNote == nil {
                     Text("Nothing is over its limit. To change a limit, type in it.")
                         .font(.footnote).foregroundStyle(.secondary).frame(maxWidth: .infinity)
@@ -293,7 +298,8 @@ struct PlanView: View {
                                 || (thisMonthOnly[c.id].map { $0.shown == limits[c.id] } ?? false),
                              planned: plannedLabel(c.id, snapshot),
                              stepNote: stepNote(c),
-                             bigCut: stepGoal(c) == nil && store.isBigCut(limits[c.id] ?? 0, for: c)
+                             // Advice for setting limits, so only while planning the month.
+                             bigCut: !adjusting && stepGoal(c) == nil && store.isBigCut(limits[c.id] ?? 0, for: c)
                                  ? "Usual \(Money.short(store.averageSpent(c.id, before: month) ?? 0)): a big cut" : nil,
                              onStep: { startStep(c) },
                              onStopStep: { stepGoals[c.id] = nil; stopSteps.insert(c.id) },

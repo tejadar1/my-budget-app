@@ -2,6 +2,10 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.34.2): Nothing left to do
+- Plan no longer asks you to "Choose what gives" for overspending you've already paid for. It says "2 categories are over, and it's paid for: … Nothing else to do."
+- "A big cut · Step down to it instead" shows only while planning the month, not on limits you lowered for this month only.
+
 ## 0.34.1: Clear about what to do
 - When limits add up to more than you have, Plan says so once, in one sentence, with one button: "Choose what gives". Before, it only said it in red at the bottom, with nothing to press.
 - Choose what gives now starts with lowering limits that still have room this month ("Shopping $300 → $200"), then the bottom of your plan: goals, trips, cards, savings. What went over stays over; your standing limits don't change.
