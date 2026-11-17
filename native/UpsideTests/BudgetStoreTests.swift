@@ -2117,4 +2117,33 @@ final class OverrunTests: XCTestCase {
         XCTAssertTrue(s.attention().contains(.limitsOver(amount: 20_000)))
         XCTAssertFalse(s.attention().contains { if case .over = $0 { true } else { false } })
     }
+
+    func testRaisingALimitHasToFitByLoweringAnother() {
+        let s = store()
+        s.data.transactions.removeAll { $0.payee == "Nobu" }   // dining $400 of $500: every dollar in a limit
+        let october = s.currentMonth
+        XCTAssertEqual(s.limitOver("dining", to: 50_000, in: october), 0)
+        XCTAssertEqual(s.limitOver("dining", to: 60_000, in: october), 10_000, "$100 more than there is")
+        XCTAssertEqual(s.limitOver("dining", to: 60_000, taking: ["shopping": 10_000], in: october), 0)
+        XCTAssertEqual(s.limitSpare("dining", to: 40_000, in: october), 10_000, "lowering frees money")
+
+        // Just October: both limits change for the month; standing ones stay.
+        s.adjustLimit("dining", to: 60_000, taking: ["shopping": 10_000], thisMonthOnly: true, in: october)
+        XCTAssertEqual(s.limit(s.category("dining")!, in: october), 60_000)
+        XCTAssertEqual(s.limit(s.category("shopping")!, in: october), 20_000)
+        XCTAssertEqual(s.category("dining")!.limit, 50_000)
+        XCTAssertEqual(s.category("shopping")!.limit, 30_000)
+        XCTAssertEqual(s.monthPlan(october).limitsOverBy, 0)
+    }
+
+    func testRaisingALimitFromNowOnChangesTheStandingLimits() {
+        let s = store()
+        s.data.transactions.removeAll { $0.payee == "Nobu" }
+        let october = s.currentMonth
+        s.adjustLimit("dining", to: 60_000, taking: ["shopping": 10_000], thisMonthOnly: false, in: october)
+        XCTAssertEqual(s.category("dining")!.limit, 60_000)
+        XCTAssertEqual(s.category("shopping")!.limit, 20_000)
+        s.now = { self.date(2026, 11, 3) }
+        XCTAssertEqual(s.limit(s.category("dining")!, in: s.currentMonth), 60_000, "carries into November")
+    }
 }

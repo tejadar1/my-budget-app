@@ -9,6 +9,7 @@ struct CategoryDetailView: View {
     var month: Date? = nil
     /// A past month picked from the chart, opened as its own page.
     @State private var drill: MonthRef?
+    @State private var adjusting = false
 
     var body: some View {
         let month = self.month ?? store.currentMonth
@@ -41,6 +42,7 @@ struct CategoryDetailView: View {
                     Grid(alignment: .leading, horizontalSpacing: 16) {
                         GridRow {
                             stat(isCurrent ? "This month" : "Spent", Money.short(spent))
+                            if limit > 0 { stat("Limit", Money.short(limit)) }
                             stat("Usual", average.map(Money.short) ?? "—")
                             stat(isCurrent ? "Pace" : "Result",
                                  isCurrent ? pace(spent: spent, limit: limit)
@@ -49,7 +51,17 @@ struct CategoryDetailView: View {
                     }
                 }
                 .padding(.vertical, 6)
+                // Change this one limit here; it has to fit what there is.
+                if isCurrent, let category, store.everydayCategories.contains(where: { $0.id == category.id }) {
+                    Button {
+                        adjusting = true
+                    } label: {
+                        Label(limit > 0 ? "Adjust limit" : "Set a limit", systemImage: "slider.horizontal.3")
+                            .fontWeight(.semibold)
+                    }
+                }
             }
+            .sheet(isPresented: $adjusting) { LimitAdjustSheet(categoryId: categoryId) }
 
             TrendSection(categoryId: categoryId, month: month,
                          limit: limit > 0 ? limit : nil, isCurrent: isCurrent) { picked in

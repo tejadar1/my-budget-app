@@ -2,6 +2,11 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.34.3): Adjust a limit where you see it
+- Tap a category, then Adjust limit, to change just that one. Pick From now on or Just this month.
+- It checks right away whether it fits what you have. If raising it goes past that, it says by how much and offers to take it from categories with room left ("Take $100 from Shopping · $267 left"). Save waits until it fits. Lowering a limit is always fine.
+- The category screen also shows the limit next to what's spent.
+
 ## 0.34.2: Nothing left to do
 - Plan no longer asks you to "Choose what gives" for overspending you've already paid for. It says "2 categories are over, and it's paid for: … Nothing else to do."
 - "A big cut · Step down to it instead" shows only while planning the month, not on limits you lowered for this month only.
