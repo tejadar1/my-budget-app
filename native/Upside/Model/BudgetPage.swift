@@ -21,6 +21,14 @@ extension BudgetStore {
         /// Everyday limits add up to more than there is to spend.
         case limitsOver(amount: Cents)
 
+        /// Warnings you can hide, and the amount that brings one back if it grows.
+        var hideableAmount: Cents? {
+            switch self {
+            case .over(_, let amount), .rebalance(_, let amount), .onPace(_, let amount), .limitsOver(let amount): amount
+            default: nil
+            }
+        }
+
         var id: String {
             switch self {
             case .bank: "bank"
@@ -41,10 +49,16 @@ extension BudgetStore {
         var items: [Attention] = []
         if !staleAccounts.isEmpty || !(data.syncErrors ?? []).isEmpty { items.append(.bank) }
         let overs = overruns(in: currentMonth)
-        if overs.count >= 2 {
-            items.append(.rebalance(categories: overs.count, amount: overs.reduce(0) { $0 + $1.over }))
-        } else if let one = overs.first {
-            items.append(.over(categoryId: one.id, amount: one.over))
+        let cost = overrunCost(in: currentMonth)
+        let decided = cost.cuts.reduce(0) { $0 + $1.amount }
+        // Overspending you've paid for is handled: it leaves this list (the
+        // category still shows over, and the recap names it).
+        if cost.total - decided > 0 {
+            if overs.count >= 2 {
+                items.append(.rebalance(categories: overs.count, amount: overs.reduce(0) { $0 + $1.over }))
+            } else if let one = overs.first {
+                items.append(.over(categoryId: one.id, amount: one.over))
+            }
         }
         if let pace = onPaceToGoOver(in: currentMonth).first {
             items.append(.onPace(categoryId: pace.id, amount: pace.over))
@@ -56,13 +70,26 @@ extension BudgetStore {
             items.append(.checkIn(decisions: decisions))
         }
         if !toCheck.isEmpty { items.append(.toCheck(count: toCheck.count)) }
-        // Limits past what there is to spend (what's spent counted where it's
-        // more): one row, unless an overspending row already says it.
-        if overs.isEmpty {
-            let needed = overrunCost(in: currentMonth).needed
-            if needed > 0 { items.append(.limitsOver(amount: needed)) }
+        // Limits past what there is to spend, beyond the overspending above.
+        let overPart = max(0, cost.total - cost.fromUnassigned - decided)
+        let limitsPart = max(0, cost.needed - overPart) / 100 * 100
+        if limitsPart > 0 { items.append(.limitsOver(amount: limitsPart)) }
+        let hidden = data.hiddenAttention ?? [:]
+        return items.filter { item in
+            guard let amount = item.hideableAmount, let was = hidden[hideKey(item)] else { return true }
+            return amount > was + 1_000
         }
-        return items
+    }
+
+    private func hideKey(_ item: Attention) -> String { "\(Self.monthKey(currentMonth)):\(item.id)" }
+
+    /// Hides a row for this month, until its amount grows.
+    func hideAttention(_ item: Attention) {
+        guard let amount = item.hideableAmount else { return }
+        let prefix = Self.monthKey(currentMonth) + ":"
+        var hidden = (data.hiddenAttention ?? [:]).filter { $0.key.hasPrefix(prefix) }
+        hidden[hideKey(item)] = amount
+        data.hiddenAttention = hidden
     }
 
     /// Everyday categories worth showing (a limit, spending, or a usual),

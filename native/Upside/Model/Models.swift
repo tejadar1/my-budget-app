@@ -266,6 +266,9 @@ struct BudgetData: Codable {
         }
     }
     var previousPlan: SavingsPlan?
+    /// Needs attention rows you hid ("2026-11:over-dining" → the amount
+    /// then). One comes back if its amount grows.
+    var hiddenAttention: [String: Cents]?
     /// Alerts already sent ("2026-11:dining:80"), so each goes out once.
     /// Optional so budgets saved by older versions still load.
     var alertsSent: [String]?

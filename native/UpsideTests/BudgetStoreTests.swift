@@ -2080,4 +2080,41 @@ final class OverrunTests: XCTestCase {
         gifts.goalLimit = 2_000
         XCTAssertEqual(store().stepsToGoal(gifts), 1)
     }
+
+    func testPaidForOverspendingLeavesNeedsAttention() {
+        let s = store()
+        let october = s.currentMonth
+        XCTAssertTrue(s.attention().contains(.over(categoryId: "dining", amount: 10_000)))
+        s.payForOverspending(from: .cards, amount: 10_000, categoryId: "dining", in: october)
+        XCTAssertFalse(s.attention().contains { if case .over = $0 { true } else { false } }, "handled")
+        XCTAssertFalse(s.attention().contains { if case .limitsOver = $0 { true } else { false } })
+        XCTAssertEqual(s.overruns(in: october).first?.over, 10_000, "still over in Categories")
+    }
+
+    func testHiddenRowsComeBackOnlyIfTheyGrow() {
+        let s = store()
+        let row = BudgetStore.Attention.over(categoryId: "dining", amount: 10_000)
+        s.hideAttention(row)
+        XCTAssertFalse(s.attention().contains(row))
+        // $5 more isn't news; $20 more is.
+        s.data.transactions.append(Transaction(id: "x1", accountId: "r", date: date(2026, 10, 18), amount: -500,
+                                               payee: "Starbucks", categoryId: "dining"))
+        XCTAssertFalse(s.attention().contains { if case .over = $0 { true } else { false } })
+        s.data.transactions.append(Transaction(id: "x2", accountId: "r", date: date(2026, 10, 19), amount: -1_500,
+                                               payee: "Starbucks", categoryId: "dining"))
+        XCTAssertTrue(s.attention().contains(.over(categoryId: "dining", amount: 12_000)))
+        // Next month starts clean.
+        s.now = { self.date(2026, 11, 20) }
+        s.hideAttention(.onPace(categoryId: "dining", amount: 5_000))
+        XCTAssertEqual(s.data.hiddenAttention?.keys.count, 1, "October's hidden rows are dropped")
+    }
+
+    func testLimitsPastWhatYouHaveShowAfterOverspendingIsPaidFor() {
+        let s = store()
+        let october = s.currentMonth
+        s.payForOverspending(from: .cards, amount: 10_000, categoryId: "dining", in: october)
+        s.setLimit("groceries", 20_000)   // $200 more than there is
+        XCTAssertTrue(s.attention().contains(.limitsOver(amount: 20_000)))
+        XCTAssertFalse(s.attention().contains { if case .over = $0 { true } else { false } })
+    }
 }

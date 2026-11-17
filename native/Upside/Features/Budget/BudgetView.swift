@@ -359,8 +359,29 @@ struct AttentionList: View {
                 SectionTitle(text: "Needs attention")
                 RowGroup {
                     ForEach(items) { item in
-                        Button { open(item) } label: { row(item) }
-                            .buttonStyle(.plain)
+                        HStack(spacing: 0) {
+                            Button { open(item) } label: { row(item) }
+                                .buttonStyle(.plain)
+                            if item.hideableAmount != nil {
+                                Button {
+                                    withAnimation { store.hideAttention(item) }
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.title3).foregroundStyle(.tertiary)
+                                        .padding(.trailing, 14).padding(.leading, 2)
+                                        .frame(minHeight: 44)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Hide until it changes")
+                            }
+                        }
+                        .contextMenu {
+                            if item.hideableAmount != nil {
+                                Button("Hide until it changes", systemImage: "eye.slash") {
+                                    withAnimation { store.hideAttention(item) }
+                                }
+                            }
+                        }
                         if item != items.last { RowDivider() }
                     }
                 }
