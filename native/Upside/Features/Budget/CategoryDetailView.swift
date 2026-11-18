@@ -86,7 +86,7 @@ struct CategoryDetailView: View {
                     Text("Nothing yet").foregroundStyle(.secondary)
                 }
                 ForEach(transactions) { t in
-                    TransactionRow(transaction: t)
+                    TransactionRow(transaction: t, quickActions: true)
                 }
             }
         }
@@ -120,6 +120,8 @@ struct CategoryDetailView: View {
 struct TransactionRow: View {
     @Environment(BudgetStore.self) private var store
     let transaction: Transaction
+    /// Swipe or long-press to move it to another category or mark it business.
+    var quickActions = false
     @State private var isEditing = false
 
     var body: some View {
@@ -147,6 +149,8 @@ struct TransactionRow: View {
         }
         .buttonStyle(.plain)
         .sheet(isPresented: $isEditing) { TransactionSheet(transactionId: transaction.id) }
+        .modifier(QuickActions(on: quickActions && transaction.amount < 0 && !transaction.id.contains("#"),
+                               transaction: transaction, edit: { isEditing = true }))
     }
 
     private func detail(_ account: Account?) -> String {
@@ -630,5 +634,58 @@ private struct CheckRow: View {
             .foregroundStyle(Theme.accent)
         }
         .accessibilityLabel("Category: \(guess?.name ?? "none"). Tap to change")
+    }
+}
+
+/// Swipe: Move… (the full editor) and Business. Long-press: move straight to
+/// a category. One purchase only; the store learns nothing from it.
+private struct QuickActions: ViewModifier {
+    @Environment(BudgetStore.self) private var store
+    let on: Bool
+    let transaction: Transaction
+    let edit: () -> Void
+
+    func body(content: Content) -> some View {
+        if on {
+            content
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button {
+                        Haptics.tap()
+                        withAnimation { store.setBusiness(transaction.id, !transaction.isBusiness) }
+                    } label: {
+                        Label(transaction.isBusiness ? "Not business" : "Business", systemImage: "briefcase.fill")
+                    }
+                    .tint(.brown)
+                    Button(action: edit) {
+                        Label("Move", systemImage: "arrow.right.circle.fill")
+                    }
+                    .tint(.indigo)
+                }
+                .contextMenu {
+                    Menu {
+                        ForEach(store.groupedCategories) { group in
+                            Section(group.name) {
+                                ForEach(group.categories.filter { $0.id != transaction.categoryId }) { c in
+                                    Button(c.name) {
+                                        Haptics.tap()
+                                        withAnimation { store.setCategory(transaction.id, c.id, remember: false) }
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        Label("Move to", systemImage: "arrow.right.circle")
+                    }
+                    Button {
+                        Haptics.tap()
+                        withAnimation { store.setBusiness(transaction.id, !transaction.isBusiness) }
+                    } label: {
+                        Label(transaction.isBusiness ? "Not a business expense" : "Business expense", systemImage: "briefcase")
+                    }
+                    Button("Edit…", systemImage: "pencil", action: edit)
+                }
+        } else {
+            content
+        }
     }
 }

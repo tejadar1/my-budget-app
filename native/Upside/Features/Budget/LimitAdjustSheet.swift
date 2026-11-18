@@ -72,6 +72,7 @@ struct LimitAdjustSheet: View {
                             ForEach(room.prefix(5), id: \.0.id) { source, left in
                                 let take = min(left, (over + 999) / 1_000 * 1_000)
                                 Button {
+                                    Haptics.tap()
                                     withAnimation { taking[source.id, default: 0] += take }
                                 } label: {
                                     VStack(alignment: .leading, spacing: 2) {
@@ -103,6 +104,7 @@ struct LimitAdjustSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         store.adjustLimit(categoryId, to: value, taking: taking, thisMonthOnly: thisMonthOnly, in: month)
+                        Haptics.success()
                         dismiss()
                     }
                     .disabled(!canSave || !fits)

@@ -37,6 +37,17 @@ extension BudgetStore {
         return "About \(Money.short(average)) a month lately, \(Money.short(abs(diff))) \(diff < 0 ? "less" : "more") than the three months before."
     }
 
+    /// "That's about 31% of what comes in (about $14,540 a month)."
+    static func incomeShareNote(_ finished: [MonthTotal]) -> String? {
+        let recent = finished.suffix(3).filter { $0.income > 0 }
+        guard !recent.isEmpty else { return nil }
+        let income = recent.reduce(0) { $0 + $1.income } / recent.count
+        let spent = recent.reduce(0) { $0 + $1.spent } / recent.count
+        guard income > 0 else { return nil }
+        let share = Int((Double(spent) / Double(income) * 100).rounded())
+        return "That's about \(share)% of what comes in (about \(Money.short(income)) a month)."
+    }
+
     /// Categories that moved the most in `month` compared with their
     /// usual (the three months before), biggest change first. Small
     /// wobbles (under $25 or 15%) are left out.

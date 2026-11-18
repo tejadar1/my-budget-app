@@ -61,7 +61,7 @@ struct OverrunSheet: View {
                                 Label("You " + cut.source.done(cut.amount) + " this month", systemImage: "checkmark.circle.fill")
                                     .font(.subheadline).foregroundStyle(.primary)
                                 Spacer()
-                                Button("Undo") { withAnimation { store.undoOverspendingCut(cut.id, in: month) } }
+                                Button("Undo") { Haptics.tap(); withAnimation { store.undoOverspendingCut(cut.id, in: month) } }
                                     .font(.footnote.weight(.semibold)).buttonStyle(.borderless)
                             }
                         }
@@ -74,6 +74,7 @@ struct OverrunSheet: View {
                                 .font(.subheadline.weight(.semibold))
                             ForEach(cost.options) { option in
                                 Button {
+                                    Haptics.success()
                                     withAnimation {
                                         store.payForOverspending(from: option.source, amount: option.amount,
                                                                  categoryId: focus ?? overs.first?.id, in: month)

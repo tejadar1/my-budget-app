@@ -37,6 +37,8 @@ struct PlanView: View {
     @State private var stopSteps: Set<String> = []
     /// What has to give, for limits past what there is (opened from Plan).
     @State private var showWhatGives = false
+    /// Categories never used (no limit, no usual, nothing spent) stay tucked away.
+    @State private var showUnused = false
 
     private var month: Date { store.currentMonth }
 
@@ -133,7 +135,7 @@ struct PlanView: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        if numbers().toSpend < 0 { confirmOver = true } else { save(); dismiss() }
+                        if numbers().toSpend < 0 { confirmOver = true } else { save(); Haptics.success(); dismiss() }
                     }
                 }
             }
@@ -296,7 +298,13 @@ struct PlanView: View {
             }
             .padding(.vertical, 4)
             .listRowSeparator(.hidden)
-            ForEach(store.everydayCategories) { c in
+            // Categories with no limit, no usual and nothing spent wait behind a button.
+            let unused = store.everydayCategories.filter { c in
+                (limits[c.id] ?? 0) == 0 && (store.averageSpent(c.id, before: month) ?? 0) == 0
+                    && store.spent(c.id, in: month) == 0
+            }
+            let unusedIds = Set(unused.map(\.id))
+            ForEach(store.everydayCategories.filter { showUnused || !unusedIds.contains($0.id) }) { c in
                 LimitPlanRow(name: c.name,
                              usual: store.averageSpent(c.id, before: month) ?? 0,
                              spentSoFar: store.spent(c.id, in: month),
@@ -314,6 +322,15 @@ struct PlanView: View {
                              onStep: { startStep(c) },
                              onStopStep: { stepGoals[c.id] = nil; stopSteps.insert(c.id) },
                              dollars: Binding(get: { limits[c.id] ?? 0 }, set: { limits[c.id] = max(0, $0) }))
+            }
+            if !unused.isEmpty {
+                Button {
+                    withAnimation { showUnused.toggle() }
+                } label: {
+                    Text(showUnused ? "Hide unused" : "Show \(unused.count) unused: " + unused.prefix(3).map(\.name).joined(separator: ", ")
+                         + (unused.count > 3 ? "…" : ""))
+                        .font(.subheadline)
+                }
             }
             // Only money nothing uses: not limits, and not overspending.
             let spare = (n.toSpend - n.committed) / 1000 * 10

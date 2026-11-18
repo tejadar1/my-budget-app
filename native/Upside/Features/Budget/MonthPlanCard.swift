@@ -168,7 +168,14 @@ struct MonthPlanCard: View {
         if isPast { return "Spent \(Money.short(plan.everydaySpent)) of \(Money.short(plan.toSpend)) to spend" }
         if plan.leftToSpend < 0 { return "This comes out of savings and trips." }
         guard let days = plan.daysLeft, let perDay = plan.perDay else { return "" }
-        return days <= 1 ? "Last day of the month" : "\(days) days · about \(Money.short(perDay)) a day"
+        if days <= 1 { return "Last day of the month" }
+        let line = "\(days) days · about \(Money.short(perDay)) a day"
+        // How that compares with the pace so far (after the first few days).
+        let day = store.calendar.component(.day, from: store.now())
+        guard day >= 4, plan.everydaySpent > 0 else { return line }
+        let soFar = plan.everydaySpent / day
+        return line + "\nSo far you've spent about \(Money.short(soFar)) a day"
+            + (soFar > perDay * 11 / 10 ? ", faster than that." : ".")
     }
 
     private func line(_ label: String, _ value: Cents, note: String?, bold: Bool = false, chevron: Bool = false) -> some View {

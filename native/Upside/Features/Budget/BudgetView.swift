@@ -52,6 +52,8 @@ struct BudgetView: View {
                     .padding(.horizontal)
                     .padding(.bottom, 24)
                 }
+                // Pull down to sync the banks, as on Accounts.
+                .refreshable { try? await BankSync.sync(store: store) }
                 .onAppear {
                     // `-scrollTo more` opens partway down (used for screenshots).
                     let args = ProcessInfo.processInfo.arguments
@@ -364,6 +366,7 @@ struct AttentionList: View {
                                 .buttonStyle(.plain)
                             if item.hideableAmount != nil {
                                 Button {
+                                    Haptics.tap()
                                     withAnimation { store.hideAttention(item) }
                                 } label: {
                                     Image(systemName: "xmark.circle.fill")
@@ -480,6 +483,8 @@ struct CategoryList: View {
     @State private var showAll = false
     /// Remembered on this phone.
     @AppStorage("categorySort") private var sortKey = CategorySort.closest.rawValue
+    /// Adjust limit, opened from a row's long-press menu.
+    @State private var adjusting: CategoryRef?
     private let shown = 6
 
     var body: some View {
@@ -505,6 +510,8 @@ struct CategoryList: View {
                     .accessibilityLabel("Sort categories: \(sort.label)")
                 }
                 .padding(.top, 8)
+                .sheet(item: $adjusting) { LimitAdjustSheet(categoryId: $0.id) }
+                .onChange(of: sortKey) { Haptics.tap() }
                 if sort != .closest {
                     Text("Sorted by \(sort.label.lowercased())").font(.caption).foregroundStyle(.secondary)
                 }
@@ -515,6 +522,19 @@ struct CategoryList: View {
                             CategoryRow(category: category, month: month)
                         }
                         .buttonStyle(.plain)
+                        .contextMenu {
+                            if month == store.currentMonth {
+                                Button("Adjust limit", systemImage: "slider.horizontal.3") {
+                                    adjusting = CategoryRef(id: category.id)
+                                }
+                            }
+                            NavigationLink(value: Route.category(category.id, month)) {
+                                Label("See purchases", systemImage: "list.bullet")
+                            }
+                            NavigationLink(value: Route.trends) {
+                                Label("Trends", systemImage: "chart.line.uptrend.xyaxis")
+                            }
+                        }
                         if category.id != visible.last?.id || rows.count > shown { RowDivider() }
                     }
                     if rows.count > shown {
@@ -548,14 +568,12 @@ struct CategoryRow: View {
 
         HStack(spacing: 12) {
             CategoryIcon(categoryId: category.id, size: 30)
-            VStack(alignment: .leading, spacing: 7) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(category.name).lineLimit(1)
-                    Spacer(minLength: 8)
-                    amount(spent: spent, limit: limit, left: left, color: status.color, skipping: skipping)
-                        .font(.subheadline.monospacedDigit())
-                        .lineLimit(1)
-                }
+            VStack(alignment: .leading, spacing: 5) {
+                // Name on its own line so it's never cut short; amount under it.
+                Text(category.name).lineLimit(2)
+                amount(spent: spent, limit: limit, left: left, color: status.color, skipping: skipping)
+                    .font(.subheadline.monospacedDigit())
+                    .lineLimit(1)
                 if limit > 0 {
                     SplitBar(fraction: Double(spent) / Double(limit),
                              segments: segments(store.spentByOwner(categoryId: category.id, in: month)),
@@ -669,4 +687,9 @@ struct MoreList: View {
         store.expenseCategories.filter(\.aimsForZero)
             .max { store.spent($0.id, in: month) < store.spent($1.id, in: month) }?.id ?? "fees"
     }
+}
+
+/// A category id that can drive `.sheet(item:)`.
+struct CategoryRef: Identifiable, Hashable {
+    let id: String
 }

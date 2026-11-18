@@ -2,8 +2,16 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next (0.34.5): Sort categories
-- Budget's Categories has a sort button (↑↓) next to the total: Closest to the limit (the usual order), Most left, Most spent, or Name. Your choice is remembered on this phone.
+## Next (0.34.5): Smoother
+- Sort categories: the ↑↓ button next to Categories on Budget sorts by Closest to the limit (the usual order), Most left, Most spent, or Name. Remembered on this phone.
+- Category names are never cut short: the amount sits under the name.
+- Long-press a category on Budget: Adjust limit, See purchases, or Trends.
+- Fix a purchase in place: in a category's purchases, swipe left for Move or Business, or long-press to move it straight to another category. Handy for the odd charge that landed in the wrong place and inflates your usual.
+- Pull down on Budget to sync your banks, as on Accounts.
+- Plan tucks away categories you never use (no limit, no usual, nothing spent) behind "Show unused".
+- Budget's card adds how fast you've been spending: "So far you've spent about $40 a day, faster than that."
+- Trends: the bars use the whole chart now; your income moved into words ("That's about 31% of what comes in").
+- Light haptic taps when you save Plan, adjust a limit, choose what gives, hide a warning, sort, or move a purchase.
 
 ## 0.34.4: No more loop
 - Fixed: Plan offered "Save the $X not in any limit" with money that was already covering a category that went over. Saving it left that category uncovered on Budget, which sent you back to Plan. Plan now counts spending past a limit the same way Budget does, so it only offers money nothing is using.

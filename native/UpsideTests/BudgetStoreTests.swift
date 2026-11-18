@@ -2223,4 +2223,11 @@ final class OverrunTests: XCTestCase {
         XCTAssertEqual(s.categoryRows(in: october, sort: .mostLeft).last?.id, "kids")
         XCTAssertEqual(s.categoryRows(in: october, sort: .mostSpent).first?.id, "kids")
     }
+
+    func testTrendsSaysWhatShareOfIncomeIsSpent() {
+        let months = (7...9).map { MonthTotal(month: date(2026, $0, 1), spent: 250_000, income: 500_000) }
+        XCTAssertEqual(BudgetStore.incomeShareNote(months),
+                       "That's about 50% of what comes in (about \(Money.short(500_000)) a month).")
+        XCTAssertNil(BudgetStore.incomeShareNote(months.map { MonthTotal(month: $0.month, spent: $0.spent, income: 0) }))
+    }
 }

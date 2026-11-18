@@ -1,4 +1,13 @@
 import SwiftUI
+import UIKit
+
+/// Light taps that confirm a choice, the way system apps do.
+enum Haptics {
+    /// A decision took effect (paid for overspending, saved a plan).
+    static func success() { UINotificationFeedbackGenerator().notificationOccurred(.success) }
+    /// A small change (hid a row, changed the sort, moved a purchase).
+    static func tap() { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+}
 
 /// Upside's look: Apple system styles plus a money-green accent.
 enum Theme {

@@ -21,7 +21,7 @@ struct TrendsView: View {
                 } header: {
                     Text("Spent each month")
                 } footer: {
-                    Text([BudgetStore.spendingNote(finished),
+                    Text([BudgetStore.spendingNote(finished), BudgetStore.incomeShareNote(finished),
                           "Bills included, trips not. This month is so far."].compactMap { $0 }.joined(separator: " "))
                 }
             }
@@ -86,7 +86,8 @@ struct TrendsView: View {
     }
 }
 
-/// Bars for spending, a line for income; this month lighter (it's not over).
+/// Bars for spending, scaled to spending (income is in words below, so it
+/// doesn't flatten the bars); this month lighter (it's not over).
 private struct SpendingChart: View {
     let totals: [MonthTotal]
     let current: Date
@@ -99,17 +100,7 @@ private struct SpendingChart: View {
                     .foregroundStyle(point.month == current ? Theme.accent.opacity(0.35) : Theme.accent)
                     .cornerRadius(4)
             }
-            ForEach(totals.filter { $0.income > 0 && $0.month < current }) { point in
-                LineMark(x: .value("Month", point.month, unit: .month),
-                         y: .value("Income", Double(point.income) / 100))
-                    .foregroundStyle(by: .value("Series", "Income"))
-                    .lineStyle(StrokeStyle(lineWidth: 2, dash: [4, 3]))
-                    .symbol(.circle)
-                    .symbolSize(24)
-            }
         }
-        .chartForegroundStyleScale(["Income": Color.secondary])
-        .chartLegend(position: .top, alignment: .trailing)
         .chartXAxis {
             AxisMarks(values: .stride(by: .month)) { _ in
                 AxisValueLabel(format: .dateTime.month(.narrow), centered: true)
@@ -123,7 +114,7 @@ private struct SpendingChart: View {
                 }
             }
         }
-        .frame(height: 180)
+        .frame(height: 200)
         .accessibilityLabel("Spending for the last \(totals.count) months")
         .accessibilityValue(totals.map { "\($0.month.formatted(.dateTime.month(.wide))) \(Money.short($0.spent))" }
             .joined(separator: ", "))
