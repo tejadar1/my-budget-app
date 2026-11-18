@@ -92,6 +92,8 @@ extension BudgetStore {
         let planned = isCurrent ? data.priorities?.plannedIncome : nil
         let expected = Self.incomeToPlanOn(planned: planned, usual: usualIncome)
         let monthsPlan = plan(for: month)
+        // A finished month keeps the savings and card paydown it had then.
+        let snapshot = month < currentMonth ? data.monthSnapshots?[Self.monthKey(month)] : nil
         // Pay yourself first: income above the plan isn't spending money
         // until you give it a job (Needs attention asks). With nothing to
         // expect yet (a new budget, a bank sharing little history), what's
@@ -99,15 +101,15 @@ extension BudgetStore {
         let used = monthsPlan?.extraIncomeUsed ?? 0
         let extra = isCurrent && expected > 0 ? max(0, actualIncome - expected - used) : 0
         return MonthPlan(
-            income: isCurrent ? max(actualIncome - extra, expected) : actualIncome,
+            income: isCurrent ? Self.incomeToSpend(expected: expected, received: actualIncome, used: used) : actualIncome,
             incomeIsUsual: isCurrent && planned == nil && usualIncome > actualIncome,
             incomePlanned: planned,
             incomeReceived: actualIncome,
             billsPaid: billsPaid,
             billsDue: billsDue,
-            savings: max(0, (data.priorities?.savings ?? 0) + (monthsPlan?.goal ?? 0) - cut(.savings, in: month)),
+            savings: max(0, (snapshot?.savings ?? data.priorities?.savings ?? 0) + (monthsPlan?.goal ?? 0) - cut(.savings, in: month)),
             savingsExtra: monthsPlan?.goal ?? 0,
-            cardPaydown: max(0, (data.priorities?.cardPaydown ?? 0) + (monthsPlan?.cardExtra ?? 0) - cut(.cards, in: month)),
+            cardPaydown: max(0, (snapshot?.cardPaydown ?? data.priorities?.cardPaydown ?? 0) + (monthsPlan?.cardExtra ?? 0) - cut(.cards, in: month)),
             trips: max(0, tripSetAside(in: month) - cut(.trips, in: month)),
             everydaySpent: totalSpent(in: month) - billsPaid,
             everydayLimits: everydayLimits,
@@ -127,6 +129,14 @@ extension BudgetStore {
     /// you typed is trusted, and the plan says when it's above your usual.
     static func incomeToPlanOn(planned: Cents?, usual: Cents) -> Cents {
         planned ?? usual
+    }
+
+    /// This month's income to spend from: what you expect, plus extra that's
+    /// come in only once you've given it a job. With nothing to expect yet,
+    /// what's come in. Budget and Plan both use this.
+    static func incomeToSpend(expected: Cents, received: Cents, used: Cents) -> Cents {
+        guard expected > 0 else { return received }
+        return max(expected, min(received, expected + used))
     }
 
     /// What's owed across visible credit cards right now.

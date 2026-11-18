@@ -113,9 +113,24 @@ extension BudgetStore {
     }
 
     /// Everything goals take off the top this month.
+    /// Earlier months: what it was while that month was current.
     func goalsSetAside(in month: Date) -> Cents {
-        guard month >= currentMonth else { return 0 }
+        guard month >= currentMonth else { return data.monthSnapshots?[Self.monthKey(month)]?.goals ?? 0 }
         return goals.reduce(0) { $0 + goalMonthly($1) }
+    }
+
+    /// Keeps this month's savings, card paydown and goals as they stand.
+    /// Runs when Upside opens and when the plan or a goal changes.
+    func recordMonthSnapshot() {
+        let key = Self.monthKey(currentMonth)
+        let snapshot = MonthSnapshot(savings: data.priorities?.savings ?? 0,
+                                     cardPaydown: data.priorities?.cardPaydown ?? 0,
+                                     goals: goalsSetAside(in: currentMonth))
+        guard data.monthSnapshots?[key] != snapshot else { return }
+        var all = data.monthSnapshots ?? [:]
+        all[key] = snapshot
+        for old in all.keys.sorted().dropLast(13) { all[old] = nil }
+        data.monthSnapshots = all
     }
 
     /// Essentials for a month: usual bills plus usual everyday spending.
@@ -139,10 +154,12 @@ extension BudgetStore {
         var list = goals
         if let i = list.firstIndex(where: { $0.id == goal.id }) { list[i] = goal } else { list.append(goal) }
         data.goals = list
+        recordMonthSnapshot()
     }
 
     func deleteGoal(_ id: String) {
         data.goals = goals.filter { $0.id != id }
+        recordMonthSnapshot()
     }
 
     /// A bill paid: the fund starts over for the next one.

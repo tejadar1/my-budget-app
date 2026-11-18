@@ -62,7 +62,8 @@ extension BudgetStore {
         var count = 0
         var month = monthStart(fund.start)
         while month < currentMonth {
-            if income(in: month) - totalSpent(in: month) < fund.monthly { count += 1 }
+            // A month you chose to put less toward trips isn't "overspent".
+            if income(in: month) - totalSpent(in: month) < max(0, fund.monthly - cut(.trips, in: month)) { count += 1 }
             month = self.month(1, from: month)
         }
         return count

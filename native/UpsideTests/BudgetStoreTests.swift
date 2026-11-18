@@ -2159,4 +2159,54 @@ final class OverrunTests: XCTestCase {
         XCTAssertEqual(s.overrunCost(in: october).fromUnassigned, 10_000)
         XCTAssertEqual(s.overrunCost(in: october).needed, 0)
     }
+
+    func testBudgetAndPlanCountIncomeTheSameWay() {
+        // Extra income counts only once it has a job.
+        XCTAssertEqual(BudgetStore.incomeToSpend(expected: 500_000, received: 600_000, used: 0), 500_000)
+        XCTAssertEqual(BudgetStore.incomeToSpend(expected: 500_000, received: 600_000, used: 50_000), 550_000)
+        XCTAssertEqual(BudgetStore.incomeToSpend(expected: 500_000, received: 300_000, used: 0), 500_000, "usual until it's in")
+        XCTAssertEqual(BudgetStore.incomeToSpend(expected: 0, received: 300_000, used: 0), 300_000, "nothing to expect yet")
+        let s = store()
+        s.data.transactions.append(Transaction(id: "bonus", accountId: "r", date: date(2026, 10, 18), amount: 100_000,
+                                               payee: "Bonus", categoryId: "income"))
+        XCTAssertEqual(s.monthPlan(s.currentMonth).income, 500_000, "the $1,000 bonus waits for a job")
+        XCTAssertEqual(s.monthPlan(s.currentMonth).extraIncome, 100_000)
+    }
+
+    func testBudgetCardAndOverspendingCountSpareMoneyTheSameWay() {
+        let s = store(savings: 380_000)          // $100 spare, dining $100 over
+        let october = s.currentMonth
+        XCTAssertEqual(s.committedSpending(in: october), s.overrunCost(in: october).committed)
+        XCTAssertEqual(s.monthPlan(october).toSpend - s.committedSpending(in: october), 0, "no spare to save")
+    }
+
+    func testLoweringALimitToPayForOverspendingDoesntSetOffAlerts() {
+        let s = store()
+        let october = s.currentMonth
+        // All of Shopping's room: its limit drops to the $50 already spent (100%).
+        s.payForOverspending(from: .room, amount: 25_000, categoryId: "dining", in: october)
+        XCTAssertEqual(s.limit(s.category("shopping")!, in: october), 5_000)
+        XCTAssertFalse(s.pendingLimitAlerts().contains { $0.categoryName == "Shopping" }, "lowered by you, not news")
+        XCTAssertTrue(s.pendingLimitAlerts().contains { $0.categoryName == "Dining & Bars" && $0.percent == 100 })
+        // Going past the lowered limit is news.
+        s.data.transactions.append(Transaction(id: "t-big", accountId: "r", date: date(2026, 10, 19), amount: -20_000,
+                                               payee: "Target", categoryId: "shopping"))
+        XCTAssertTrue(s.pendingLimitAlerts().contains { $0.categoryName == "Shopping" && $0.percent == 100 })
+    }
+
+    func testLastMonthKeepsTheSavingsCardsAndGoalsItHad() {
+        let s = store()
+        s.saveGoal(Goal(id: "g", name: "Roof", kind: .purchase, target: 1_000_000, monthly: 10_000))
+        s.recordMonthSnapshot()
+        let october = s.currentMonth
+        XCTAssertEqual(s.monthPlan(october).goals, 10_000)
+
+        // November: savings changed while planning; October stays as it was.
+        s.now = { self.date(2026, 11, 2) }
+        s.data.priorities = Priorities(savings: 100_000, cardPaydown: 0, plannedIncome: 500_000)
+        XCTAssertEqual(s.monthPlan(october).savings, 390_000)
+        XCTAssertEqual(s.monthPlan(october).cardPaydown, 30_000)
+        XCTAssertEqual(s.monthPlan(october).goals, 10_000, "October's goals still count in its wrap-up")
+        XCTAssertEqual(s.monthPlan(s.currentMonth).savings, 100_000)
+    }
 }

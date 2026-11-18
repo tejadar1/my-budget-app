@@ -4,6 +4,12 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 
 ## Next (0.34.4): No more loop
 - Fixed: Plan offered "Save the $X not in any limit" with money that was already covering a category that went over. Saving it left that category uncovered on Budget, which sent you back to Plan. Plan now counts spending past a limit the same way Budget does, so it only offers money nothing is using.
+- Fixed the same mix-up on Budget's Details: "Not in any limit · put it toward savings" no longer offers money that's covering overspending.
+- Fixed: Plan counted extra income (a bonus, a third paycheck) as spending money before you gave it a job; Budget didn't. Both now wait until you choose what it's for.
+- Fixed: Credit cards said you were behind on paydown after you chose "Pay less on cards" this month. It now uses this month's amount.
+- Fixed: last month's wrap-up was worked out with today's savings and card amounts and left out goals. Each month now keeps the savings, card paydown and goals it had.
+- Lowering limits to pay for overspending no longer sets off "80% of your limit" alerts for those categories; only going past them does.
+- Trips: a month you chose to put less toward trips isn't counted as overspent.
 - Plan's limits note says how much spending past limits uses ("Spending past limits uses another $33").
 
 ## 0.34.3: Adjust a limit where you see it

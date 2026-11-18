@@ -100,6 +100,9 @@ struct CardsView: View {
         let month = store.currentMonth
         let owed = store.cardsOwed
         let target = store.data.priorities?.cardPaydown ?? 0
+        // This month's paydown, as Budget has it: plus leftover you put toward
+        // cards, minus what you chose to pay less to cover overspending.
+        let thisMonth = store.monthPlan(month).cardPaydown
         let charged = store.creditCards.reduce(0) { $0 + store.cardMonth($1, month).charged }
         let paid = store.creditCards.reduce(0) { $0 + store.cardMonth($1, month).paid }
         List {
@@ -111,10 +114,10 @@ struct CardsView: View {
                 .padding(.vertical, 6)
                 LabeledContent("Charged this month", value: Money.short(charged))
                 LabeledContent("Paid this month", value: Money.short(paid))
-                if target > 0 {
+                if target > 0 || thisMonth > 0 {
                     LabeledContent("To pay down this month") {
-                        // Paying down means paying the new charges plus the target.
-                        let goal = charged + target
+                        // Paying down means paying the new charges plus this month's paydown.
+                        let goal = charged + thisMonth
                         Text(paid >= goal ? "Done" : "\(Money.short(goal - paid)) to go")
                             .foregroundStyle(paid >= goal ? Theme.accent : Theme.warning)
                     }

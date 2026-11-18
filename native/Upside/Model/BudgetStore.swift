@@ -869,6 +869,10 @@ final class BudgetStore {
         for category in expenseCategories where !category.aimsForZero {
             guard let limit = limit(category, in: month), limit > 0 else { continue }
             let spent = spent(category.id, in: month)
+            // A limit you lowered this month to about what's spent (to pay for
+            // overspending) isn't news at 80% or at exactly the limit: only going past it is.
+            let lowered = plan(for: month)?.limits[category.id].map { $0 < (category.limit ?? .max) } ?? false
+            if lowered && spent <= limit { continue }
             for level in [100, 80] where spent * 100 >= limit * level {
                 let key = "\(monthKey):\(category.id):\(level)"
                 if !sent.contains(key) {

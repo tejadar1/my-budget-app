@@ -68,7 +68,10 @@ struct PlanView: View {
         let base = store.monthPlan(month)
         let usualIncome = store.averageIncome(before: month) ?? 0
         let planned = useUsual || plannedIncome == 0 ? nil : plannedIncome * 100
-        let income = max(BudgetStore.incomeToPlanOn(planned: planned, usual: usualIncome), base.incomeReceived)
+        // Same as Budget: extra income counts only once it has a job.
+        let income = BudgetStore.incomeToSpend(expected: BudgetStore.incomeToPlanOn(planned: planned, usual: usualIncome),
+                                               received: base.incomeReceived,
+                                               used: store.plan(for: month)?.extraIncomeUsed ?? 0)
         let extraSavings = extra * 100
         // $0 for trips means each trip saves its own share.
         let tripCost = store.data.tripsOff == true ? 0 : trips > 0 ? trips * 100 : store.tripScheduleSetAside(in: month)
@@ -510,6 +513,7 @@ struct PlanView: View {
                              thisMonthOnly: thisMonthOnly, planning: mode == .planning)
         for id in stopSteps { store.stopStepDown(id) }
         for (id, goal) in stepGoals { store.stepDown(id, to: goal * 100) }
+        store.recordMonthSnapshot()
         if trips > 0 {
             let fund = store.data.tripFund
             store.data.tripFund = TripFund(monthly: trips * 100, start: fund?.start ?? month,

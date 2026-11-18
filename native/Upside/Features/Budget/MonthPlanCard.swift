@@ -106,9 +106,11 @@ struct MonthPlanCard: View {
             if plan.trips > 0 { line("Trips", -plan.trips, note: nil) }
             Divider().overlay(Color.white.opacity(0.4))
             line("To spend", plan.toSpend, note: nil, bold: true)
-            if month == store.currentMonth && plan.everydayLimits > 0 && plan.toSpend - plan.everydayLimits >= 1000 {
+            // Money nothing uses: not limits, and not spending past them (as Plan counts it).
+            let spare = month == store.currentMonth ? plan.toSpend - store.committedSpending(in: month) : 0
+            if plan.everydayLimits > 0 && spare >= 1000 {
                 Button { onSavings?() } label: {
-                    line("Not in any limit", plan.toSpend - plan.everydayLimits, note: "put it toward savings", chevron: true)
+                    line("Not in any limit", spare, note: "put it toward savings", chevron: true)
                         .opacity(0.85)
                 }
                 .buttonStyle(.plain)

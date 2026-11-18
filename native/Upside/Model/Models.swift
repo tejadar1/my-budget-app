@@ -202,6 +202,12 @@ struct SavingsPlan: Codable, Equatable {
     var cuts: [OverrunCut]? = nil
 }
 
+struct MonthSnapshot: Codable, Equatable {
+    var savings: Cents
+    var cardPaydown: Cents
+    var goals: Cents
+}
+
 struct CategoryGroup: Identifiable {
     var name: String
     var categories: [Category]
@@ -269,6 +275,10 @@ struct BudgetData: Codable {
     /// Needs attention rows you hid ("2026-11:over-dining" → the amount
     /// then). One comes back if its amount grows.
     var hiddenAttention: [String: Cents]?
+    /// Each month's savings, card paydown and goals as they were while it
+    /// was current ("2026-11"), so last month's wrap-up isn't redone with
+    /// today's settings.
+    var monthSnapshots: [String: MonthSnapshot]?
     /// Alerts already sent ("2026-11:dining:80"), so each goes out once.
     /// Optional so budgets saved by older versions still load.
     var alertsSent: [String]?

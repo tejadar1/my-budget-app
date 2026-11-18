@@ -29,6 +29,13 @@ extension BudgetStore {
         }
     }
 
+    /// The same, with this month's saved limits.
+    func committedSpending(in month: Date) -> Cents {
+        committedSpending(limits: Dictionary(uniqueKeysWithValues: everydayCategories.compactMap { c in
+            plannedLimit(c, in: month).map { (c.id, $0) }
+        }), in: month)
+    }
+
     private func limitsCommitted(_ categoryId: String, to value: Cents, taking: [String: Cents], in month: Date) -> Cents {
         everydayCategories.reduce(0) { sum, c in
             let allowed = c.id == categoryId ? value
