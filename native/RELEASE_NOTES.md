@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next (0.34.5): Smoother
+## 0.34.5: Smoother
 - Sort categories: the ↑↓ button next to Categories on Budget sorts by Closest to the limit (the usual order), Most left, Most spent, or Name. Remembered on this phone.
 - Category names are never cut short: the amount sits under the name.
 - Long-press a category on Budget: Adjust limit, See purchases, or Trends.
