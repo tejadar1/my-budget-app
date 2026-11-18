@@ -57,6 +57,8 @@ struct PlanView: View {
         /// Limits plus usual spending for categories without one.
         var total: Cents
         var owed: Cents
+        /// Limits, with what's spent counted where it's more than a limit.
+        var committed: Cents = 0
         /// Overspending paid for this month, by what gave.
         var cuts: [PlanPriority: Cents]
         func cut(_ p: PlanPriority) -> Cents { cuts[p] ?? 0 }
@@ -81,11 +83,13 @@ struct PlanView: View {
         let toSpend = income + base.carriedIn - base.bills + base.fundedByGoals - thisSavings - thisCards
             - thisTrips - goals + base.rolledIn
         let total = limitsTotal(limits)
+        // Same count as Budget: overspending uses money too.
+        let committed = store.committedSpending(limits: limits.mapValues { $0 * 100 }, in: month)
         return Numbers(base: base, usualIncome: usualIncome, income: income, extraSavings: extraSavings,
                        extraCards: leftoverCards, carried: base.carriedIn + base.rolledIn + base.fundedByGoals,
                        tripCost: tripCost, toSpend: toSpend,
                        recommended: store.recommendedLimits(toSpend: toSpend), total: total, owed: store.cardsCarried,
-                       cuts: cuts)
+                       committed: committed, cuts: cuts)
     }
 
     var body: some View {
@@ -249,12 +253,12 @@ struct PlanView: View {
                     .tint(Theme.accent)
                     Text("Fills every limit from what you usually spend, fit to what you have.")
                         .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                } else if n.total > n.toSpend || store.overrunCost(in: month).needed > 0 {
+                } else if n.committed > n.toSpend || store.overrunCost(in: month).needed > 0 {
                     // One problem, one sentence, one button.
                     let edited = limits != loadedLimits
                     VStack(alignment: .leading, spacing: 8) {
-                        Label(n.total > n.toSpend
-                              ? "Limits are \(Money.short(n.total - n.toSpend)) more than you have"
+                        Label(n.committed > n.toSpend
+                              ? "Limits are \(Money.short(n.committed - n.toSpend)) more than you have"
                               : "\(overs) categor\(overs == 1 ? "y is" : "ies are") over",
                               systemImage: "exclamationmark.circle.fill")
                             .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.over)
@@ -308,7 +312,8 @@ struct PlanView: View {
                              onStopStep: { stepGoals[c.id] = nil; stopSteps.insert(c.id) },
                              dollars: Binding(get: { limits[c.id] ?? 0 }, set: { limits[c.id] = max(0, $0) }))
             }
-            let spare = (n.toSpend - n.total) / 1000 * 10
+            // Only money nothing uses: not limits, and not overspending.
+            let spare = (n.toSpend - n.committed) / 1000 * 10
             if spare >= 10 {
                 Button("Save the \(Money.short(spare * 100)) not in any limit") { withAnimation { savings += spare } }
             }
@@ -317,7 +322,7 @@ struct PlanView: View {
         } footer: {
             VStack(alignment: .leading, spacing: 6) {
                 Text(limitsFooter(n))
-                    .foregroundStyle(n.total <= n.toSpend ? Color.secondary : Theme.over)
+                    .foregroundStyle(n.committed <= n.toSpend ? Color.secondary : Theme.over)
             }
         }
     }
@@ -396,11 +401,11 @@ struct PlanView: View {
     /// changed, and Undo.
     @ViewBuilder private func fixResult(_ n: Numbers) -> some View {
         if let fixNote {
-            let fits = n.toSpend >= 0 && n.total <= n.toSpend
+            let fits = n.toSpend >= 0 && n.committed <= n.toSpend
             VStack(alignment: .leading, spacing: 6) {
                 Label(fits ? "Fits: limits \(Money.short(n.total)) of \(Money.short(n.toSpend)) to spend"
                            : n.toSpend < 0 ? "Still \(Money.short(-n.toSpend)) more than you make"
-                           : "Still \(Money.short(n.total - n.toSpend)) short",
+                           : "Still \(Money.short(n.committed - n.toSpend)) short",
                       systemImage: fits ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(fits ? Theme.accent : Theme.warning)
@@ -476,9 +481,11 @@ struct PlanView: View {
     }
 
     private func limitsFooter(_ n: Numbers) -> String {
-        let fits = n.total <= n.toSpend
-        let head = fits ? "Limits add up to \(Money.short(n.total)) of \(Money.short(n.toSpend)) to spend."
-                        : "Limits add up to \(Money.short(n.total)), \(Money.short(n.total - n.toSpend)) more than you have."
+        let fits = n.committed <= n.toSpend
+        let over = n.committed - n.total
+        let head = (fits ? "Limits add up to \(Money.short(n.total)) of \(Money.short(n.toSpend)) to spend."
+                         : "Limits add up to \(Money.short(n.total)), \(Money.short(n.committed - n.toSpend)) more than you have.")
+            + (over > 0 ? " Spending past limits uses another \(Money.short(over))." : "")
         return head + " No limit counts as usual."
     }
 

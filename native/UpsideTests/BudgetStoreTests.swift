@@ -2146,4 +2146,17 @@ final class OverrunTests: XCTestCase {
         s.now = { self.date(2026, 11, 3) }
         XCTAssertEqual(s.limit(s.category("dining")!, in: s.currentMonth), 60_000, "carries into November")
     }
+
+    /// Plan's "money not in any limit" counts overspending, as Budget does,
+    /// so saving it can't leave an overrun uncovered.
+    func testMoneyNotInALimitLeavesOutWhatOverspendingUsed() {
+        let s = store(savings: 380_000)          // $900 to spend, limits $800, dining $100 over
+        let october = s.currentMonth
+        let limits = ["dining": 50_000, "shopping": 30_000]
+        XCTAssertEqual(s.committedSpending(limits: limits, in: october), 90_000, "$800 of limits + $100 past dining's")
+        XCTAssertEqual(s.monthPlan(october).toSpend - s.committedSpending(limits: limits, in: october), 0,
+                       "nothing left to save: the spare $100 is covering dining")
+        XCTAssertEqual(s.overrunCost(in: october).fromUnassigned, 10_000)
+        XCTAssertEqual(s.overrunCost(in: october).needed, 0)
+    }
 }

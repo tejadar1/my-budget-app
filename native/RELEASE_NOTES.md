@@ -2,6 +2,10 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.34.4): No more loop
+- Fixed: Plan offered "Save the $X not in any limit" with money that was already covering a category that went over. Saving it left that category uncovered on Budget, which sent you back to Plan. Plan now counts spending past a limit the same way Budget does, so it only offers money nothing is using.
+- Plan's limits note says how much spending past limits uses ("Spending past limits uses another $33").
+
 ## 0.34.3: Adjust a limit where you see it
 - Tap a category, then Adjust limit, to change just that one. Pick From now on or Just this month.
 - It checks right away whether it fits what you have. If raising it goes past that, it says by how much and offers to take it from categories with room left ("Take $100 from Shopping · $267 left"). Save waits until it fits. Lowering a limit is always fine.
