@@ -478,14 +478,36 @@ struct CategoryList: View {
     @Environment(BudgetStore.self) private var store
     let month: Date
     @State private var showAll = false
+    /// Remembered on this phone.
+    @AppStorage("categorySort") private var sortKey = CategorySort.closest.rawValue
     private let shown = 6
 
     var body: some View {
-        let rows = store.categoryRows(in: month)
+        let sort = CategorySort(rawValue: sortKey) ?? .closest
+        let rows = store.categoryRows(in: month, sort: sort)
         if !rows.isEmpty {
             let spent = rows.reduce(0) { $0 + store.spent($1.id, in: month) }
             VStack(alignment: .leading, spacing: 10) {
-                SectionTitle(text: "Categories", trailing: "\(Money.short(spent)) spent")
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Categories").font(.title2.bold())
+                    Spacer()
+                    Text("\(Money.short(spent)) spent").font(.footnote).foregroundStyle(.secondary)
+                    Menu {
+                        Picker("Sort by", selection: $sortKey) {
+                            ForEach(CategorySort.allCases) { Text($0.label).tag($0.rawValue) }
+                        }
+                    } label: {
+                        Label("Sort", systemImage: "arrow.up.arrow.down")
+                            .labelStyle(.iconOnly)
+                            .font(.subheadline.weight(.semibold))
+                            .frame(minWidth: 44, minHeight: 32)
+                    }
+                    .accessibilityLabel("Sort categories: \(sort.label)")
+                }
+                .padding(.top, 8)
+                if sort != .closest {
+                    Text("Sorted by \(sort.label.lowercased())").font(.caption).foregroundStyle(.secondary)
+                }
                 RowGroup {
                     let visible = showAll ? rows : Array(rows.prefix(shown))
                     ForEach(visible) { category in

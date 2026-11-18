@@ -2209,4 +2209,18 @@ final class OverrunTests: XCTestCase {
         XCTAssertEqual(s.monthPlan(october).goals, 10_000, "October's goals still count in its wrap-up")
         XCTAssertEqual(s.monthPlan(s.currentMonth).savings, 100_000)
     }
+
+    func testCategoriesSortFourWays() {
+        let s = store()                          // dining $600 of $500, shopping $50 of $300
+        let october = s.currentMonth
+        XCTAssertEqual(s.categoryRows(in: october).map(\.id), ["dining", "shopping"], "closest to the limit by default")
+        XCTAssertEqual(s.categoryRows(in: october, sort: .mostLeft).map(\.id), ["shopping", "dining"])
+        XCTAssertEqual(s.categoryRows(in: october, sort: .mostSpent).map(\.id), ["dining", "shopping"])
+        XCTAssertEqual(s.categoryRows(in: october, sort: .name).map(\.id), ["dining", "shopping"])
+        // A category with spending and no limit goes last for "most left".
+        s.data.transactions.append(Transaction(id: "k", accountId: "r", date: date(2026, 10, 7), amount: -90_000,
+                                               payee: "Gymboree", categoryId: "kids"))
+        XCTAssertEqual(s.categoryRows(in: october, sort: .mostLeft).last?.id, "kids")
+        XCTAssertEqual(s.categoryRows(in: october, sort: .mostSpent).first?.id, "kids")
+    }
 }

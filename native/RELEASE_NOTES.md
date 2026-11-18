@@ -2,6 +2,9 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.34.5): Sort categories
+- Budget's Categories has a sort button (↑↓) next to the total: Closest to the limit (the usual order), Most left, Most spent, or Name. Your choice is remembered on this phone.
+
 ## 0.34.4: No more loop
 - Fixed: Plan offered "Save the $X not in any limit" with money that was already covering a category that went over. Saving it left that category uncovered on Budget, which sent you back to Plan. Plan now counts spending past a limit the same way Budget does, so it only offers money nothing is using.
 - Fixed the same mix-up on Budget's Details: "Not in any limit · put it toward savings" no longer offers money that's covering overspending.

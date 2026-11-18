@@ -2,6 +2,20 @@ import Foundation
 
 /// What the Budget page shows and in what order: a short list of things
 /// that need you, and categories with the ones closest to their limit first.
+/// How Budget lists categories.
+enum CategorySort: String, CaseIterable, Identifiable {
+    case closest, mostLeft, mostSpent, name
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .closest: return "Closest to the limit"
+        case .mostLeft: return "Most left"
+        case .mostSpent: return "Most spent"
+        case .name: return "Name"
+        }
+    }
+}
+
 extension BudgetStore {
     enum Attention: Hashable, Identifiable {
         /// A bank stopped sending activity or SimpleFIN reported a problem.
@@ -94,13 +108,32 @@ extension BudgetStore {
 
     /// Everyday categories worth showing (a limit, spending, or a usual),
     /// the most used-up first; ones without a limit after, by spending.
-    func categoryRows(in month: Date) -> [Category] {
-        let rows = everydayCategories.compactMap { c -> (Category, Double, Cents)? in
+    func categoryRows(in month: Date, sort: CategorySort = .closest) -> [Category] {
+        let rows = everydayCategories.compactMap { c -> (c: Category, used: Double, spent: Cents, left: Cents?)? in
             let used = spent(c.id, in: month)
             let limit = limit(c, in: month) ?? 0
             guard limit > 0 || used > 0 || (averageSpent(c.id, before: month) ?? 0) > 0 else { return nil }
-            return (c, limit > 0 ? Double(used) / Double(limit) : -1, used)
+            return (c, limit > 0 ? Double(used) / Double(limit) : -1, used, limit > 0 ? limit - used : nil)
         }
-        return rows.sorted { $0.1 != $1.1 ? $0.1 > $1.1 : $0.2 > $1.2 }.map(\.0)
+        let sorted: [(c: Category, used: Double, spent: Cents, left: Cents?)]
+        switch sort {
+        case .closest:
+            sorted = rows.sorted { $0.used != $1.used ? $0.used > $1.used : $0.spent > $1.spent }
+        case .mostLeft:
+            // No limit has nothing "left": those go last, by spending.
+            sorted = rows.sorted { a, b in
+                switch (a.left, b.left) {
+                case let (x?, y?): return x != y ? x > y : a.spent > b.spent
+                case (.some, nil): return true
+                case (nil, .some): return false
+                case (nil, nil): return a.spent > b.spent
+                }
+            }
+        case .mostSpent:
+            sorted = rows.sorted { $0.spent != $1.spent ? $0.spent > $1.spent : $0.c.name < $1.c.name }
+        case .name:
+            sorted = rows.sorted { $0.c.name.localizedStandardCompare($1.c.name) == .orderedAscending }
+        }
+        return sorted.map(\.c)
     }
 }
