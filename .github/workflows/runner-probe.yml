@@ -13,4 +13,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 5
     steps:
-      - run: ls -d /Applications/Xcode*.app | tail -4; sw_vers -productVersion; uname -m
+      - name: Every Xcode and its iOS SDK
+        run: |
+          sw_vers -productVersion; uname -m
+          echo "Default: $(xcode-select -p)"
+          for x in /Applications/Xcode*.app; do
+            v=$("$x/Contents/Developer/usr/bin/xcodebuild" -version 2>/dev/null | head -1)
+            sdk=$("$x/Contents/Developer/usr/bin/xcodebuild" -showsdks 2>/dev/null | grep -o 'iphoneos[0-9.]*' | head -1)
+            echo "$x  →  $v  ·  $sdk"
+          done
