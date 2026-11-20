@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next (0.34.6): Steady
+## 0.34.6: Steady
 - Fixed: Adjust limit on a category's screen closed by itself the first time you opened it.
 - Built on Apple's newer Mac build machines with the iOS 26.5 SDK; builds will move to the iOS 27 SDK on their own once it's available there.
 
