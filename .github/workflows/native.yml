@@ -13,9 +13,11 @@ on:
       - native/**
       - .github/workflows/native.yml
 
+# Check runs replace each other; a release is never cancelled by a later
+# push (it runs in its own group).
 concurrency:
-  group: native
-  cancel-in-progress: true
+  group: native-${{ (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[ship-native]')) && 'ship' || 'check' }}
+  cancel-in-progress: ${{ !(github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[ship-native]')) }}
 
 permissions:
   contents: write
