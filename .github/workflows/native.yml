@@ -23,7 +23,28 @@ permissions:
   contents: write
 
 jobs:
+  # Is this a release? Only "Run workflow", or the ship tag in the commit's
+  # first line. (The tag mentioned in a commit's body once shipped a build.)
+  decide:
+    runs-on: ubuntu-latest
+    outputs:
+      ship: ${{ steps.d.outputs.ship }}
+    steps:
+      - id: d
+        env:
+          MESSAGE: ${{ github.event.head_commit.message }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          subject=$(printf '%s\n' "$MESSAGE" | head -n 1)
+          if [ "$EVENT" = "workflow_dispatch" ] || [[ "$subject" == *"[ship-native]"* ]]; then
+            echo "ship=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ship=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Release: $(grep ship "$GITHUB_OUTPUT")"
+
   test-and-preview:
+    needs: decide
     runs-on: ${{ vars.MAC_RUNNER || 'macos-26' }}
     timeout-minutes: 60
     steps:
@@ -66,7 +87,7 @@ jobs:
 
       - name: Screenshot every tab, light and dark
         # Ship builds skip these: the check run before them took and reviewed them.
-        if: ${{ !contains(github.event.head_commit.message, '[ship-native]') }}
+        if: ${{ needs.decide.outputs.ship != 'true' }}
         working-directory: native
         run: |
           UDID=${{ steps.sim.outputs.udid }}
@@ -132,7 +153,7 @@ jobs:
           echo "Built from ${GITHUB_SHA}" > "$OUT/COMMIT.txt"
 
       - name: Publish screenshots to the previews-native branch
-        if: ${{ always() && !contains(github.event.head_commit.message, '[ship-native]') }}
+        if: ${{ always() && needs.decide.outputs.ship != 'true' }}
         run: |
           OUT="$RUNNER_TEMP/previews"
           [ -d "$OUT" ] || exit 0
@@ -148,8 +169,8 @@ jobs:
   # Uploads the native app to TestFlight (same app as before, new build).
   # Runs on "Run workflow" or a commit message containing [ship-native].
   ship:
-    needs: test-and-preview
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[ship-native]')
+    needs: [decide, test-and-preview]
+    if: needs.decide.outputs.ship == 'true'
     runs-on: ${{ vars.MAC_RUNNER || 'macos-26' }}
     timeout-minutes: 60
     permissions:

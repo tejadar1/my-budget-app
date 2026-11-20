@@ -8,6 +8,10 @@ on:
       version:
         description: Version to expire, like 27.0.0
         required: true
+      build:
+        description: Only this build number (like 202611202321); empty = every build of the version
+        required: false
+        default: ""
 
 jobs:
   expire:
@@ -19,6 +23,7 @@ jobs:
           ISSUER: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
           P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
           VERSION: ${{ inputs.version }}
+          BUILD: ${{ inputs.build }}
         run: |
           pip install --quiet "pyjwt[crypto]" requests
           python3 - <<'PY'
@@ -36,7 +41,10 @@ jobs:
               raise SystemExit(f'No version {os.environ["VERSION"]} found')
           for v in versions:
               builds = requests.get(f"{api}/preReleaseVersions/{v['id']}/builds", headers=h, params={"limit": 200}).json()["data"]
+              only = os.environ.get("BUILD", "").strip()
               for b in builds:
+                  if only and b["attributes"]["version"] != only:
+                      continue
                   if b["attributes"]["expired"]:
                       print(f'{b["attributes"]["version"]} already expired'); continue
                   r = requests.patch(f"{api}/builds/{b['id']}", headers=h,
