@@ -182,7 +182,8 @@ enum BankSync {
                 && !["zelle", "venmo", "paypal", "mortgage", "loan"].contains(where: { p.contains($0) })
                 && !carLoanWords.contains(where: { p.contains($0) })
             if matched.contains(t.id) || looksLikeTransfer(t.payee) || isCardCredit || paysOwnCard
-                || transferRules.contains(BudgetStore.payeeKey(t.payee)) {
+                || transferRules.contains(BudgetStore.payeeKey(t.payee))
+                || BudgetStore.isHouseholdPayment(t.payee, people: data.people) {
                 data.transactions[i].isTransfer = true
                 data.transactions[i].categoryId = nil
                 data.transactions[i].autoSort = nil
@@ -228,6 +229,11 @@ enum BankSync {
         let p = payee.lowercased()
         if isInvestmentPayee(p) { return true }
         if carLoanWords.contains(where: { p.contains($0) }) { return false }
+        if p.contains("venmo cashout") || p.contains("cash out") { return true }
+        // Paying (or being paid by) a person isn't a move between your own
+        // accounts, even when the bank calls it "Zelle Transfer". Payments
+        // between the two of you are caught by name, in markTransfers.
+        if BudgetStore.personPayment(payee) != nil { return false }
         let always = [
             "transfer", "xfer", "payment thank you", "payment - thank", "pymt thank",
             "payment received", "credit card payment", "card payment", "cc payment",

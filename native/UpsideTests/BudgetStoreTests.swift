@@ -2292,4 +2292,35 @@ final class OverrunTests: XCTestCase {
         XCTAssertEqual(data.transactions[2].categoryId, "kids", "Maria again")
         XCTAssertEqual(data.transactions[1].autoSort, "unknown", "John: Check these asks")
     }
+
+    func testZelleTransferToAPersonIsSpendingNotATransfer() {
+        // Bank of America writes "Zelle Transfer to …": the word "Transfer" isn't a move between your accounts.
+        XCTAssertFalse(BankSync.looksLikeTransfer("Zelle Transfer to Pamela Ruiz Conf# 8hj2k"))
+        XCTAssertTrue(BankSync.looksLikeTransfer("Online Transfer to SAV ...4410"), "real transfers still are")
+        XCTAssertTrue(BankSync.looksLikeTransfer("VENMO CASHOUT"), "moving Venmo money to the bank is")
+        XCTAssertEqual(BudgetStore.payeeKey("Zelle Transfer to Pamela Ruiz Conf# 8hj2k"), "zelle pamela ruiz")
+
+        let people = People(p1: "Ron", p2: "Jadira")
+        XCTAssertTrue(BudgetStore.isHouseholdPayment("Zelle Transfer to Ronald Tejada", people: people), "between the two of you")
+        XCTAssertFalse(BudgetStore.isHouseholdPayment("Zelle Transfer to Pamela Ruiz", people: people))
+
+        var data = BudgetData()
+        data.people = people
+        data.accounts = [Account(id: "b", name: "Checking", institution: "Bank of America", kind: .checking, balance: 0, owner: .p2)]
+        data.transactions = [
+            Transaction(id: "p", accountId: "b", date: date(2026, 11, 16), amount: -49_673,
+                        payee: "Zelle Transfer to Pamela Ruiz Conf# 8hj2k", categoryId: nil),
+            Transaction(id: "r", accountId: "b", date: date(2026, 11, 3), amount: -2_000,
+                        payee: "Zelle Transfer to Ronald Tejada Conf# 1aa", categoryId: nil),
+            Transaction(id: "m", accountId: "b", date: date(2026, 11, 16), amount: 1_850,
+                        payee: "Zelle Transfer from Maria Lopez Conf# 2bb", categoryId: nil),
+        ]
+        BankSync.markTransfers(&data)
+        XCTAssertFalse(data.transactions[0].isTransfer, "Pamela is spending")
+        XCTAssertTrue(data.transactions[1].isTransfer, "Ron is your own money")
+        XCTAssertFalse(data.transactions[2].isTransfer)
+        let s = BudgetStore(data: data, isDemo: true)
+        s.calendar = calendar
+        XCTAssertEqual(Set(s.toCheck.map(\.id)), ["p", "m"], "both need a category; Maria's $18.50 could be a dinner paid back")
+    }
 }

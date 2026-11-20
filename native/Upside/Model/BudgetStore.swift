@@ -36,6 +36,18 @@ final class BudgetStore {
     static func load() -> BudgetStore {
         if let raw = try? Data(contentsOf: fileURL),
            var data = try? JSONDecoder.upside.decode(BudgetData.self, from: raw) {
+            // Once: Zelles to other people that "Zelle Transfer" wording
+            // marked as transfers go back to Check these.
+            if !UserDefaults.standard.bool(forKey: "zelleByPerson") {
+                for i in data.transactions.indices where data.transactions[i].isTransfer {
+                    let t = data.transactions[i]
+                    guard personPayment(t.payee) != nil, !isHouseholdPayment(t.payee, people: data.people) else { continue }
+                    data.transactions[i].isTransfer = false
+                    data.transactions[i].categoryId = nil
+                    data.transactions[i].autoSort = nil
+                }
+                UserDefaults.standard.set(true, forKey: "zelleByPerson")
+            }
             // Newer transfer detection also cleans up what's already here.
             BankSync.markTransfers(&data)
             // Categories added in later versions (e.g. card fees).
@@ -430,7 +442,9 @@ final class BudgetStore {
     var toCheck: [Transaction] {
         let onBudget = Set(data.accounts.filter(\.countsInBudget).map(\.id))
         return data.transactions
-            .filter { !$0.isTransfer && !$0.isBusiness && $0.amount < 0 && onBudget.contains($0.accountId)
+            .filter { !$0.isTransfer && !$0.isBusiness && onBudget.contains($0.accountId)
+                // Money in from a person (paid back for dinner?) needs a home too.
+                && ($0.amount < 0 || (Self.personPayment($0.payee) != nil && $0.categoryId == nil))
                 && ($0.isHunch || $0.categoryId == nil) }
             .sorted { $0.date > $1.date }
     }
@@ -592,6 +606,14 @@ final class BudgetStore {
             .components(separatedBy: CharacterSet.alphanumerics.inverted)
             .filter { !$0.isEmpty && !$0.allSatisfy(\.isNumber) && $0.count > 1 }
         return words.prefix(2).joined(separator: " ")
+    }
+
+    /// A Zelle (or Venmo…) between the two of you: moving your own money.
+    /// Matched on first names ("Ron" matches "Ronald Tejada").
+    static func isHouseholdPayment(_ payee: String, people: People) -> Bool {
+        guard let first = personPayment(payee)?.person.split(separator: " ").first?.lowercased() else { return false }
+        return [people.p1, people.p2].compactMap { $0.split(separator: " ").first?.lowercased() }
+            .contains { name in name.count >= 2 && (first == name || (name.count >= 3 && first.hasPrefix(name))) }
     }
 
     /// Zelle, Venmo, Cash App and Apple Cash: which service, and who it
