@@ -2,6 +2,10 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.34.6): Steady
+- Fixed: Adjust limit on a category's screen closed by itself the first time you opened it.
+- Built on Apple's newer Mac build machines with the iOS 26.5 SDK; builds will move to the iOS 27 SDK on their own once it's available there.
+
 ## 0.34.5: Smoother
 - Sort categories: the ↑↓ button next to Categories on Budget sorts by Closest to the limit (the usual order), Most left, Most spent, or Name. Remembered on this phone.
 - Category names are never cut short: the amount sits under the name.

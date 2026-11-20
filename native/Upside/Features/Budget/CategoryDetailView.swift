@@ -61,7 +61,6 @@ struct CategoryDetailView: View {
                     }
                 }
             }
-            .sheet(isPresented: $adjusting) { LimitAdjustSheet(categoryId: categoryId) }
 
             TrendSection(categoryId: categoryId, month: month,
                          limit: limit > 0 ? limit : nil, isCurrent: isCurrent) { picked in
@@ -93,6 +92,9 @@ struct CategoryDetailView: View {
         .navigationTitle(category?.name ?? "Category")
         .navigationBarTitleDisplayMode(.large)
         .navigationDestination(item: $drill) { CategoryDetailView(categoryId: categoryId, month: $0.date) }
+        // On the page, not on a list section: sections are rebuilt as the
+        // list updates, which closed the sheet the first time it opened.
+        .sheet(isPresented: $adjusting) { LimitAdjustSheet(categoryId: categoryId) }
     }
 
     private func stat(_ label: String, _ value: String) -> some View {
