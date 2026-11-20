@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next (0.34.7): Room from anywhere
+## 0.34.7: Room from anywhere
 - A category with less than $10 left says "Used up" in gray, instead of an orange "$1 left".
 - Adjust limit: when other categories don't have enough room, it now also offers to put less toward savings, cards, trips or goals, right there ("Pay $100 less on cards a month", "Save $100 less this month"). No trip back to Plan. "From now on" changes the monthly amount; "Just this month" changes only this month. Goals only give for this month.
 
