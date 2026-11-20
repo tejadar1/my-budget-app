@@ -2257,4 +2257,13 @@ final class OverrunTests: XCTestCase {
         XCTAssertEqual(s.overrunCost(in: october).needed, 0)
         XCTAssertFalse(s.canLowerEveryMonth(.goals), "goals only give this month")
     }
+
+    func testAFewDollarsLeftIsUsedUp() {
+        XCTAssertTrue(Status(limit: 55_000, left: 100).usedUp, "$1 of $550")
+        XCTAssertTrue(Status(limit: 17_000, left: 600).usedUp, "$6 of $170")
+        XCTAssertFalse(Status(limit: 200_000, left: 5_000).usedUp, "$50 is still money")
+        XCTAssertFalse(Status(limit: 30_000, left: 6_200).usedUp, "$62 of $300")
+        XCTAssertFalse(Status(limit: 50_000, left: -100).usedUp, "over is over")
+        XCTAssertFalse(Status(limit: 0, left: 0).usedUp, "no limit")
+    }
 }

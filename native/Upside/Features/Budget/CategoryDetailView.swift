@@ -27,7 +27,8 @@ struct CategoryDetailView: View {
             Section {
                 VStack(alignment: .leading, spacing: 14) {
                     Text(limit == 0 ? Money.short(spent)
-                         : left < 0 ? "\(Money.short(left)) over" : "\(Money.short(left)) left")
+                         : left < 0 ? "\(Money.short(left)) over"
+                         : Status(limit: limit, left: left).usedUp ? "Used up" : "\(Money.short(left)) left")
                         .heroNumber(44)
                         .foregroundStyle(limit == 0 ? Color.primary : Status(limit: limit, left: left).color)
                     if limit > 0 {

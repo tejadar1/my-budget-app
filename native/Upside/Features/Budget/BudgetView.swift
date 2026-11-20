@@ -275,8 +275,13 @@ struct Status {
     let limit: Cents
     let left: Cents
 
+    /// A few dollars left is nothing left: "$1 left" reads as noise, so
+    /// under $10 it's simply used up.
+    var usedUp: Bool { limit > 0 && left >= 0 && left < 1_000 }
+
     var color: Color {
         if left < 0 { return Theme.over }
+        if usedUp { return .secondary }
         if limit > 0 && Double(left) < Double(limit) * 0.15 { return Theme.warning }
         return Theme.accent
     }
@@ -596,6 +601,10 @@ struct CategoryRow: View {
         if left < 0 {
             return Text("\(Money.short(-left)) over").fontWeight(.semibold).foregroundColor(Theme.over)
                 + Text(" \(Money.short(limit)) limit").foregroundColor(.secondary)
+        }
+        if Status(limit: limit, left: left).usedUp {
+            return Text("Used up").fontWeight(.semibold).foregroundColor(.secondary)
+                + Text(" · \(Money.short(limit)) limit").foregroundColor(.secondary)
         }
         return Text(Money.short(left)).fontWeight(.semibold).foregroundColor(color == Theme.accent ? .primary : color)
             + Text(" left of \(Money.short(limit))").foregroundColor(.secondary)
