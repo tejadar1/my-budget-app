@@ -2,6 +2,9 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.34.7): Room from anywhere
+- Adjust limit: when other categories don't have enough room, it now also offers to put less toward savings, cards, trips or goals, right there ("Pay $100 less on cards a month", "Save $100 less this month"). No trip back to Plan. "From now on" changes the monthly amount; "Just this month" changes only this month. Goals only give for this month.
+
 ## 0.34.6: Steady
 - Fixed: Adjust limit on a category's screen closed by itself the first time you opened it.
 - Built on Apple's newer Mac build machines with the iOS 26.5 SDK; builds will move to the iOS 27 SDK on their own once it's available there.

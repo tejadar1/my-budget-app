@@ -2230,4 +2230,31 @@ final class OverrunTests: XCTestCase {
                        "That's about 50% of what comes in (about \(Money.short(500_000)) a month).")
         XCTAssertNil(BudgetStore.incomeShareNote(months.map { MonthTotal(month: $0.month, spent: $0.spent, income: 0) }))
     }
+
+    func testRaisingALimitCanTakeFromCardsOrSavingsRightThere() {
+        let s = store()
+        s.data.transactions.removeAll { $0.payee == "Nobu" }   // every dollar in a limit
+        let october = s.currentMonth
+        XCTAssertEqual(s.limitOver("dining", to: 70_000, in: october), 20_000)
+        XCTAssertEqual(s.planRoom(in: october).map(\.0), [.cards, .savings])
+
+        // Just October: cards give $200 this month; the standing paydown stays.
+        s.adjustLimit("dining", to: 70_000, fromPlan: [.cards: 20_000], thisMonthOnly: true, in: october)
+        XCTAssertEqual(s.limit(s.category("dining")!, in: october), 70_000)
+        XCTAssertEqual(s.monthPlan(october).cardPaydown, 10_000)
+        XCTAssertEqual(s.data.priorities?.cardPaydown, 30_000)
+        XCTAssertEqual(s.overrunCost(in: october).needed, 0, "it fits")
+    }
+
+    func testRaisingALimitFromNowOnLowersSavingsEveryMonth() {
+        let s = store()
+        s.data.transactions.removeAll { $0.payee == "Nobu" }
+        let october = s.currentMonth
+        s.adjustLimit("dining", to: 70_000, fromPlan: [.savings: 20_000], thisMonthOnly: false, in: october)
+        XCTAssertEqual(s.category("dining")!.limit, 70_000)
+        XCTAssertEqual(s.data.priorities?.savings, 370_000, "every month now")
+        XCTAssertTrue(s.overrunCuts(in: october).isEmpty, "a standing change, not a one-month cut")
+        XCTAssertEqual(s.overrunCost(in: october).needed, 0)
+        XCTAssertFalse(s.canLowerEveryMonth(.goals), "goals only give this month")
+    }
 }

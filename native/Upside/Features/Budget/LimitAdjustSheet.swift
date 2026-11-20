@@ -11,6 +11,8 @@ struct LimitAdjustSheet: View {
     @State private var thisMonthOnly = false
     /// Lowered elsewhere to make room: category id → cents.
     @State private var taking: [String: Cents] = [:]
+    /// Less toward savings, cards, trips or goals to make room.
+    @State private var fromPlan: [PlanPriority: Cents] = [:]
 
     private var month: Date { store.currentMonth }
 
@@ -18,12 +20,14 @@ struct LimitAdjustSheet: View {
         let category = store.category(categoryId)
         let monthName = month.formatted(.dateTime.month(.wide))
         let value = dollars * 100
-        let over = store.limitOver(categoryId, to: value, taking: taking, in: month)
-        let spare = store.limitSpare(categoryId, to: value, taking: taking, in: month)
+        // Less toward savings, cards or trips adds to what limits can use.
+        let planTotal = fromPlan.values.reduce(0, +)
+        let over = max(0, store.limitOver(categoryId, to: value, taking: taking, in: month) - planTotal)
+        let spare = store.limitSpare(categoryId, to: value, taking: taking, in: month) + max(0, planTotal - store.limitOver(categoryId, to: value, taking: taking, in: month))
         let spent = store.spent(categoryId, in: month)
         let usual = store.averageSpent(categoryId, before: month)
         // Lowering is always fine; raising has to fit.
-        let canSave = dollars != startDollars || !taking.isEmpty
+        let canSave = dollars != startDollars || !taking.isEmpty || !fromPlan.isEmpty
         let fits = over == 0 || dollars <= startDollars
 
         NavigationStack {
@@ -65,10 +69,6 @@ struct LimitAdjustSheet: View {
                             let room = store.roomLeft(in: month, excluding: [categoryId])
                                 .map { ($0, $0.room - (taking[$0.id] ?? 0)) }
                                 .filter { $0.1 >= 1_000 }
-                            if room.isEmpty {
-                                Text("No category has room left this month. Raise it by less, or put less toward savings, cards or trips in Plan.")
-                                    .font(.footnote).foregroundStyle(.secondary)
-                            }
                             ForEach(room.prefix(5), id: \.0.id) { source, left in
                                 let take = min(left, (over + 999) / 1_000 * 1_000)
                                 Button {
@@ -82,13 +82,39 @@ struct LimitAdjustSheet: View {
                                 }
                                 .tint(.primary)
                             }
+                            // Then the bottom of the plan: right here, no trip to Plan.
+                            let planRoom = store.planRoom(in: month)
+                                .map { ($0.0, $0.1 - (fromPlan[$0.0] ?? 0)) }
+                                .filter { $0.1 >= 1_000 }
+                            ForEach(planRoom, id: \.0) { source, left in
+                                let take = min(left / 1_000 * 1_000, (over + 999) / 1_000 * 1_000)
+                                let everyMonth = !thisMonthOnly && store.canLowerEveryMonth(source)
+                                Button {
+                                    Haptics.tap()
+                                    withAnimation { fromPlan[source, default: 0] += take }
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(source.action(take) + (everyMonth ? " a month" : " this month")).fontWeight(.semibold)
+                                        Text("\(Money.short(left)) \(everyMonth ? "a month" : "in \(monthName)") now")
+                                            .font(.footnote).foregroundStyle(.secondary)
+                                    }
+                                }
+                                .tint(.primary)
+                            }
+                            if room.isEmpty && planRoom.isEmpty {
+                                Text("Nothing else has room this month. Raise it by less.")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            }
                         }
                     }
-                    if !taking.isEmpty {
+                    if !taking.isEmpty || !fromPlan.isEmpty {
                         ForEach(taking.sorted { $0.key < $1.key }, id: \.key) { id, amount in
                             LabeledContent(store.category(id)?.name ?? id, value: "−\(Money.short(amount))")
                         }
-                        Button("Put those back") { withAnimation { taking = [:] } }
+                        ForEach(fromPlan.sorted { $0.key.rawValue < $1.key.rawValue }, id: \.key) { source, amount in
+                            LabeledContent(source.noun.capitalized, value: "−\(Money.short(amount))")
+                        }
+                        Button("Put those back") { withAnimation { taking = [:]; fromPlan = [:] } }
                             .font(.footnote.weight(.semibold))
                     }
                 } header: {
@@ -103,7 +129,8 @@ struct LimitAdjustSheet: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        store.adjustLimit(categoryId, to: value, taking: taking, thisMonthOnly: thisMonthOnly, in: month)
+                        store.adjustLimit(categoryId, to: value, taking: taking, fromPlan: fromPlan,
+                                          thisMonthOnly: thisMonthOnly, in: month)
                         Haptics.success()
                         dismiss()
                     }

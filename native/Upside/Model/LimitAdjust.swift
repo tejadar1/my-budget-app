@@ -48,7 +48,7 @@ extension BudgetStore {
     /// `thisMonthOnly`: just this month; otherwise from now on (this month
     /// included). Mid-month the month's original plan is kept for the recap.
     func adjustLimit(_ categoryId: String, to value: Cents, taking: [String: Cents] = [:],
-                     thisMonthOnly: Bool, in month: Date) {
+                     fromPlan: [PlanPriority: Cents] = [:], thisMonthOnly: Bool, in month: Date) {
         if !isPlanningWindow(month) { keepOriginalPlan(for: month) }
         var plan = data.plan.flatMap { isInMonth($0.month, month) ? $0 : nil }
             ?? SavingsPlan(month: month, goal: 0, limits: [:])
@@ -68,5 +68,60 @@ extension BudgetStore {
             }
         }
         data.plan = plan
+        for (source, amount) in fromPlan where amount > 0 {
+            lowerPriority(source, by: amount, thisMonthOnly: thisMonthOnly, for: categoryId, in: month)
+        }
+    }
+
+    /// What savings, cards, trips and goals can still give this month.
+    func planRoom(in month: Date) -> [(PlanPriority, Cents)] {
+        let plan = monthPlan(month)
+        return [(.goals, plan.goals), (.trips, plan.trips), (.cards, plan.cardPaydown), (.savings, plan.savings)]
+            .filter { $0.1 >= 1_000 }
+    }
+
+    /// Whether lowering `source` can change the standing amount (so "from
+    /// now on" means every month). Goals, and trips without a fund, are
+    /// worked out each month, so only this month can give.
+    func canLowerEveryMonth(_ source: PlanPriority) -> Bool {
+        switch source {
+        case .savings: return (data.priorities?.savings ?? 0) > 0
+        case .cards: return (data.priorities?.cardPaydown ?? 0) > 0
+        case .trips: return data.tripFund != nil
+        case .goals, .room: return false
+        }
+    }
+
+    /// Puts less toward savings, cards, trips or goals to make room for a
+    /// limit: this month only (like paying for overspending), or from now on.
+    func lowerPriority(_ source: PlanPriority, by amount: Cents, thisMonthOnly: Bool, for categoryId: String?, in month: Date) {
+        guard amount > 0 else { return }
+        guard !thisMonthOnly, canLowerEveryMonth(source) else {
+            payForOverspending(from: source, amount: amount, categoryId: categoryId, in: month)
+            return
+        }
+        var priorities = data.priorities ?? Priorities()
+        switch source {
+        case .savings:
+            let take = min(amount, priorities.savings)
+            priorities.savings -= take
+            data.priorities = priorities
+            if amount > take { payForOverspending(from: .savings, amount: amount - take, categoryId: categoryId, in: month) }
+        case .cards:
+            let take = min(amount, priorities.cardPaydown)
+            priorities.cardPaydown -= take
+            data.priorities = priorities
+            if amount > take { payForOverspending(from: .cards, amount: amount - take, categoryId: categoryId, in: month) }
+        case .trips:
+            if var fund = data.tripFund {
+                let take = min(amount, fund.monthly)
+                fund.monthly -= take
+                data.tripFund = fund
+                if amount > take { payForOverspending(from: .trips, amount: amount - take, categoryId: categoryId, in: month) }
+            }
+        case .goals, .room:
+            payForOverspending(from: source, amount: amount, categoryId: categoryId, in: month)
+        }
+        recordMonthSnapshot()
     }
 }
