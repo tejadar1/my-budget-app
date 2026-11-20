@@ -100,6 +100,7 @@ struct BudgetView: View {
                 case .cards: CardsView()
                 case .trends: TrendsView()
                 case .year(let year): YearReviewView(year: year)
+                case .help(let topic): HowItWorksView(focus: topic)
                 }
             }
             .sheet(item: $sheet, onDismiss: {
@@ -127,7 +128,7 @@ struct BudgetView: View {
                 }
                 Button("Just this once") { Haptics.tap(); withAnimation { store.dismissPayChange(change) } }
             } message: { change in
-                Text("This check was \(Money.short(change.latestAmount)), \(Money.short(change.perCheckDrop)) less than usual. Planning on it lowers what there is to spend from this month on (\(Money.short(change.oldMonthly)) → \(Money.short(change.newMonthly)) a month). If your limits no longer fit, Budget will say so.")
+                Text("This check: \(Money.short(change.latestAmount)), \(Money.short(change.perCheckDrop)) less than usual. From this month on: \(Money.short(change.oldMonthly)) → \(Money.short(change.newMonthly)) a month.")
             }
             .confirmationDialog("Is \(askHousehold ?? "") one of you?",
                                 isPresented: Binding(get: { askHousehold != nil }, set: { if !$0 { askHousehold = nil } }),
@@ -137,7 +138,7 @@ struct BudgetView: View {
                     Button("No, someone we pay") { Haptics.tap(); withAnimation { store.answerHousehold(name, isUs: false) } }
                 }
             } message: {
-                Text("Yes: Zelles with them are your own money moving, so they don't count as spending. No: they go to Check these so you can sort them.")
+                Text("Yes: Zelles with them are transfers. No: they're spending.")
             }
         }
     }
@@ -177,6 +178,7 @@ struct BudgetView: View {
         case "bills": path.append(Route.bills)
         case "cards": path.append(Route.cards)
         case "trends": path.append(Route.trends)
+        case "help": path.append(Route.help(HelpTopic(rawValue: open.id)))
         case "year": path.append(Route.year(Int(open.id) ?? store.defaultReviewYear))
         case "business": path.append(Route.business)
         case "search": path.append(Route.search(open.id))
@@ -243,6 +245,7 @@ enum Route: Hashable {
     case cards
     case trends
     case year(Int)
+    case help(HelpTopic?)
 }
 
 // MARK: - Month switcher

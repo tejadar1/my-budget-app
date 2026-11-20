@@ -120,7 +120,11 @@ struct LimitAdjustSheet: View {
                 } header: {
                     Text("Does it fit?")
                 } footer: {
-                    Text("Limits share what's left after bills, savings, cards and trips (\(Money.short(store.monthPlan(month).toSpend)) in \(monthName)). Money already spent counts where it's more than a limit.")
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("\(Money.short(store.monthPlan(month).toSpend)) to spend in \(monthName)")
+                        Spacer(minLength: 8)
+                        LearnMore(topic: .month)
+                    }
                 }
             }
             .navigationTitle("Adjust limit")

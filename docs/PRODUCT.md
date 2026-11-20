@@ -15,6 +15,10 @@ accounts, banks and way of budgeting are the test bed, not the spec.
 - **One set of numbers.** Every screen counts spending money, limits and
   overspending the same way.
 - **Everything learned is visible and editable** (People you pay, Categories).
+- **Screens say what's true and what to do; How Upside works says why.**
+  At most one short line of explanation on a screen, only when it changes a
+  decision or says what a tap will do. Everything else goes in the page,
+  reached with Learn more.
 - **Apple quality.** Plain words, few of them; calm by default; clear next
   step; haptics and system patterns.
 

@@ -220,7 +220,11 @@ struct ReviewView: View {
                              onNew: { newCategoryName = ""; newCategoryFor = t })
                 }
             } footer: {
-                Text("Tap Right, or tap the category to change it. Upside remembers the store.")
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Upside remembers each store.")
+                    Spacer(minLength: 8)
+                    LearnMore(topic: .sorting)
+                }
             }
         }
         .overlay {
@@ -267,7 +271,7 @@ struct LimitsView: View {
                         Label("Recommended categories", systemImage: "sparkles")
                     }
                 } footer: {
-                    Text("Limits are set in Plan. Tap a category to see how its limit was set.")
+                    Text("Tap a category to see how its limit was set.")
                 }
                 ForEach(store.groupedCategories) { group in
                     if group.name != "Trips" {
@@ -405,9 +409,8 @@ struct LimitDetailView: View {
                 } header: {
                     Text("Limit")
                 } footer: {
-                    // Plan is the one place limits change, so they always fit the month.
-                    Text(explanation(category, usual: usual, suggested: suggested) + " Change it with Adjust limit on the category, or in Plan."
-                         + (category.rolloverSince != nil ? " What you don’t spend adds to next month’s limit." : ""))
+                    Text(explanation(category, usual: usual, suggested: suggested)
+                         + (category.rolloverSince != nil ? " What's left rolls into next month." : ""))
                 }
 
                 if !category.isIncome && category.group != "Trips" {

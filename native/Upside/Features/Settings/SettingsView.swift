@@ -36,6 +36,14 @@ struct SettingsView: View {
                     .padding(.vertical, 4)
                 }
 
+                Section {
+                    NavigationLink {
+                        HowItWorksView()
+                    } label: {
+                        row("How Upside works", icon: "questionmark.circle.fill", color: .gray, chevron: false)
+                    }
+                }
+
                 Section("People") {
                     if editingNames || !store.people.isSetUp {
                         PeopleCard(isEditing: $editingNames)
@@ -63,8 +71,6 @@ struct SettingsView: View {
                         row("People you pay", icon: "person.2.fill", color: .purple,
                             value: store.personRules.isEmpty ? nil : "\(store.personRules.count)", chevron: false)
                     }
-                } footer: {
-                    Text("Zelle, Venmo and Cash App: who's one of you, and what paying each person is for.")
                 }
 
                 Section {
@@ -83,7 +89,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Banks")
                 } footer: {
-                    Text("Manage banks opens SimpleFIN: add a bank, sign in again, or tap Adjust. Upside syncs when you close it.")
+                    Text("Manage banks opens SimpleFIN to add or fix a bank.")
                 }
 
                 if !store.isDemo {
@@ -149,7 +155,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Alerts")
                 } footer: {
-                    Text("Bills: 9am two days before they’re due. Low balance: when checking dips under your amount or under bills still due.")
+                    Text("Bills: two days before they’re due. Low balance: under your amount, or under bills still due.")
                 }
                 .onChange(of: limitAlerts) { _, on in if on { Task { _ = await Alerts.requestPermission() } } }
                 .onChange(of: weeklySummary) { _, on in if on { Task { _ = await Alerts.requestPermission() } } }

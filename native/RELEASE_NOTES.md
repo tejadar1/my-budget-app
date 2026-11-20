@@ -2,6 +2,10 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.35): How Upside works
+- One page explains how Upside thinks: your month, planning, going over, income, sorting, Zelle and Venmo, transfers, trips and goals, savings, month end, alerts and your data. Settings › How Upside works, or Learn more wherever a screen used to explain itself.
+- Screens are quieter: explanations moved to the page, leaving short facts ("$14,540 in so far", "Limits $4,400 of $4,464", "Only November changes").
+
 ## 0.34.9: Pay changes
 - When a paycheck comes in lower (a bigger 401(k) contribution, fewer hours), Budget asks after the first one: "Ron's paycheck went down $500. Plan on $X a month, or was it a one-off?" After two in a row it says so. Before, the plan took about two months to notice.
 - Plan on it, and what there is to spend comes down from this month on, including an income you typed into Plan. If your limits no longer fit, Budget says so and you choose what gives.

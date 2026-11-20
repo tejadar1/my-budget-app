@@ -198,7 +198,7 @@ struct ExtraIncomeSheet: View {
                         .foregroundStyle(.secondary)
                 } else {
                 Text("\(text) more came in than planned").font(.title2.bold())
-                Text("\(month)’s plan counted on \(Money.short(plan.income)). \(Money.short(plan.incomeReceived)) has come in so far. The extra isn’t in your spending money yet. Give it a job:")
+                Text("\(month)’s plan counted on \(Money.short(plan.income)); \(Money.short(plan.incomeReceived)) came in. Give the extra a job:")
                     .foregroundStyle(.secondary)
                 Spacer(minLength: 12)
                 choice("Save \(text)", note: "Adds it to \(month)’s savings.", prominent: true) {

@@ -133,7 +133,11 @@ private struct SavingsMovesSheet: View {
                         }
                     }
                 } footer: {
-                    Text("Money into savings and investment accounts, and transfers you marked Saved & invested. Interest and dividends don’t count.")
+                    HStack(alignment: .firstTextBaseline) {
+                        Text("Interest and dividends don’t count.")
+                        Spacer(minLength: 8)
+                        LearnMore(topic: .savings)
+                    }
                 }
             }
             .navigationTitle("Saved in \(month.formatted(.dateTime.month(.wide)))")

@@ -21,8 +21,8 @@ struct TrendsView: View {
                 } header: {
                     Text("Spent each month")
                 } footer: {
-                    Text([BudgetStore.spendingNote(finished), BudgetStore.incomeShareNote(finished),
-                          "Bills included, trips not. This month is so far."].compactMap { $0 }.joined(separator: " "))
+                    Text([BudgetStore.spendingNote(finished), BudgetStore.incomeShareNote(finished)]
+                        .compactMap { $0 }.joined(separator: " "))
                 }
             }
 

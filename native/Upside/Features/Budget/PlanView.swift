@@ -159,19 +159,23 @@ struct PlanView: View {
         } header: {
             Text(month.formatted(.dateTime.month(.wide)))
         } footer: {
-            Text(incomeFooter(n))
+            HStack(alignment: .firstTextBaseline) {
+                Text(incomeFooter(n))
+                Spacer(minLength: 8)
+                LearnMore(topic: .income)
+            }
         }
     }
 
     private func incomeFooter(_ n: Numbers) -> String {
         let planned = plannedIncome * 100
         guard !useUsual, planned > 0 else {
-            return "Your usual is the paychecks above, added together. \(Money.short(n.base.incomeReceived)) in so far."
+            return "\(Money.short(n.base.incomeReceived)) in so far"
         }
         if n.usualIncome > 0 && planned > n.usualIncome {
-            return "\(Money.short(planned - n.usualIncome)) above your usual. \(Money.short(n.base.incomeReceived)) in so far."
+            return "\(Money.short(planned - n.usualIncome)) above your usual · \(Money.short(n.base.incomeReceived)) in so far"
         }
-        return "\(Money.short(n.base.incomeReceived)) in so far. Any extra counts when it arrives."
+        return "\(Money.short(n.base.incomeReceived)) in so far"
     }
 
     private func prioritiesSection(_ n: Numbers) -> some View {
@@ -231,8 +235,12 @@ struct PlanView: View {
         let snapshot = store.data.originalLimits?[BudgetStore.monthKey(month)]
         return Section {
             if adjusting {
-                Text("\(monthName)’s plan is set. Changes now are adjustments; your recap at the end of \(monthName) compares with the plan you started with.")
-                    .font(.footnote).foregroundStyle(.secondary)
+                HStack(alignment: .firstTextBaseline) {
+                    Text("\(monthName)’s plan is set. Changes now are adjustments.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                    Spacer(minLength: 8)
+                    LearnMore(topic: .planning)
+                }
             }
             // The main action of this section: a full-width filled button,
             // with what it does underneath.
@@ -267,7 +275,7 @@ struct PlanView: View {
                               : "\(overs) categor\(overs == 1 ? "y is" : "ies are") over",
                               systemImage: "exclamationmark.circle.fill")
                             .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.over)
-                        Text("Part of it is already spent, so something has to give this month: lower limits that still have room, or put less toward trips, cards or savings. You choose; nothing's raised to hide it.")
+                        Text("Something has to give this month. You choose what.")
                             .font(.footnote).foregroundStyle(.secondary)
                         Button {
                             showWhatGives = true
@@ -340,9 +348,11 @@ struct PlanView: View {
         } header: {
             Text("Everyday limits")
         } footer: {
-            VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
                 Text(limitsFooter(n))
                     .foregroundStyle(n.committed <= n.toSpend ? Color.secondary : Theme.over)
+                Spacer(minLength: 8)
+                LearnMore(topic: .month)
             }
         }
     }
@@ -384,7 +394,7 @@ struct PlanView: View {
         if n.toSpend < 0 {
             let over = (-n.toSpend + 99) / 100
             Section {
-                Text("Bills, savings, card paydown and trips add up to more than you make, so nothing’s left for everyday spending.")
+                Text("Bills, savings, cards and trips are more than you make.")
                     .font(.subheadline)
                 if trips > 10 || paydown > 0 {
                     Button { fitIncome(over) } label: {
@@ -396,8 +406,8 @@ struct PlanView: View {
                 Label("\(Money.short(over * 100)) more than you make", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(Theme.over).textCase(nil).font(.subheadline.weight(.semibold))
             } footer: {
-                Text(trips > 10 || paydown > 0 ? "Puts less toward trips, then card paydown. Savings stays as you set it."
-                                               : "Lower savings with its slider, or plan on more income.")
+                Text(trips > 10 || paydown > 0 ? "Trips first, then cards. Never savings."
+                                               : "Lower savings, or plan on more income.")
             }
         } else if gap >= 5_000 {
             Section {
@@ -407,7 +417,11 @@ struct PlanView: View {
                 Label("Plan vs. what you usually spend", systemImage: "scalemass.fill")
                     .foregroundStyle(Theme.warning).textCase(nil).font(.subheadline.weight(.semibold))
             } footer: {
-                Text("Next month, put less toward trips with its slider, or step down the big cuts in Everyday limits: each starts near what you usually spend and drops 10% a month.")
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Put less toward trips, or step down big cuts.")
+                    Spacer(minLength: 8)
+                    LearnMore(topic: .planning)
+                }
             }
         }
     }
@@ -503,10 +517,9 @@ struct PlanView: View {
     private func limitsFooter(_ n: Numbers) -> String {
         let fits = n.committed <= n.toSpend
         let over = n.committed - n.total
-        let head = (fits ? "Limits add up to \(Money.short(n.total)) of \(Money.short(n.toSpend)) to spend."
-                         : "Limits add up to \(Money.short(n.total)), \(Money.short(n.committed - n.toSpend)) more than you have.")
-            + (over > 0 ? " Spending past limits uses another \(Money.short(over))." : "")
-        return head + " No limit counts as usual."
+        return (fits ? "Limits \(Money.short(n.total)) of \(Money.short(n.toSpend))"
+                     : "Limits \(Money.short(n.total)) · \(Money.short(n.committed - n.toSpend)) more than you have")
+            + (over > 0 ? " · \(Money.short(over)) spent past limits" : "")
     }
 
     private func load() {

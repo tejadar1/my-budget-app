@@ -13,7 +13,6 @@ struct OverrunSheet: View {
         let cost = store.overrunCost(in: month)
         let overs = cost.overruns
         let monthName = month.formatted(.dateTime.month(.wide))
-        let names = cost.options.map(\.source.noun)
 
         NavigationStack {
             List {
@@ -25,9 +24,9 @@ struct OverrunSheet: View {
                              : "Nothing is over")
                             .font(.title2.bold())
                         Text(!overs.isEmpty
-                             ? "Past the limits you set for \(monthName). It stays that way: the limit isn't raised to hide it."
+                             ? "Past the limits you set for \(monthName)."
                              : cost.needed > 0
-                             ? "With what's already spent, \(monthName)'s limits use \(Money.short(cost.committed)). After bills, savings, cards and trips there's \(Money.short(cost.toSpend))."
+                             ? "Limits and what's spent: \(Money.short(cost.committed)) · to spend: \(Money.short(cost.toSpend))"
                              : "Everything fits in \(monthName)'s plan.")
                             .foregroundStyle(.secondary)
                     }
@@ -92,22 +91,24 @@ struct OverrunSheet: View {
                                 .tint(.primary)
                             }
                         } else if cost.paid > 0 || cost.fromUnassigned > 0 {
-                            Text("It's paid for. It still shows as over, and the recap will name it.")
+                            Text("Paid for.")
                                 .font(.footnote).foregroundStyle(.secondary)
                         }
                     } header: {
                         Text("What it costs")
                     } footer: {
-                        Text(cost.needed > 0
-                             ? "Starts with limits that still have room, then the bottom of your plan: \(names.filter { $0 != PlanPriority.room.noun }.joined(separator: ", ")). Savings comes last and is never chosen for you. Only \(monthName) changes; your standing limits and amounts stay as you set them."
-                             : "Only \(monthName) changes; next month is back to your plan.")
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("Only \(monthName) changes.")
+                            Spacer(minLength: 8)
+                            LearnMore(topic: .overspending)
+                        }
                     }
                 }
 
                 Section {
                     Text(store.businessOwed > 0
-                         ? "\(Money.short(store.businessOwed)) of business purchases is waiting to be paid back. It isn't counted here, and nothing has to give for it."
-                         : "Business purchases aren't counted. If one of these was for work, open it and turn on Business expense: you'll be paid back, so nothing has to give.")
+                         ? "\(Money.short(store.businessOwed)) of business purchases waiting to be paid back isn't counted."
+                         : "A work purchase? Open it and turn on Business expense.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
             }
