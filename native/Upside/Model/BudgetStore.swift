@@ -581,7 +581,7 @@ final class BudgetStore {
         updated.transactions[i].categoryId = isTransfer ? nil : categoryId
         updated.transactions[i].isTransfer = isTransfer
         updated.transactions[i].autoSort = nil
-        if remember {
+        if remember && Self.isLearnable(updated.transactions[i].payee) {
             let key = Self.payeeKey(updated.transactions[i].payee)
             updated.rules.removeAll { $0.payeeKey == key }
             updated.rules.append(PayeeRule(payeeKey: key, categoryId: categoryId))
@@ -600,7 +600,10 @@ final class BudgetStore {
     static func payeeKey(_ payee: String) -> String {
         // Paying a person: the person is what matters, not "Zelle payment".
         if let p2p = personPayment(payee) {
-            return p2p.person.isEmpty ? p2p.service : p2p.service + " " + p2p.person.lowercased()
+            // Money from someone is remembered apart from money to them:
+            // paying Marlene is always the phone; what she pays back varies.
+            let service = p2p.incoming ? p2p.service + " from" : p2p.service
+            return p2p.person.isEmpty ? service : service + " " + p2p.person.lowercased()
         }
         let words = payee.lowercased()
             .components(separatedBy: CharacterSet.alphanumerics.inverted)
@@ -619,7 +622,7 @@ final class BudgetStore {
     /// Zelle, Venmo, Cash App and Apple Cash: which service, and who it
     /// went to (first two words of their name; empty if the bank left it
     /// out). Nil for anything else.
-    static func personPayment(_ payee: String) -> (service: String, person: String)? {
+    static func personPayment(_ payee: String) -> (service: String, person: String, incoming: Bool)? {
         let p = payee.lowercased()
         let services = [("zelle", "zelle"), ("venmo", "venmo"), ("cash app", "cash app"), ("sq *cash", "cash app"),
                         ("square cash", "cash app"), ("apple cash", "apple cash")]
@@ -634,7 +637,8 @@ final class BudgetStore {
             .filter { !$0.isEmpty && $0.rangeOfCharacter(from: .decimalDigits) == nil }
             .flatMap { $0.components(separatedBy: CharacterSet.letters.inverted) }
         let name = raw.filter { $0.count > 1 && !filler.contains($0.lowercased()) }.prefix(2)
-        return (service, name.map { $0.prefix(1).uppercased() + $0.dropFirst().lowercased() }.joined(separator: " "))
+        let incoming = raw.contains { ["from", "received", "recv"].contains($0.lowercased()) }
+        return (service, name.map { $0.prefix(1).uppercased() + $0.dropFirst().lowercased() }.joined(separator: " "), incoming)
     }
 
     // MARK: Saving money
@@ -809,9 +813,14 @@ final class BudgetStore {
         }
     }
 
+    /// A Zelle with no name says nothing about the next one.
+    static func isLearnable(_ payee: String) -> Bool {
+        !payeeKey(payee).isEmpty && personPayment(payee).map { !$0.person.isEmpty } ?? true
+    }
+
     private func remember(payee: String, as categoryId: String) {
         let key = Self.payeeKey(payee)
-        guard !key.isEmpty else { return }
+        guard !key.isEmpty, Self.isLearnable(payee) else { return }
         data.rules.removeAll { $0.payeeKey == key }
         data.rules.append(PayeeRule(payeeKey: key, categoryId: categoryId))
     }

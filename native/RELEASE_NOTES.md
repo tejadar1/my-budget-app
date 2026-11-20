@@ -5,7 +5,7 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 ## Next (0.34.8): Zelle by person
 - Fixed: Bank of America's "Zelle Transfer to …" was counted as a transfer between your own accounts, so those payments weren't in your spending at all. A Zelle to or from another person now counts; a Zelle between the two of you is still a transfer (matched by first name).
 - Once, after updating: Zelles that were wrongly marked as transfers move to Check these so you can sort them. Money a person sent you (paid back for dinner?) shows there too: sort it into the category it pays back, or Income.
-- Zelle, Venmo, Cash App and Apple Cash are sorted by who the money went to. Sorting a Zelle to Maria as Kids teaches Upside "Maria is Kids", not "every Zelle is Kids". A Zelle to someone new lands in Check these so you can choose.
+- Zelle, Venmo, Cash App and Apple Cash are sorted by who the money went to. Money a person sends you is remembered separately from money you send them: paying Marlene is always the phone, but what someone pays you back for varies. Sorting a Zelle to Maria as Kids teaches Upside "Maria is Kids", not "every Zelle is Kids". A Zelle to someone new lands in Check these so you can choose.
 - They read better too: "Zelle · Maria Lopez" instead of "ZELLE PAYMENT TO MARIA LOPEZ CONF# T0QX8".
 - A regular Zelle (the same person, about the same amount each month, like a sitter or a cleaner) can now show up with your bills.
 

@@ -2323,4 +2323,33 @@ final class OverrunTests: XCTestCase {
         s.calendar = calendar
         XCTAssertEqual(Set(s.toCheck.map(\.id)), ["p", "m"], "both need a category; Maria's $18.50 could be a dinner paid back")
     }
+
+    /// Ron's own example: Marlene is the cell phone, Pamela is child care,
+    /// what people send back varies, and the two of you are transfers.
+    func testEachPersonIsRememberedOnceAndMoneyBackIsKeptApart() {
+        var data = BudgetData()
+        data.people = People(p1: "Ron", p2: "Jadira")
+        data.accounts = [Account(id: "b", name: "Checking", institution: "Bank of America", kind: .checking, balance: 0, owner: .p2)]
+        data.transactions = [
+            Transaction(id: "m1", accountId: "b", date: date(2026, 10, 15), amount: -11_500,
+                        payee: "Zelle Transfer To Marlene Diaz Conf# 1a", categoryId: nil),
+            Transaction(id: "p1", accountId: "b", date: date(2026, 10, 5), amount: -41_744,
+                        payee: "Zelle Transfer to Pamela Ruiz Conf# 2b", categoryId: nil),
+        ]
+        let s = BudgetStore(data: data, isDemo: true)
+        s.calendar = calendar
+        s.categorize("m1", as: "phone")
+        s.categorize("p1", as: "kids")
+
+        func sorted(_ payee: String, _ amount: Cents) -> String? {
+            BankSync.categorize(payee: payee, amount: amount, rules: s.data.rules)
+        }
+        XCTAssertEqual(sorted("Zelle Transfer To Marlene Diaz Conf# 9z", -11_500), "phone", "Marlene next month")
+        XCTAssertEqual(sorted("Zelle Transfer to Pamela Ruiz Conf# 8y", -49_673), "kids", "Pamela next time")
+        XCTAssertNil(sorted("Zelle Transfer to Jessica Park Conf# 7x", -3_000), "someone new: you choose")
+        XCTAssertNil(sorted("Zelle Transfer from Marlene Diaz Conf# 6w", 2_000), "money back isn't the phone bill")
+        XCTAssertNotEqual(BudgetStore.payeeKey("Zelle Transfer from Marlene Diaz"), BudgetStore.payeeKey("Zelle Transfer to Marlene Diaz"))
+        XCTAssertTrue(BudgetStore.isHouseholdPayment("Zelle Transfer from Jadira Tejada Conf# 5v", people: s.people))
+        XCTAssertFalse(BudgetStore.isLearnable("Zelle Transfer"), "no name: nothing to remember")
+    }
 }
