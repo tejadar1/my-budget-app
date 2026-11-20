@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next (0.34.9): Pay changes
+## 0.34.9: Pay changes
 - When a paycheck comes in lower (a bigger 401(k) contribution, fewer hours), Budget asks after the first one: "Ron's paycheck went down $500. Plan on $X a month, or was it a one-off?" After two in a row it says so. Before, the plan took about two months to notice.
 - Plan on it, and what there is to spend comes down from this month on, including an income you typed into Plan. If your limits no longer fit, Budget says so and you choose what gives.
 - Just this once: it won't ask about that check again; a later lower check asks again.
