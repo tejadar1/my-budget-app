@@ -461,7 +461,7 @@ final class BudgetStore {
         var byWord: [String: [String: Int]] = [:]
         for t in data.transactions where !t.isTransfer && !t.isHunch && t.amount < 0 {
             guard let c = t.categoryId else { continue }
-            let words = nameWords(t.payee)
+            let words = hunchWords(t.payee)
             if let first = words.first { byFirstWord[first, default: [:]][c, default: 0] += 1 }
             for w in Set(words) where w.count >= 4 && !genericWords.contains(w) { byWord[w, default: [:]][c, default: 0] += 1 }
         }
@@ -474,13 +474,22 @@ final class BudgetStore {
             guard !t.isTransfer, t.amount < 0 else { continue }
             // New purchases, and earlier hunches that fell back to Shopping.
             guard t.categoryId == nil || (t.isHunch && t.categoryId == "shopping") else { continue }
-            let words = nameWords(t.payee)
+            let words = hunchWords(t.payee)
             let guess = best(words.first.flatMap { byFirstWord[$0] }, atLeast: 1)
-                ?? clueCategory(words).flatMap { known.contains($0) ? $0 : nil }
+                // A person's name isn't a store ("Joe Baker" isn't a bakery).
+                ?? (personPayment(t.payee) == nil ? clueCategory(words).flatMap { known.contains($0) ? $0 : nil } : nil)
                 ?? words.lazy.compactMap { best(byWord[$0], atLeast: 2) }.first
             data.transactions[i].categoryId = guess ?? "shopping"
             data.transactions[i].autoSort = guess == nil ? "unknown" : "hunch"
         }
+    }
+
+    /// Words to guess from. For a payment to a person, just who it went to
+    /// (as one word), so one Zelle never decides another's category; with no
+    /// name, nothing to go on, so Check these asks.
+    static func hunchWords(_ payee: String) -> [String] {
+        if let p2p = personPayment(payee) { return p2p.person.isEmpty ? [] : [payeeKey(payee)] }
+        return nameWords(payee)
     }
 
     /// The words of a store's name, lowercased, without numbers.
@@ -575,10 +584,35 @@ final class BudgetStore {
 
     /// "KROGER #123 CINCINNATI OH" and "Kroger 456" both become "kroger".
     static func payeeKey(_ payee: String) -> String {
+        // Paying a person: the person is what matters, not "Zelle payment".
+        if let p2p = personPayment(payee) {
+            return p2p.person.isEmpty ? p2p.service : p2p.service + " " + p2p.person.lowercased()
+        }
         let words = payee.lowercased()
             .components(separatedBy: CharacterSet.alphanumerics.inverted)
             .filter { !$0.isEmpty && !$0.allSatisfy(\.isNumber) && $0.count > 1 }
         return words.prefix(2).joined(separator: " ")
+    }
+
+    /// Zelle, Venmo, Cash App and Apple Cash: which service, and who it
+    /// went to (first two words of their name; empty if the bank left it
+    /// out). Nil for anything else.
+    static func personPayment(_ payee: String) -> (service: String, person: String)? {
+        let p = payee.lowercased()
+        let services = [("zelle", "zelle"), ("venmo", "venmo"), ("cash app", "cash app"), ("sq *cash", "cash app"),
+                        ("square cash", "cash app"), ("apple cash", "apple cash")]
+        guard let service = services.first(where: { p.contains($0.0) })?.1 else { return nil }
+        let filler: Set<String> = ["zelle", "venmo", "cash", "app", "apple", "square", "sq", "payment", "payments", "pmt",
+                                   "to", "from", "sent", "send", "received", "recv", "transfer", "xfer", "conf",
+                                   "confirmation", "ref", "id", "on", "web", "mobile", "des", "indn", "co", "ppd",
+                                   "ccd", "ach", "inst", "instant", "debit", "credit", "via", "for", "trn", "ext", "bank",
+                                   "jpm", "chase", "bac", "wf", "memo", "pay", "paid", "request", "the"]
+        // Words with digits are codes ("T0QX8KD2"), so split on digits too and keep letters-only words.
+        let raw = payee.components(separatedBy: .whitespaces)
+            .filter { !$0.isEmpty && $0.rangeOfCharacter(from: .decimalDigits) == nil }
+            .flatMap { $0.components(separatedBy: CharacterSet.letters.inverted) }
+        let name = raw.filter { $0.count > 1 && !filler.contains($0.lowercased()) }.prefix(2)
+        return (service, name.map { $0.prefix(1).uppercased() + $0.dropFirst().lowercased() }.joined(separator: " "))
     }
 
     // MARK: Saving money

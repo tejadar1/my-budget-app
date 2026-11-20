@@ -25,6 +25,11 @@ enum Merchant {
                                                "tj", "ikea", "h&m", "kfc", "jfk", "lga", "ewr", "nj", "ny", "llc"]
 
     static func clean(_ payee: String) -> String {
+        // "ZELLE PAYMENT TO MARIA LOPEZ CONF# T0QX8" → "Zelle · Maria Lopez".
+        if let p2p = BudgetStore.personPayment(payee), !p2p.person.isEmpty {
+            let service = ["zelle": "Zelle", "venmo": "Venmo", "cash app": "Cash App", "apple cash": "Apple Cash"][p2p.service] ?? p2p.service
+            return "\(service) · \(p2p.person)"
+        }
         var text = payee.trimmingCharacters(in: .whitespaces)
         let lower = text.lowercased()
         if let hit = known.first(where: { lower.hasPrefix($0.0) }) { return hit.1 }

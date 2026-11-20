@@ -2,6 +2,11 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.34.8): Zelle by person
+- Zelle, Venmo, Cash App and Apple Cash are sorted by who the money went to. Sorting a Zelle to Maria as Kids teaches Upside "Maria is Kids", not "every Zelle is Kids". A Zelle to someone new lands in Check these so you can choose.
+- They read better too: "Zelle · Maria Lopez" instead of "ZELLE PAYMENT TO MARIA LOPEZ CONF# T0QX8".
+- A regular Zelle (the same person, about the same amount each month, like a sitter or a cleaner) can now show up with your bills.
+
 ## 0.34.7: Room from anywhere
 - A category with less than $10 left says "Used up" in gray, instead of an orange "$1 left".
 - Adjust limit: when other categories don't have enough room, it now also offers to put less toward savings, cards, trips or goals, right there ("Pay $100 less on cards a month", "Save $100 less this month"). No trip back to Plan. "From now on" changes the monthly amount; "Just this month" changes only this month. Goals only give for this month.

@@ -2266,4 +2266,30 @@ final class OverrunTests: XCTestCase {
         XCTAssertFalse(Status(limit: 50_000, left: -100).usedUp, "over is over")
         XCTAssertFalse(Status(limit: 0, left: 0).usedUp, "no limit")
     }
+
+    func testZelleIsSortedByWhoItWentTo() {
+        // Each person is their own "store"; the same person matches across bank formats.
+        let maria = BudgetStore.payeeKey("ZELLE PAYMENT TO MARIA LOPEZ CONF# T0QX8KD2")
+        XCTAssertEqual(maria, "zelle maria lopez")
+        XCTAssertEqual(BudgetStore.payeeKey("Zelle payment to Maria Lopez for \"Tutoring\"; Conf# abc123"), maria)
+        XCTAssertNotEqual(BudgetStore.payeeKey("ZELLE PAYMENT TO JOHN SMITH CONF# 9XYZ"), maria)
+        XCTAssertEqual(BudgetStore.payeeKey("VENMO PAYMENT 1023 JANE DOE"), "venmo jane doe")
+        XCTAssertEqual(BudgetStore.payeeKey("ZELLE PAYMENT CONF# 88812"), "zelle", "no name: nothing to learn from")
+        XCTAssertEqual(BudgetStore.payeeKey("SQ *BLUE BOTTLE #12"), "sq blue", "stores unchanged")
+        XCTAssertEqual(Merchant.clean("ZELLE PAYMENT TO MARIA LOPEZ CONF# T0QX8KD2"), "Zelle · Maria Lopez")
+
+        // Sorting Maria as Kids teaches Maria, not every Zelle.
+        var data = BudgetData()
+        data.transactions = [
+            Transaction(id: "1", accountId: "r", date: date(2026, 10, 2), amount: -20_000,
+                        payee: "ZELLE PAYMENT TO MARIA LOPEZ CONF# A1B2", categoryId: "kids"),
+            Transaction(id: "2", accountId: "r", date: date(2026, 10, 9), amount: -15_000,
+                        payee: "ZELLE PAYMENT TO JOHN SMITH CONF# C3D4", categoryId: nil),
+            Transaction(id: "3", accountId: "r", date: date(2026, 10, 16), amount: -20_000,
+                        payee: "ZELLE TO MARIA LOPEZ ON 10/16 REF 5566", categoryId: nil),
+        ]
+        BudgetStore.fillHunches(&data)
+        XCTAssertEqual(data.transactions[2].categoryId, "kids", "Maria again")
+        XCTAssertEqual(data.transactions[1].autoSort, "unknown", "John: Check these asks")
+    }
 }
