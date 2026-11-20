@@ -41,7 +41,8 @@ final class BudgetStore {
             if !UserDefaults.standard.bool(forKey: "zelleByPerson") {
                 for i in data.transactions.indices where data.transactions[i].isTransfer {
                     let t = data.transactions[i]
-                    guard personPayment(t.payee) != nil, !isHouseholdPayment(t.payee, people: data.people) else { continue }
+                    guard personPayment(t.payee) != nil,
+                          !isHouseholdPayment(t.payee, people: data.people, known: data.householdPayees ?? [:]) else { continue }
                     data.transactions[i].isTransfer = false
                     data.transactions[i].categoryId = nil
                     data.transactions[i].autoSort = nil
@@ -613,10 +614,97 @@ final class BudgetStore {
 
     /// A Zelle (or Venmo…) between the two of you: moving your own money.
     /// Matched on first names ("Ron" matches "Ronald Tejada").
-    static func isHouseholdPayment(_ payee: String, people: People) -> Bool {
-        guard let first = personPayment(payee)?.person.split(separator: " ").first?.lowercased() else { return false }
+    /// What you told Upside wins; otherwise a first-name match is a guess
+    /// that Needs attention asks about once.
+    static func isHouseholdPayment(_ payee: String, people: People, known: [String: Bool] = [:]) -> Bool {
+        guard let person = personPayment(payee)?.person.lowercased(), !person.isEmpty else { return false }
+        if let answer = known[person] { return answer }
+        return looksLikeHousehold(person, people: people)
+    }
+
+    static func looksLikeHousehold(_ person: String, people: People) -> Bool {
+        guard let first = person.split(separator: " ").first?.lowercased() else { return false }
         return [people.p1, people.p2].compactMap { $0.split(separator: " ").first?.lowercased() }
             .contains { name in name.count >= 2 && (first == name || (name.count >= 3 && first.hasPrefix(name))) }
+    }
+
+    /// Names that look like one of you but you haven't confirmed (last 4 months).
+    var householdQuestions: [String] {
+        let known = data.householdPayees ?? [:]
+        let since = month(-3, from: currentMonth)
+        var seen: [String] = []
+        for t in data.transactions where t.date >= since {
+            guard let p = Self.personPayment(t.payee), !p.person.isEmpty else { continue }
+            let key = p.person.lowercased()
+            if known[key] == nil, !seen.contains(p.person), Self.looksLikeHousehold(key, people: people) {
+                seen.append(p.person)
+            }
+        }
+        return seen
+    }
+
+    /// "Is Ronald Tejada one of you?" Yes: their Zelles are your own money
+    /// moving. No: they're someone you pay, so those go to Check these.
+    func answerHousehold(_ person: String, isUs: Bool) {
+        var updated = data
+        var known = updated.householdPayees ?? [:]
+        known[person.lowercased()] = isUs
+        updated.householdPayees = known
+        if !isUs {
+            for i in updated.transactions.indices where updated.transactions[i].isTransfer
+                && Self.personPayment(updated.transactions[i].payee)?.person.lowercased() == person.lowercased() {
+                updated.transactions[i].isTransfer = false
+                updated.transactions[i].categoryId = nil
+                updated.transactions[i].autoSort = nil
+            }
+        }
+        BankSync.markTransfers(&updated)
+        data = updated
+    }
+
+    // MARK: People you pay
+
+    struct PersonRule: Identifiable {
+        var key: String
+        var service: String
+        var name: String
+        var incoming: Bool
+        var categoryId: String
+        var id: String { key }
+    }
+
+    /// What Upside learned about each person, from your sorting.
+    var personRules: [PersonRule] {
+        let services = ["apple cash", "cash app", "zelle", "venmo"]
+        return data.rules.compactMap { rule in
+            guard let service = services.first(where: { rule.payeeKey.hasPrefix($0 + " ") }) else { return nil }
+            var rest = String(rule.payeeKey.dropFirst(service.count + 1))
+            let incoming = rest.hasPrefix("from ")
+            if incoming { rest = String(rest.dropFirst(5)) }
+            guard !rest.isEmpty else { return nil }
+            let name = rest.split(separator: " ").map { $0.prefix(1).uppercased() + $0.dropFirst() }.joined(separator: " ")
+            return PersonRule(key: rule.payeeKey, service: service, name: name, incoming: incoming, categoryId: rule.categoryId)
+        }
+        .sorted { $0.name < $1.name }
+    }
+
+    /// Changes what a person's payments are: this rule and every payment
+    /// already sorted by it.
+    func setPersonRule(_ key: String, to categoryId: String) {
+        var updated = data
+        updated.rules.removeAll { $0.payeeKey == key }
+        updated.rules.append(PayeeRule(payeeKey: key, categoryId: categoryId))
+        for i in updated.transactions.indices where Self.payeeKey(updated.transactions[i].payee) == key
+            && !updated.transactions[i].isTransfer && updated.transactions[i].splits == nil {
+            updated.transactions[i].categoryId = categoryId
+            updated.transactions[i].autoSort = nil
+        }
+        data = updated
+    }
+
+    /// Forgets a person: their next payment goes to Check these.
+    func forgetPersonRule(_ key: String) {
+        data.rules.removeAll { $0.payeeKey == key }
     }
 
     /// Zelle, Venmo, Cash App and Apple Cash: which service, and who it

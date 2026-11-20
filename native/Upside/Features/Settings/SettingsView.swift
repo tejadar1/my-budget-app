@@ -57,6 +57,17 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    NavigationLink {
+                        PeopleYouPayView()
+                    } label: {
+                        row("People you pay", icon: "person.2.fill", color: .purple,
+                            value: store.personRules.isEmpty ? nil : "\(store.personRules.count)", chevron: false)
+                    }
+                } footer: {
+                    Text("Zelle, Venmo and Cash App: who's one of you, and what paying each person is for.")
+                }
+
+                Section {
                     Button { showConnect = true } label: {
                         row("Bank connection", icon: "building.columns.fill", color: .teal,
                             value: store.data.bankConnected ? "Connected" : "Not connected")

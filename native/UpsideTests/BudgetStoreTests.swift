@@ -2352,4 +2352,37 @@ final class OverrunTests: XCTestCase {
         XCTAssertTrue(BudgetStore.isHouseholdPayment("Zelle Transfer from Jadira Tejada Conf# 5v", people: s.people))
         XCTAssertFalse(BudgetStore.isLearnable("Zelle Transfer"), "no name: nothing to remember")
     }
+
+    func testHouseholdIsAskedOnceAndPeopleCanBeChangedOrForgotten() {
+        var data = BudgetData()
+        data.people = People(p1: "Ron", p2: "Jadira")
+        data.accounts = [Account(id: "b", name: "Checking", institution: "Bank of America", kind: .checking, balance: 0, owner: .p2)]
+        data.transactions = [
+            Transaction(id: "r", accountId: "b", date: date(2026, 11, 3), amount: -2_000,
+                        payee: "Zelle Transfer to Ronda Smith Conf# 1a", categoryId: nil),
+            Transaction(id: "m", accountId: "b", date: date(2026, 11, 15), amount: -11_500,
+                        payee: "Zelle Transfer To Marlene Diaz Conf# 2b", categoryId: nil),
+        ]
+        BankSync.markTransfers(&data)
+        let s = BudgetStore(data: data, isDemo: true)
+        s.calendar = calendar
+        s.now = { self.date(2026, 11, 20) }
+
+        // "Ronda" looks like "Ron": a guess, so Budget asks.
+        XCTAssertTrue(s.data.transactions[0].isTransfer)
+        XCTAssertEqual(s.householdQuestions, ["Ronda Smith"])
+        XCTAssertTrue(s.attention().contains(.household(name: "Ronda Smith")))
+        s.answerHousehold("Ronda Smith", isUs: false)
+        XCTAssertFalse(s.data.transactions[0].isTransfer, "someone you pay")
+        XCTAssertTrue(s.toCheck.contains { $0.id == "r" })
+        XCTAssertTrue(s.householdQuestions.isEmpty, "asked once")
+
+        // What sorting taught shows in People you pay, and can change.
+        s.categorize("m", as: "shopping")
+        XCTAssertEqual(s.personRules.map(\.name), ["Marlene Diaz"])
+        s.setPersonRule("zelle marlene diaz", to: "phone")
+        XCTAssertEqual(s.data.transactions.first { $0.id == "m" }?.categoryId, "phone", "past payment moves too")
+        s.forgetPersonRule("zelle marlene diaz")
+        XCTAssertTrue(s.personRules.isEmpty)
+    }
 }

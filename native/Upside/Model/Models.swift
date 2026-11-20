@@ -279,6 +279,9 @@ struct BudgetData: Codable {
     /// was current ("2026-11"), so last month's wrap-up isn't redone with
     /// today's settings.
     var monthSnapshots: [String: MonthSnapshot]?
+    /// People in Zelle-style payments you've told Upside about, by name
+    /// ("ronald tejada" → true: one of us, so it's a transfer).
+    var householdPayees: [String: Bool]?
     /// Alerts already sent ("2026-11:dining:80"), so each goes out once.
     /// Optional so budgets saved by older versions still load.
     var alertsSent: [String]?

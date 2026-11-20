@@ -183,7 +183,7 @@ enum BankSync {
                 && !carLoanWords.contains(where: { p.contains($0) })
             if matched.contains(t.id) || looksLikeTransfer(t.payee) || isCardCredit || paysOwnCard
                 || transferRules.contains(BudgetStore.payeeKey(t.payee))
-                || BudgetStore.isHouseholdPayment(t.payee, people: data.people) {
+                || BudgetStore.isHouseholdPayment(t.payee, people: data.people, known: data.householdPayees ?? [:]) {
                 data.transactions[i].isTransfer = true
                 data.transactions[i].categoryId = nil
                 data.transactions[i].autoSort = nil

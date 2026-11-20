@@ -12,6 +12,8 @@ struct BudgetView: View {
     @State private var path = NavigationPath()
     /// The month being looked at; nil means "this month" (follows the date).
     @State private var pickedMonth: Date?
+    /// "Is Ronald Tejada one of you?" from Needs attention.
+    @State private var askHousehold: String?
 
     private var month: Date { pickedMonth ?? store.currentMonth }
     private var isCurrentMonth: Bool { month == store.currentMonth }
@@ -115,6 +117,16 @@ struct BudgetView: View {
                 }
             }
             .onAppear(perform: openFromLaunchArgs)
+            .confirmationDialog("Is \(askHousehold ?? "") one of you?",
+                                isPresented: Binding(get: { askHousehold != nil }, set: { if !$0 { askHousehold = nil } }),
+                                titleVisibility: .visible) {
+                if let name = askHousehold {
+                    Button("Yes, one of us") { Haptics.success(); withAnimation { store.answerHousehold(name, isUs: true) } }
+                    Button("No, someone we pay") { Haptics.tap(); withAnimation { store.answerHousehold(name, isUs: false) } }
+                }
+            } message: {
+                Text("Yes: Zelles with them are your own money moving, so they don't count as spending. No: they go to Check these so you can sort them.")
+            }
         }
     }
 
@@ -133,6 +145,7 @@ struct BudgetView: View {
         case .checkIn: sheet = .checkIn
         case .extraIncome: sheet = .extraIncome
         case .toCheck: path.append(Route.review)
+        case .household(let name): askHousehold = name
         case .limitsOver: sheet = .overrun(nil)
         }
     }
@@ -432,6 +445,11 @@ struct AttentionList: View {
             ListRow(title: "Wrap up \(name)",
                     subtitle: decisions == 1 ? "1 thing to decide" : "\(decisions) things to decide") {
                 SymbolIcon(symbol: "calendar.badge.checkmark", color: .indigo)
+            }
+        case .household(let name):
+            ListRow(title: "Is \(name) one of you?",
+                    subtitle: "Zelles with them would be your own money moving, not spending") {
+                SymbolIcon(symbol: "person.2.fill", color: .purple)
             }
         case .toCheck(let count):
             ListRow(title: count == 1 ? "1 purchase to check" : "\(count) purchases to check",
