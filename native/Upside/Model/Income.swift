@@ -132,6 +132,8 @@ extension BudgetStore {
                     monthly = sum / covered.count
                 }
             }
+            // A lower paycheck you chose to plan on counts right away.
+            if let level = incomeLevel(key, for: month) { monthly = min(monthly, level.monthly) }
             let quietDays = month.timeIntervalSince(latest.date) / 86_400
             let regular = payer.cadence != .other || (paidCount[key] ?? 0) >= 3
             let stopped = regular && quietDays > (payer.cadence == .weekly ? 21 : 35)

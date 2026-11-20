@@ -14,6 +14,8 @@ struct BudgetView: View {
     @State private var pickedMonth: Date?
     /// "Is Ronald Tejada one of you?" from Needs attention.
     @State private var askHousehold: String?
+    /// "Ron's paycheck went down $500" from Needs attention.
+    @State private var askPay: BudgetStore.PayChange?
 
     private var month: Date { pickedMonth ?? store.currentMonth }
     private var isCurrentMonth: Bool { month == store.currentMonth }
@@ -117,6 +119,16 @@ struct BudgetView: View {
                 }
             }
             .onAppear(perform: openFromLaunchArgs)
+            .confirmationDialog("Plan on the new paycheck?",
+                                isPresented: Binding(get: { askPay != nil }, set: { if !$0 { askPay = nil } }),
+                                titleVisibility: .visible, presenting: askPay) { change in
+                Button("Plan on \(Money.short(change.newMonthly)) a month") {
+                    Haptics.success(); withAnimation { store.acceptPayChange(change) }
+                }
+                Button("Just this once") { Haptics.tap(); withAnimation { store.dismissPayChange(change) } }
+            } message: { change in
+                Text("This check was \(Money.short(change.latestAmount)), \(Money.short(change.perCheckDrop)) less than usual. Planning on it lowers what there is to spend from this month on (\(Money.short(change.oldMonthly)) → \(Money.short(change.newMonthly)) a month). If your limits no longer fit, Budget will say so.")
+            }
             .confirmationDialog("Is \(askHousehold ?? "") one of you?",
                                 isPresented: Binding(get: { askHousehold != nil }, set: { if !$0 { askHousehold = nil } }),
                                 titleVisibility: .visible) {
@@ -146,6 +158,7 @@ struct BudgetView: View {
         case .extraIncome: sheet = .extraIncome
         case .toCheck: path.append(Route.review)
         case .household(let name): askHousehold = name
+        case .payChange(let id): askPay = store.payChanges().first { $0.sourceId == id }
         case .limitsOver: sheet = .overrun(nil)
         }
     }
@@ -410,6 +423,12 @@ struct AttentionList: View {
         }
     }
 
+    /// "Ron's " or "Your " for a shared paycheck.
+    private func whose(_ owner: Owner) -> String {
+        let name = store.people.name(owner)
+        return owner == .unassigned || owner == .shared || name.isEmpty ? "A " : name + "'s "
+    }
+
     @ViewBuilder private func row(_ item: BudgetStore.Attention) -> some View {
         switch item {
         case .bank:
@@ -445,6 +464,15 @@ struct AttentionList: View {
             ListRow(title: "Wrap up \(name)",
                     subtitle: decisions == 1 ? "1 thing to decide" : "\(decisions) things to decide") {
                 SymbolIcon(symbol: "calendar.badge.checkmark", color: .indigo)
+            }
+        case .payChange(let id):
+            if let change = store.payChanges().first(where: { $0.sourceId == id }) {
+                ListRow(title: "\(whose(change.owner))paycheck went down \(Money.short(change.perCheckDrop))",
+                        subtitle: change.inARow >= 2
+                            ? "\(change.inARow) in a row. Plan on \(Money.short(change.newMonthly)) a month from now on?"
+                            : "Plan on \(Money.short(change.newMonthly)) a month, or was it a one-off?") {
+                    SymbolIcon(symbol: "arrow.down.circle.fill", color: .orange)
+                }
             }
         case .household(let name):
             ListRow(title: "Is \(name) one of you?",

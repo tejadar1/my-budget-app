@@ -282,6 +282,10 @@ struct BudgetData: Codable {
     /// People in Zelle-style payments you've told Upside about, by name
     /// ("ronald tejada" → true: one of us, so it's a transfer).
     var householdPayees: [String: Bool]?
+    /// Lower paychecks you chose to plan on, by income source.
+    var incomeLevels: [String: IncomeLevel]?
+    /// The latest paycheck already asked about, by income source.
+    var payChangeSeen: [String: String]?
     /// Alerts already sent ("2026-11:dining:80"), so each goes out once.
     /// Optional so budgets saved by older versions still load.
     var alertsSent: [String]?

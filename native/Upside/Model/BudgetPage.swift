@@ -32,6 +32,8 @@ extension BudgetStore {
         case checkIn(decisions: Int)
         /// Purchases sorted on a hunch.
         case toCheck(count: Int)
+        /// A paycheck came in lower: plan on the new amount?
+        case payChange(sourceId: String)
         /// A Zelle name that looks like one of you: ask once.
         case household(name: String)
         /// Everyday limits add up to more than there is to spend.
@@ -55,6 +57,7 @@ extension BudgetStore {
             case .checkIn: "checkin"
             case .toCheck: "check"
             case .household(let name): "household-\(name)"
+            case .payChange(let id): "pay-\(id)"
             case .limitsOver: "limits"
             }
         }
@@ -65,6 +68,8 @@ extension BudgetStore {
     func attention() -> [Attention] {
         var items: [Attention] = []
         if !staleAccounts.isEmpty || !(data.syncErrors ?? []).isEmpty { items.append(.bank) }
+        // Income sets everything else, so a pay change comes first.
+        for change in payChanges() { items.append(.payChange(sourceId: change.sourceId)) }
         let overs = overruns(in: currentMonth)
         let cost = overrunCost(in: currentMonth)
         let decided = cost.cuts.reduce(0) { $0 + $1.amount }

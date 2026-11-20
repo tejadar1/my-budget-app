@@ -2,6 +2,12 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.34.9): Pay changes
+- When a paycheck comes in lower (a bigger 401(k) contribution, fewer hours), Budget asks after the first one: "Ron's paycheck went down $500. Plan on $X a month, or was it a one-off?" After two in a row it says so. Before, the plan took about two months to notice.
+- Plan on it, and what there is to spend comes down from this month on, including an income you typed into Plan. If your limits no longer fit, Budget says so and you choose what gives.
+- Just this once: it won't ask about that check again; a later lower check asks again.
+- Raises stay careful: the plan only counts on more once it keeps arriving.
+
 ## 0.34.8: Zelle by person
 - Fixed: Bank of America's "Zelle Transfer to …" was counted as a transfer between your own accounts, so those payments weren't in your spending at all. A Zelle to or from another person now counts; a Zelle between the two of you is still a transfer (matched by first name).
 - When a Zelle name only looks like one of you ("Ronda" vs "Ron"), Budget asks once: "Is Ronda Smith one of you?" Your answer sticks.

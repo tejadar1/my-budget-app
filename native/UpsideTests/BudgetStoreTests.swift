@@ -2385,4 +2385,40 @@ final class OverrunTests: XCTestCase {
         s.forgetPersonRule("zelle marlene diaz")
         XCTAssertTrue(s.personRules.isEmpty)
     }
+
+    /// A bigger 401(k) contribution: the check drops $500. The plan asks
+    /// after the first one instead of waiting months for the usual to catch up.
+    func testALowerPaycheckIsAskedAboutRightAway() {
+        let s = store()
+        XCTAssertTrue(s.payChanges().isEmpty, "steady pay: nothing to ask")
+        s.data.transactions.append(Transaction(id: "nov", accountId: "r", date: date(2026, 11, 10), amount: 450_000,
+                                               payee: "Payroll", categoryId: "income"))
+        s.now = { self.date(2026, 11, 20) }
+        let change = s.payChanges().first
+        XCTAssertEqual(change?.perCheckDrop, 50_000)
+        XCTAssertEqual(change?.newMonthly, 450_000)
+        XCTAssertEqual(change?.inARow, 1)
+        XCTAssertTrue(s.attention().contains(.payChange(sourceId: change!.sourceId)))
+
+        s.acceptPayChange(change!)
+        XCTAssertEqual(s.data.priorities?.plannedIncome, 450_000, "the income you typed comes down too")
+        XCTAssertEqual(s.monthPlan(s.currentMonth).income, 450_000)
+        XCTAssertEqual(s.averageIncome(before: s.month(1, from: s.currentMonth)), 450_000, "not months of catching up")
+        XCTAssertTrue(s.payChanges().isEmpty, "asked once")
+    }
+
+    func testAOneOffIsLeftAloneUntilItHappensAgain() {
+        let s = store()
+        s.data.transactions.append(Transaction(id: "nov", accountId: "r", date: date(2026, 11, 10), amount: 450_000,
+                                               payee: "Payroll", categoryId: "income"))
+        s.now = { self.date(2026, 11, 20) }
+        s.dismissPayChange(s.payChanges()[0])
+        XCTAssertTrue(s.payChanges().isEmpty)
+        XCTAssertEqual(s.data.priorities?.plannedIncome, 500_000, "nothing changed")
+        // December's check is lower again: two in a row, so it asks again.
+        s.data.transactions.append(Transaction(id: "dec", accountId: "r", date: date(2026, 12, 10), amount: 450_000,
+                                               payee: "Payroll", categoryId: "income"))
+        s.now = { self.date(2026, 12, 15) }
+        XCTAssertEqual(s.payChanges().first?.inARow, 2)
+    }
 }
