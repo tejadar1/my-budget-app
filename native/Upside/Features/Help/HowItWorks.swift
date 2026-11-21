@@ -130,6 +130,9 @@ enum HelpTopic: String, CaseIterable, Identifiable {
 /// The whole page; opens at `focus` when a screen's Learn more sent you.
 struct HowItWorksView: View {
     var focus: HelpTopic? = nil
+    /// A little below the top: the list runs under the bar, so `.top`
+    /// would leave the topic's title behind it.
+    private static let landing = UnitPoint(x: 0.5, y: 0.15)
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -154,7 +157,7 @@ struct HowItWorksView: View {
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
                 guard let focus else { return }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { proxy.scrollTo(focus, anchor: .top) }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { proxy.scrollTo(focus, anchor: Self.landing) }
             }
         }
     }

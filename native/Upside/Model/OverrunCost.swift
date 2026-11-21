@@ -115,7 +115,9 @@ extension BudgetStore {
         var options: [OverrunCost.Option] = []
         if needed > 0 {
             if roomTotal > 0 {
-                options.append(.init(source: .room, planned: roomTotal, amount: min(needed, roomTotal)))
+                // Limits move in $10s, so say what will really be lowered.
+                options.append(.init(source: .room, planned: roomTotal,
+                                     amount: min((needed + 999) / 1_000 * 1_000, roomTotal)))
             }
             for (source, amount) in [(PlanPriority.goals, plan.goals), (.trips, plan.trips),
                                      (.cards, plan.cardPaydown), (.savings, plan.savings)] where amount >= 100 {
