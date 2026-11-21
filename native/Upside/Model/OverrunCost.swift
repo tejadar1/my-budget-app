@@ -68,7 +68,7 @@ extension BudgetStore {
         /// what there is to spend, before any choice.
         var committed: Cents
         var toSpend: Cents
-        /// Still has to come from somewhere (whole dollars).
+        /// Still has to come from somewhere (nearest whole dollar).
         var needed: Cents
         /// What each can still give this month, bottom of the order first.
         var options: [Option]
@@ -107,7 +107,9 @@ extension BudgetStore {
         let committed = allowed.reduce(0) { $0 + max($1.1, spent($1.0.id, in: month)) }
         let spare = max(0, plan.toSpend - paid - allowedTotal)
         let fromUnassigned = min(total, spare)
-        let needed = (max(0, committed - plan.toSpend) + 99) / 100 * 100
+        // To the nearest dollar, as amounts are shown: $4.30 over reads
+        // "$4 over" and asks for $4, never $5. Under 50¢ is nothing to choose.
+        let needed = (max(0, committed - plan.toSpend) + 50) / 100 * 100
         let room = roomLeft(in: month, excluding: Set(overs.map(\.id)))
         let roomTotal = room.reduce(0) { $0 + $1.room }
         var options: [OverrunCost.Option] = []

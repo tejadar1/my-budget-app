@@ -1955,6 +1955,18 @@ final class OverrunTests: XCTestCase {
         XCTAssertTrue(s.attention().contains(.over(categoryId: "dining", amount: 10_000)))
     }
 
+    func testWhatHasToGiveIsRoundedLikeTheOverrunItself() {
+        // $4.30 over reads "$4 over" and asks for $4, not $5.
+        let s = store()
+        let october = s.currentMonth
+        s.setLimit("dining", 50_000 + 10_000 - 430)
+        XCTAssertEqual(s.overrunCost(in: october).needed, 400)
+        // Paying the $4 leaves 30¢: nothing left to choose.
+        s.payForOverspending(from: .cards, amount: 400, categoryId: "dining", in: october)
+        XCTAssertEqual(s.overrunCost(in: october).needed, 0)
+        XCTAssertTrue(s.overrunCost(in: october).options.isEmpty)
+    }
+
     func testPayingWithCardsChangesThisMonthOnlyAndDiningStaysOver() {
         let s = store()
         let october = s.currentMonth

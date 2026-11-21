@@ -142,10 +142,12 @@ struct HowItWorksView: View {
                                 .padding(.vertical, 2)
                         }
                     } header: {
+                        // The id is on the header so a Learn more lands with
+                        // the topic's title showing, not under the bar.
                         Label(topic.title, systemImage: topic.symbol)
                             .font(.headline).foregroundStyle(.primary).textCase(nil)
+                            .id(topic)
                     }
-                    .id(topic)
                 }
             }
             .navigationTitle("How Upside works")

@@ -61,6 +61,9 @@ struct PlanView: View {
         var owed: Cents
         /// Limits, with what's spent counted where it's more than a limit.
         var committed: Cents = 0
+        /// Limits use more than there is, by at least a dollar once rounded
+        /// (cents left from rounding a choice aren't a problem to show).
+        var short: Bool { committed - toSpend >= 50 }
         /// Overspending paid for this month, by what gave.
         var cuts: [PlanPriority: Cents]
         func cut(_ p: PlanPriority) -> Cents { cuts[p] ?? 0 }
@@ -235,11 +238,13 @@ struct PlanView: View {
         let snapshot = store.data.originalLimits?[BudgetStore.monthKey(month)]
         return Section {
             if adjusting {
-                HStack(alignment: .firstTextBaseline) {
+                // One row, one tap: the row is the link (a Learn more inside a
+                // row also drew the row's chevron, two things saying one).
+                NavigationLink {
+                    HowItWorksView(focus: .planning)
+                } label: {
                     Text("\(monthName)’s plan is set. Changes now are adjustments.")
                         .font(.footnote).foregroundStyle(.secondary)
-                    Spacer(minLength: 8)
-                    LearnMore(topic: .planning)
                 }
             }
             // The main action of this section: a full-width filled button,
@@ -266,11 +271,11 @@ struct PlanView: View {
                     .tint(Theme.accent)
                     Text("Fills every limit from what you usually spend, fit to what you have.")
                         .font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                } else if n.committed > n.toSpend || store.overrunCost(in: month).needed > 0 {
+                } else if n.short || store.overrunCost(in: month).needed > 0 {
                     // One problem, one sentence, one button.
                     let edited = limits != loadedLimits
                     VStack(alignment: .leading, spacing: 8) {
-                        Label(n.committed > n.toSpend
+                        Label(n.short
                               ? "Limits are \(Money.short(n.committed - n.toSpend)) more than you have"
                               : "\(overs) categor\(overs == 1 ? "y is" : "ies are") over",
                               systemImage: "exclamationmark.circle.fill")
@@ -350,7 +355,7 @@ struct PlanView: View {
         } footer: {
             HStack(alignment: .firstTextBaseline) {
                 Text(limitsFooter(n))
-                    .foregroundStyle(n.committed <= n.toSpend ? Color.secondary : Theme.over)
+                    .foregroundStyle(!n.short ? Color.secondary : Theme.over)
                 Spacer(minLength: 8)
                 LearnMore(topic: .month)
             }
@@ -435,7 +440,7 @@ struct PlanView: View {
     /// changed, and Undo.
     @ViewBuilder private func fixResult(_ n: Numbers) -> some View {
         if let fixNote {
-            let fits = n.toSpend >= 0 && n.committed <= n.toSpend
+            let fits = n.toSpend >= 0 && !n.short
             VStack(alignment: .leading, spacing: 6) {
                 Label(fits ? "Fits: limits \(Money.short(n.total)) of \(Money.short(n.toSpend)) to spend"
                            : n.toSpend < 0 ? "Still \(Money.short(-n.toSpend)) more than you make"
@@ -515,7 +520,7 @@ struct PlanView: View {
     }
 
     private func limitsFooter(_ n: Numbers) -> String {
-        let fits = n.committed <= n.toSpend
+        let fits = !n.short
         let over = n.committed - n.total
         return (fits ? "Limits \(Money.short(n.total)) of \(Money.short(n.toSpend))"
                      : "Limits \(Money.short(n.total)) · \(Money.short(n.committed - n.toSpend)) more than you have")
