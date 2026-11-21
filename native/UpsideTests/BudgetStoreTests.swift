@@ -1959,7 +1959,7 @@ final class OverrunTests: XCTestCase {
         // $4.30 over reads "$4 over" and asks for $4, not $5.
         let s = store()
         let october = s.currentMonth
-        s.setLimit("dining", 50_000 + 10_000 - 430)
+        s.data.priorities?.savings -= 10_000 - 430   // $4.30 short instead of $100
         XCTAssertEqual(s.overrunCost(in: october).needed, 400)
         // Paying the $4 leaves 30¢: nothing left to choose.
         s.payForOverspending(from: .cards, amount: 400, categoryId: "dining", in: october)
