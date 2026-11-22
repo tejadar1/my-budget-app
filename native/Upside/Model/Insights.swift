@@ -31,7 +31,7 @@ struct Recurring: Identifiable, Equatable {
 extension BudgetStore {
     /// Looks back six months for payees charged about once a month, on about
     /// the same day, for about the same amount, and still active.
-    func recurringCharges() -> [Recurring] {
+    func recurringCharges(activeWithin days: Int = 45) -> [Recurring] {
         let thisMonth = currentMonth
         let since = month(-6, from: thisMonth)
         let today = now()
@@ -48,9 +48,9 @@ extension BudgetStore {
         // monthly, each steady price is checked on its own.
         return groups.flatMap { key, list -> [Recurring] in
             guard !dismissed.contains(key) else { return [] }
-            if let whole = recurring(key, list, historyStart: historyStart) { return [whole] }
+            if let whole = recurring(key, list, historyStart: historyStart, activeDays: days) { return [whole] }
             return Self.byPrice(list).compactMap { price, sub in
-                recurring("\(key)|\(price)", sub, historyStart: historyStart)
+                recurring("\(key)|\(price)", sub, historyStart: historyStart, activeDays: days)
             }
         }
         .filter { !stopped.contains($0.id) }
@@ -67,16 +67,16 @@ extension BudgetStore {
         String(recurringId.split(separator: "|").first ?? "")
     }
 
-    private func recurring(_ key: String, _ list: [Transaction], historyStart: Date) -> Recurring? {
+    private func recurring(_ key: String, _ list: [Transaction], historyStart: Date, activeDays: Int) -> Recurring? {
         let thisMonth = currentMonth
         let today = now()
         do {
             let sorted = list.sorted { $0.date < $1.date }
             guard let first = sorted.first, let last = sorted.last else { return nil }
             let months = Set(sorted.map { monthStart($0.date) })
-            // Twice or more, about once a month, charged in the last 45 days.
+            // Twice or more, about once a month, charged recently (45 days).
             guard months.count >= 2, sorted.count <= months.count + 1,
-                  today.timeIntervalSince(last.date) <= 45 * 86_400 else { return nil }
+                  today.timeIntervalSince(last.date) <= Double(activeDays) * 86_400 else { return nil }
 
             let amounts = sorted.map { -$0.amount }
             let median = amounts.sorted()[amounts.count / 2]

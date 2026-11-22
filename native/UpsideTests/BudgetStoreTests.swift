@@ -727,6 +727,48 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertTrue(store.recurringCharges().contains { $0.name == "Con Ed" })
     }
 
+    func testABillCanStopInAMonthYouPick() {
+        let store = makeStore()
+        for (m, amount) in [(7, 12_000), (8, 12_000), (9, 12_000)] {
+            store.data.transactions.append(Transaction(id: "e\(m)", accountId: "r", date: date(2026, m, 20),
+                                                       amount: -amount, payee: "Con Ed", categoryId: "utilities"))
+        }
+        let october = store.currentMonth
+        let bill = store.recurringCharges().first { $0.name == "Con Ed" }!
+        let december = store.month(2, from: october)
+        store.stopBill(bill, lastPayment: december)
+        XCTAssertEqual(store.lastPayment(bill.id), december)
+        XCTAssertTrue(store.recurringCharges().contains { $0.name == "Con Ed" }, "still due until then")
+        XCTAssertEqual(store.billLines(october).first { $0.category.id == "utilities" }?.expected, 12_000)
+        XCTAssertEqual(store.stoppedBills.first?.from, store.month(3, from: october), "it stops counting in January")
+        XCTAssertEqual(store.stoppedShare("utilities", before: december), 0, "December still counts it")
+    }
+
+    func testALateBillAsksWhetherItEnded() {
+        let store = makeStore()   // today: Oct 15
+        for (m, d) in [(7, 1), (8, 1), (9, 1)] {
+            store.data.transactions.append(Transaction(id: "n\(m)", accountId: "r", date: date(2026, m, d),
+                                                       amount: -1_549, payee: "Netflix", categoryId: "subscriptions"))
+        }
+        // Last charged Sep 1: six weeks without one by Oct 15.
+        let missed = store.missedBills()
+        XCTAssertEqual(missed.map(\.name), ["Netflix"])
+        XCTAssertTrue(store.attention().contains(.billMissed(id: missed[0].id)))
+
+        // Not yet: it stops asking this month.
+        store.answerMissedBill(missed[0], ended: false)
+        XCTAssertTrue(store.missedBills().isEmpty)
+        store.data.billsKept = nil
+
+        // It ended: stopped from this month.
+        store.answerMissedBill(missed[0], ended: true)
+        XCTAssertTrue(store.missedBills().isEmpty)
+        XCTAssertEqual(store.stoppedBills.first?.from, store.currentMonth)
+
+        // A bill paid on time never asks.
+        XCTAssertFalse(store.missedBills().contains { $0.name == "Con Ed" })
+    }
+
     func testFindsSubscriptionsByPattern() {
         let store = makeStore()
         for (m, d) in [(8, 3), (9, 4), (10, 3)] {

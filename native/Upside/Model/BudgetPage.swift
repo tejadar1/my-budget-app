@@ -36,6 +36,8 @@ extension BudgetStore {
         case payChange(sourceId: String)
         /// A Zelle name that looks like one of you: ask once.
         case household(name: String)
+        /// A regular bill that hasn't come in six weeks: did it end?
+        case billMissed(id: String)
         /// Everyday limits add up to more than there is to spend.
         case limitsOver(amount: Cents)
 
@@ -57,6 +59,7 @@ extension BudgetStore {
             case .checkIn: "checkin"
             case .toCheck: "check"
             case .household(let name): "household-\(name)"
+            case .billMissed(let id): "missed-\(id)"
             case .payChange(let id): "pay-\(id)"
             case .limitsOver: "limits"
             }
@@ -93,6 +96,7 @@ extension BudgetStore {
         }
         if !toCheck.isEmpty { items.append(.toCheck(count: toCheck.count)) }
         if let name = householdQuestions.first { items.append(.household(name: name)) }
+        for bill in missedBills().prefix(2) { items.append(.billMissed(id: bill.id)) }
         // Limits past what there is to spend, beyond the overspending above.
         let overPart = max(0, cost.total - cost.fromUnassigned - decided)
         let limitsPart = max(0, cost.needed - overPart) / 100 * 100

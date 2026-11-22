@@ -55,6 +55,8 @@ struct BillsView: View {
     @Environment(BudgetStore.self) private var store
     /// The bill whose Stop was tapped, for the when-does-it-stop question.
     @State private var stopping: Recurring?
+    /// The bill whose last month is being picked.
+    @State private var picking: Recurring?
 
     var body: some View {
         let all = store.recurringCharges()
@@ -182,13 +184,20 @@ struct BillsView: View {
                             isPresented: Binding(get: { stopping != nil }, set: { if !$0 { stopping = nil } }),
                             titleVisibility: .visible, presenting: stopping) { bill in
             if bill.paidThisMonth {
-                Button("Stop") { stop(bill, afterThisMonth: true) }
+                Button("After this month") { stop(bill, afterThisMonth: true) }
             } else {
                 Button("It already stopped") { stop(bill, afterThisMonth: false) }
                 Button("After this month’s payment") { stop(bill, afterThisMonth: true) }
             }
+            Button("Pick the last month…") {
+                // After the dialog has closed: a sheet asked for while one closes can be dropped.
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { picking = bill }
+            }
         } message: { bill in
             Text("\(Money.exact(bill.amount)) a month goes back to spending money once it stops.")
+        }
+        .sheet(item: $picking) { bill in
+            LastPaymentSheet(bill: bill)
         }
     }
 
@@ -227,6 +236,10 @@ private struct BillRow: View {
                 Text(Merchant.clean(bill.name))
                 Text([when, store.category(bill.categoryId)?.name].compactMap { $0 }.joined(separator: " · "))
                     .font(.footnote).foregroundStyle(.secondary)
+                if let last = store.lastPayment(bill.id) {
+                    Label("Last payment in \(last.formatted(.dateTime.month(.wide).year()))", systemImage: "stop.circle")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
                 if let up = bill.priceIncrease, let before = bill.previous {
                     Label("Up \(Money.exact(up)) from \(Money.exact(before))", systemImage: "arrow.up.right")
                         .font(.footnote.weight(.semibold)).foregroundStyle(Theme.warning)
@@ -240,5 +253,47 @@ private struct BillRow: View {
             Text(Money.exact(bill.amount)).monospacedDigit()
         }
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// Stop a bill later: pick the month of its last payment (a loan paid off
+/// in March, daycare through June). It counts through that month.
+private struct LastPaymentSheet: View {
+    @Environment(BudgetStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    let bill: Recurring
+    @State private var last: Date?
+
+    var body: some View {
+        let months = (0..<24).map { store.month($0, from: store.currentMonth) }
+        NavigationStack {
+            Form {
+                Section {
+                    Picker("Month", selection: Binding(get: { last ?? months[1] }, set: { last = $0 })) {
+                        ForEach(months, id: \.self) { m in
+                            Text(m.formatted(.dateTime.month(.wide).year())).tag(m)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                    .labelsHidden()
+                } footer: {
+                    let chosen = last ?? months[1]
+                    Text("Counted through \(chosen.formatted(.dateTime.month(.wide))). From \(store.month(1, from: chosen).formatted(.dateTime.month(.wide).year())), its \(Money.exact(bill.amount)) a month is spending money.")
+                }
+            }
+            .navigationTitle("Last payment for \(Merchant.clean(bill.name))")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Stop") {
+                        store.stopBill(bill, lastPayment: last ?? months[1])
+                        Haptics.success()
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium])
     }
 }

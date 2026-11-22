@@ -5,7 +5,9 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 ## Next (0.36): Stop a bill
 - A bill that's ending (cancelled, paid off, the last daycare month) can be stopped: Bills & subscriptions › swipe left › Stop, or long-press it. If it hasn't charged yet this month, choose "It already stopped" or "After this month's payment".
 - Its money is spending money again right away. Before, a stopped bill kept being planned for about three months, until its average caught up.
+- Ending later? "Pick the last month…" (a loan paid off in March, daycare through June). It counts through that month, and the bill shows "Last payment in March".
 - Stopped bills are listed at the bottom of Bills with Restart. If one charges again, it comes back on its own.
+- A regular bill with no charge for six weeks shows in Needs attention: "No Netflix charge since Sep 1. Did it end?" It ended: stopped, money freed. Not yet: it stays, and asks again next month if it still hasn't come.
 
 ## 0.35: How Upside works
 - One page explains how Upside thinks: your month, planning, going over, income, sorting, Zelle and Venmo, transfers, trips and goals, savings, month end, alerts and your data. Settings › How Upside works, or Learn more wherever a screen used to explain itself.

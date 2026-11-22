@@ -30,7 +30,13 @@ extension BudgetStore {
     /// Stops a bill. `afterThisMonth`: it still charges once more this
     /// month (or was already paid), so it counts through this month.
     func stopBill(_ bill: Recurring, afterThisMonth: Bool) {
-        let from = afterThisMonth || bill.paidThisMonth ? month(1, from: currentMonth) : currentMonth
+        stopBill(bill, lastPayment: afterThisMonth || bill.paidThisMonth ? currentMonth : nil)
+    }
+
+    /// Stops a bill after its last payment in `lastPayment` (a month), or
+    /// from this month when nil (it already stopped).
+    func stopBill(_ bill: Recurring, lastPayment: Date?) {
+        let from = lastPayment.map { month(1, from: monthStart($0)) } ?? currentMonth
         var stops = (data.stoppedBills ?? []).filter { $0.id != bill.id }
         stops.append(StoppedBill(id: bill.id, name: bill.name, categoryId: bill.categoryId,
                                  amount: bill.amount, from: from))
@@ -58,4 +64,35 @@ extension BudgetStore {
         guard parts.count == 2, let price = Int(parts[1]) else { return true }
         return -t.amount / 100 == price
     }
+
+    /// When a bill set to stop later makes its last payment ("March"), if one is set.
+    func lastPayment(_ id: String) -> Date? {
+        stoppedBills.first { $0.id == id && $0.from > currentMonth }.map { month(-1, from: $0.from) }
+    }
+
+    // MARK: - Bills that didn't come
+
+    /// Regular bills with no charge for six weeks (they come about monthly):
+    /// maybe they ended. Each asks once a month until you answer.
+    func missedBills() -> [Recurring] {
+        let today = now()
+        let kept = Set(data.billsKept ?? [])
+        return recurringCharges(activeWithin: 75).filter { bill in
+            !bill.paidThisMonth && today.timeIntervalSince(bill.lastDate) >= 42 * 86_400
+                && !kept.contains(keptKey(bill.id))
+        }
+    }
+
+    /// "It ended": stops it from this month. "Not yet": keeps expecting it,
+    /// and asks again next month if it still hasn't come.
+    func answerMissedBill(_ bill: Recurring, ended: Bool) {
+        if ended {
+            stopBill(bill, lastPayment: nil)
+        } else {
+            let key = keptKey(bill.id)
+            data.billsKept = Array(Set(data.billsKept ?? []).union([key])).sorted()
+        }
+    }
+
+    private func keptKey(_ id: String) -> String { "\(Self.monthKey(currentMonth)):\(id)" }
 }

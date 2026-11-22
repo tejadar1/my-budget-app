@@ -297,6 +297,8 @@ struct BudgetData: Codable {
     var notRecurring: [String]?
     /// Bills you stopped (cancelled, paid off, over).
     var stoppedBills: [StoppedBill]?
+    /// Late bills you said are still on ("2026-11:netflix"), so each asks once a month.
+    var billsKept: [String]?
     /// Whose paycheck each income source is (by payer key), for paychecks
     /// into a joint account.
     var incomeOwners: [String: Owner]?

@@ -14,6 +14,7 @@ struct BudgetView: View {
     @State private var pickedMonth: Date?
     /// "Is Ronald Tejada one of you?" from Needs attention.
     @State private var askHousehold: String?
+    @State private var askMissed: Recurring?
     /// "Ron's paycheck went down $500" from Needs attention.
     @State private var askPay: BudgetStore.PayChange?
 
@@ -140,6 +141,14 @@ struct BudgetView: View {
             } message: {
                 Text("Yes: Zelles with them are transfers. No: they're spending.")
             }
+            .confirmationDialog(askMissed.map { "Did \(Merchant.clean($0.name)) end?" } ?? "",
+                                isPresented: Binding(get: { askMissed != nil }, set: { if !$0 { askMissed = nil } }),
+                                titleVisibility: .visible, presenting: askMissed) { bill in
+                Button("It ended") { Haptics.success(); withAnimation { store.answerMissedBill(bill, ended: true) } }
+                Button("Not yet, still expect it") { Haptics.tap(); withAnimation { store.answerMissedBill(bill, ended: false) } }
+            } message: { bill in
+                Text("Ended: its \(Money.exact(bill.amount)) a month goes back to spending money. Not yet: it stays in your bills.")
+            }
         }
     }
 
@@ -159,6 +168,7 @@ struct BudgetView: View {
         case .extraIncome: sheet = .extraIncome
         case .toCheck: path.append(Route.review)
         case .household(let name): askHousehold = name
+        case .billMissed(let id): askMissed = store.missedBills().first { $0.id == id }
         case .payChange(let id): askPay = store.payChanges().first { $0.sourceId == id }
         case .limitsOver: sheet = .overrun(nil)
         }
@@ -475,6 +485,13 @@ struct AttentionList: View {
                             ? "\(change.inARow) in a row. Plan on \(Money.short(change.newMonthly)) a month from now on?"
                             : "Plan on \(Money.short(change.newMonthly)) a month, or was it a one-off?") {
                     SymbolIcon(symbol: "arrow.down.circle.fill", color: .orange)
+                }
+            }
+        case .billMissed(let id):
+            if let bill = store.missedBills().first(where: { $0.id == id }) {
+                ListRow(title: "No \(Merchant.clean(bill.name)) charge since \(bill.lastDate.formatted(.dateTime.month(.abbreviated).day()))",
+                        subtitle: "Did it end? It's still counted in your bills") {
+                    SymbolIcon(symbol: "calendar.badge.exclamationmark", color: .orange)
                 }
             }
         case .household(let name):
