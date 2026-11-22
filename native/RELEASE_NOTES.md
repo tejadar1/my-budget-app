@@ -2,6 +2,11 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.36): Stop a bill
+- A bill that's ending (cancelled, paid off, the last daycare month) can be stopped: Bills & subscriptions › swipe left › Stop, or long-press it. If it hasn't charged yet this month, choose "It already stopped" or "After this month's payment".
+- Its money is spending money again right away. Before, a stopped bill kept being planned for about three months, until its average caught up.
+- Stopped bills are listed at the bottom of Bills with Restart. If one charges again, it comes back on its own.
+
 ## 0.35: How Upside works
 - One page explains how Upside thinks: your month, planning, going over, income, sorting, Zelle and Venmo, transfers, trips and goals, savings, month end, alerts and your data. Settings › How Upside works, or Learn more wherever a screen used to explain itself.
 - Screens are quieter: explanations moved to the page, leaving short facts ("$14,540 in so far", "Limits $4,400 of $4,464", "Only November changes").

@@ -320,7 +320,7 @@ final class BudgetStore {
     /// Usual per month, averaged account by account: each account counts
     /// only the months it has history for, so a bank that sent a month of
     /// data doesn't read as $0 the months before. Nil without any history.
-    private func perAccountAverage(_ transactions: [Transaction], before month: Date) -> Cents? {
+    func perAccountAverage(_ transactions: [Transaction], before month: Date) -> Cents? {
         let months = (1...Self.averageMonths).map { self.month(-$0, from: month) }
         let starts = accountHistoryStart
         let byAccount = Dictionary(grouping: transactions) { $0.accountId }

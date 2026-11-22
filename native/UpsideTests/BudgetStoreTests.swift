@@ -692,6 +692,41 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(store.monthPlan(store.currentMonth).bills, 15_000)
     }
 
+    func testStoppingABillFreesItsMoneyRightAway() {
+        let store = makeStore()
+        for (m, amount) in [(7, 12_000), (8, 9_000), (9, 15_000)] {
+            store.data.transactions.append(Transaction(id: "e\(m)", accountId: "r", date: date(2026, m, 20),
+                                                       amount: -amount, payee: "Con Ed", categoryId: "utilities"))
+        }
+        let october = store.currentMonth
+        let before = store.monthPlan(october)
+        let bill = store.recurringCharges().first { $0.name == "Con Ed" }!
+        XCTAssertFalse(bill.paidThisMonth)
+
+        // After this month's payment: October still counts it.
+        store.stopBill(bill, afterThisMonth: true)
+        XCTAssertEqual(store.monthPlan(october).bills, before.bills)
+        XCTAssertEqual(store.stoppedBills.first?.from, store.month(1, from: october))
+
+        // It already stopped: October doesn't expect it, and its usual is gone
+        // now, not three months from now.
+        store.stopBill(bill, afterThisMonth: false)
+        XCTAssertFalse(store.recurringCharges().contains { $0.name == "Con Ed" })
+        XCTAssertEqual(store.monthPlan(october).bills, before.bills - 15_000)
+        XCTAssertEqual(store.monthPlan(october).toSpend, before.toSpend + 15_000)
+
+        // Restart puts it back.
+        store.restartBill(bill.id)
+        XCTAssertEqual(store.monthPlan(october).bills, before.bills)
+
+        // A stopped bill that charges again is back on its own.
+        store.stopBill(bill, afterThisMonth: false)
+        store.data.transactions.append(Transaction(id: "e10", accountId: "r", date: date(2026, 10, 3),
+                                                   amount: -14_000, payee: "Con Ed", categoryId: "utilities"))
+        XCTAssertTrue(store.stoppedBills.isEmpty)
+        XCTAssertTrue(store.recurringCharges().contains { $0.name == "Con Ed" })
+    }
+
     func testFindsSubscriptionsByPattern() {
         let store = makeStore()
         for (m, d) in [(8, 3), (9, 4), (10, 3)] {

@@ -295,6 +295,8 @@ struct BudgetData: Codable {
     var priorities: Priorities?
     /// Stores you said aren't bills or subscriptions (payee keys).
     var notRecurring: [String]?
+    /// Bills you stopped (cancelled, paid off, over).
+    var stoppedBills: [StoppedBill]?
     /// Whose paycheck each income source is (by payer key), for paychecks
     /// into a joint account.
     var incomeOwners: [String: Owner]?

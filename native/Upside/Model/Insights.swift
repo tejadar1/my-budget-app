@@ -42,6 +42,7 @@ extension BudgetStore {
         let historyStart = firstMonth
 
         let dismissed = Set(data.notRecurring ?? [])
+        let stopped = Set(stoppedBills.filter { $0.from <= thisMonth }.map(\.id))
         // One store can bill several things (Apple: iCloud and Apple One;
         // Tesla: charging and Connectivity). When the store as a whole isn't
         // monthly, each steady price is checked on its own.
@@ -52,6 +53,7 @@ extension BudgetStore {
                 recurring("\(key)|\(price)", sub, historyStart: historyStart)
             }
         }
+        .filter { !stopped.contains($0.id) }
         .sorted { ($0.dueDate ?? $0.lastDate) < ($1.dueDate ?? $1.lastDate) }
     }
 

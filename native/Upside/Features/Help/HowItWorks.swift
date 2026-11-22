@@ -49,6 +49,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
                 "Income − bills − savings − cards − trips − goals = spending money.",
                 "Money not in any limit is still yours. It covers surprises, or you can save it.",
                 "Bills count at least their usual until they're paid, so a bill that hasn't come yet is never spending money.",
+                "When a bill ends (cancelled, paid off), stop it in Bills: swipe left, then Stop. From then on it isn't expected and its money is spending money again right away. If it charges again, it comes back.",
                 "Bills are in your spending totals; trips aren't, so a vacation never looks like a trend.",
             ]
         case .planning:

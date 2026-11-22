@@ -68,7 +68,8 @@ extension BudgetStore {
         let funded = goalFundedCategories
         return expenseCategories.filter { $0.group == "Bills" }.compactMap { c in
             let paid = spent(c.id, in: month)
-            let usual = averageSpent(c.id, before: month) ?? 0
+            // A stopped bill leaves its category's usual at once.
+            let usual = max(0, (averageSpent(c.id, before: month) ?? 0) - stoppedShare(c.id, before: month))
             let knownDue = (due[c.id] ?? []).reduce(0) { $0 + $1.amount }
             // A bill with its own goal is saved for there; only count what's
             // actually charged, not its usual every month.

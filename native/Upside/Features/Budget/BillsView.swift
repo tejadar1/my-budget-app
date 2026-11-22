@@ -53,6 +53,8 @@ struct BillsRow: View {
 /// subscriptions cost over a year.
 struct BillsView: View {
     @Environment(BudgetStore.self) private var store
+    /// The bill whose Stop was tapped, for the when-does-it-stop question.
+    @State private var stopping: Recurring?
 
     var body: some View {
         let all = store.recurringCharges()
@@ -101,26 +103,54 @@ struct BillsView: View {
             if !due.isEmpty {
                 Section("Still due") {
                     ForEach(due) { b in
-                        BillRow(bill: b, when: b.dueDate.map { "Due \(day($0))" } ?? "").swipeActions { notButton(b) }
+                        BillRow(bill: b, when: b.dueDate.map { "Due \(day($0))" } ?? "").swipeActions { stopButton(b); notButton(b) }
+                            .contextMenu { stopButton(b); notButton(b) }
                     }
                 }
             }
             if !paid.isEmpty {
                 Section("Paid in \(monthName)") {
                     ForEach(paid) { b in
-                        BillRow(bill: b, when: "Paid \(day(b.lastDate))").swipeActions { notButton(b) }
+                        BillRow(bill: b, when: "Paid \(day(b.lastDate))").swipeActions { stopButton(b); notButton(b) }
+                            .contextMenu { stopButton(b); notButton(b) }
                     }
                 }
             }
             if !subscriptions.isEmpty {
                 Section {
                     ForEach(subscriptions) { s in
-                        BillRow(bill: s, when: "\(Money.short(s.amount * 12)) a year").swipeActions { notButton(s) }
+                        BillRow(bill: s, when: "\(Money.short(s.amount * 12)) a year").swipeActions { stopButton(s); notButton(s) }
+                            .contextMenu { stopButton(s); notButton(s) }
                     }
                 } header: {
                     Text("Subscriptions")
                 } footer: {
-                    Text("\(Money.short(subscriptions.reduce(0) { $0 + $1.amount } * 12)) a year. Swipe left on anything that isn’t one.")
+                    Text("\(Money.short(subscriptions.reduce(0) { $0 + $1.amount } * 12)) a year. Swipe left to stop one you cancelled.")
+                }
+            }
+
+            let stopped = store.stoppedBills.filter { $0.from >= store.month(-6, from: store.currentMonth) }
+            if !stopped.isEmpty {
+                Section {
+                    ForEach(stopped) { stop in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(Merchant.clean(stop.name))
+                                Text("\(Money.exact(stop.amount)) · \(stop.from > store.currentMonth ? "stops" : "stopped") in \(stop.from.formatted(.dateTime.month(.wide)))")
+                                    .font(.footnote).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Button("Restart") {
+                                withAnimation { store.restartBill(stop.id) }
+                                Haptics.tap()
+                            }
+                            .buttonStyle(.borderless)
+                        }
+                    }
+                } header: {
+                    Text("Stopped")
+                } footer: {
+                    Text("If one charges again, it comes back on its own.")
                 }
             }
 
@@ -148,6 +178,30 @@ struct BillsView: View {
         }
         .navigationTitle("Bills & subscriptions")
         .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog(stopping.map { "Stop \(Merchant.clean($0.name))?" } ?? "",
+                            isPresented: Binding(get: { stopping != nil }, set: { if !$0 { stopping = nil } }),
+                            titleVisibility: .visible, presenting: stopping) { bill in
+            if bill.paidThisMonth {
+                Button("Stop") { stop(bill, afterThisMonth: true) }
+            } else {
+                Button("It already stopped") { stop(bill, afterThisMonth: false) }
+                Button("After this month’s payment") { stop(bill, afterThisMonth: true) }
+            }
+        } message: { bill in
+            Text("\(Money.exact(bill.amount)) a month goes back to spending money once it stops.")
+        }
+    }
+
+    private func stop(_ bill: Recurring, afterThisMonth: Bool) {
+        withAnimation { store.stopBill(bill, afterThisMonth: afterThisMonth) }
+        Haptics.success()
+        stopping = nil
+    }
+
+    /// Swipe: "Stop", for a bill that's ending (cancelled, paid off).
+    private func stopButton(_ bill: Recurring) -> some View {
+        Button { stopping = bill } label: { Label("Stop", systemImage: "stop.circle") }
+            .tint(.orange)
     }
 
     /// Swipe: "Not a bill" / "Not a subscription".
