@@ -722,7 +722,7 @@ final class BudgetStoreTests: XCTestCase {
         // A stopped bill that charges again is back on its own.
         store.stopBill(bill, afterThisMonth: false)
         store.data.transactions.append(Transaction(id: "e10", accountId: "r", date: date(2026, 10, 14),
-                                                   amount: -14_000, payee: "Con Ed", categoryId: "utilities"))
+                                                   amount: -12_000, payee: "Con Ed", categoryId: "utilities"))
         XCTAssertTrue(store.stoppedBills.isEmpty)
         XCTAssertTrue(store.recurringCharges().contains { $0.name == "Con Ed" })
     }
