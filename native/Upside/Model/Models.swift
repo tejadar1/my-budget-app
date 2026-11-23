@@ -205,6 +205,7 @@ struct SavingsPlan: Codable, Equatable {
     var keepFrom: PlanPriority? = nil
     /// How much of that came from it on its own, after you chose.
     var autoPaid: Cents? = nil
+}
 
 struct MonthSnapshot: Codable, Equatable {
     var savings: Cents
