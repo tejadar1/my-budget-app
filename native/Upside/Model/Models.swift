@@ -200,7 +200,11 @@ struct SavingsPlan: Codable, Equatable {
     /// Overspending paid for this month by putting less toward savings,
     /// cards, trips or goals. The overspending itself stays on show.
     var cuts: [OverrunCut]? = nil
-}
+    /// The last of savings, cards, trips or goals you chose: more
+    /// overspending this month comes from it too, until it runs out.
+    var keepFrom: PlanPriority? = nil
+    /// How much of that came from it on its own, after you chose.
+    var autoPaid: Cents? = nil
 
 struct MonthSnapshot: Codable, Equatable {
     var savings: Cents

@@ -184,7 +184,26 @@ extension BudgetStore {
             cuts.append(cut)
         }
         plan.cuts = cuts
+        if source != .room { plan.keepFrom = source }
         data.plan = plan
+    }
+
+    /// Once you've chosen what gives this month, more overspending comes
+    /// from the same place on its own (Budget says so), instead of asking
+    /// again for every few dollars. Lowering limits is never automatic.
+    /// When that runs out, you're asked again. Returns what it took.
+    @discardableResult
+    func keepPayingOverspending(in month: Date? = nil) -> Cents {
+        let month = month ?? currentMonth
+        guard let source = plan(for: month)?.keepFrom else { return 0 }
+        let cost = overrunCost(in: month)
+        guard cost.needed > 0, let option = cost.options.first(where: { $0.source == source }),
+              option.amount > 0 else { return 0 }
+        payForOverspending(from: source, amount: option.amount, categoryId: cost.overruns.first?.id, in: month)
+        guard var plan = data.plan, isInMonth(plan.month, month) else { return option.amount }
+        plan.autoPaid = (plan.autoPaid ?? 0) + option.amount
+        data.plan = plan
+        return option.amount
     }
 
     /// This month's choices, one per source (older budgets kept one per
@@ -206,10 +225,16 @@ extension BudgetStore {
         }
     }
 
-    /// Undoes every choice that took from `source` this month.
+    /// Undoes every choice that took from `source` this month, and stops
+    /// more overspending coming from it on its own.
     func undoOverspending(from source: PlanPriority, in month: Date) {
         for cut in overrunCuts(in: month) where cut.source == source {
             undoOverspendingCut(cut.id, in: month)
+        }
+        if var plan = data.plan, isInMonth(plan.month, month), plan.keepFrom == source {
+            plan.keepFrom = nil
+            plan.autoPaid = nil
+            data.plan = plan
         }
     }
 

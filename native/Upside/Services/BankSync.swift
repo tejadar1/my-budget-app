@@ -128,6 +128,7 @@ enum BankSync {
         BudgetStore.keepNotBillsOutOfBills(&data)
         store.data = data
         store.detectSubscriptions()
+        store.keepPayingOverspending()
     }
 
     /// Payments between your own accounts aren't spending. Two signals:

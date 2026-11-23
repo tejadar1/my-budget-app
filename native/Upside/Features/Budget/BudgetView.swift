@@ -171,6 +171,7 @@ struct BudgetView: View {
         case .billMissed(let id): askMissed = store.missedBills().first { $0.id == id }
         case .payChange(let id): askPay = store.payChanges().first { $0.sourceId == id }
         case .limitsOver: sheet = .overrun(nil)
+        case .autoPaid: sheet = .overrun(nil)
         }
     }
 
@@ -503,6 +504,11 @@ struct AttentionList: View {
             ListRow(title: count == 1 ? "1 purchase to check" : "\(count) purchases to check",
                     subtitle: "Sorted on a hunch") {
                 SymbolIcon(symbol: "checklist", color: .orange)
+            }
+        case .autoPaid(let source, let amount):
+            ListRow(title: "\(Money.short(amount)) more overspending came out of \(source.noun)",
+                    subtitle: "As you chose this month. Change it in Over the plan") {
+                SymbolIcon(symbol: "arrow.uturn.down.circle.fill", color: .orange)
             }
         case .limitsOver(let amount):
             ListRow(title: "Limits are \(Money.short(amount)) more than you have",

@@ -2032,6 +2032,29 @@ final class OverrunTests: XCTestCase {
         XCTAssertTrue(s.attention().contains(.over(categoryId: "dining", amount: 10_000)))
     }
 
+    func testMoreOverspendingComesFromWhatYouChoseUntilItRunsOut() {
+        let s = store()
+        let october = s.currentMonth
+        // Lowering limits is never automatic.
+        s.payForOverspending(from: .room, amount: 2_000, categoryId: "dining", in: october)
+        XCTAssertEqual(s.keepPayingOverspending(in: october), 0)
+
+        // Cards, chosen for part of it: the rest comes from cards on its own.
+        s.payForOverspending(from: .cards, amount: 3_000, categoryId: "dining", in: october)
+        XCTAssertEqual(s.overrunCost(in: october).needed, 5_000)
+        XCTAssertEqual(s.keepPayingOverspending(in: october), 5_000)
+        XCTAssertEqual(s.overrunCost(in: october).needed, 0)
+        XCTAssertEqual(s.overrunCutsBySource(in: october).first { $0.source == .cards }?.amount, 8_000)
+        XCTAssertTrue(s.attention().contains(.autoPaid(source: .cards, amount: 5_000)))
+        XCTAssertEqual(s.keepPayingOverspending(in: october), 0, "nothing more to pay")
+
+        // Undo stops it.
+        s.undoOverspending(from: .cards, in: october)
+        XCTAssertNil(s.plan(for: october)?.keepFrom)
+        XCTAssertEqual(s.keepPayingOverspending(in: october), 0)
+        XCTAssertFalse(s.attention().contains { if case .autoPaid = $0 { return true } else { return false } })
+    }
+
     func testChoicesFromTheSameSourceAddUpToOneLine() {
         let s = store()
         let october = s.currentMonth
