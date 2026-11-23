@@ -55,12 +55,21 @@ struct OverrunSheet: View {
                                   systemImage: "tray.fill")
                                 .font(.subheadline)
                         }
-                        ForEach(cost.cuts) { cut in
+                        ForEach(store.overrunCutsBySource(in: month)) { group in
                             HStack {
-                                Label("You " + cut.source.done(cut.amount) + " this month", systemImage: "checkmark.circle.fill")
-                                    .font(.subheadline).foregroundStyle(.primary)
+                                Label {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("You " + group.source.done(group.amount) + " this month")
+                                        if let detail = loweredDetail(group.lowered) {
+                                            Text(detail).font(.footnote).foregroundStyle(.secondary)
+                                        }
+                                    }
+                                } icon: {
+                                    Image(systemName: "checkmark.circle.fill")
+                                }
+                                .font(.subheadline).foregroundStyle(.primary)
                                 Spacer()
-                                Button("Undo") { Haptics.tap(); withAnimation { store.undoOverspendingCut(cut.id, in: month) } }
+                                Button("Undo") { Haptics.tap(); withAnimation { store.undoOverspending(from: group.source, in: month) } }
                                     .font(.footnote.weight(.semibold)).buttonStyle(.borderless)
                             }
                         }
@@ -138,5 +147,15 @@ struct OverrunSheet: View {
             return "\(room.name) \(Money.short(limit)) → \(Money.short(limit - take))"
         }
         return parts.prefix(3).joined(separator: ", ") + (parts.count > 3 ? " and \(parts.count - 3) more" : "") + " this month"
+    }
+}
+
+private extension OverrunSheet {
+    /// "Groceries & Liquor −$190 · Gas & Auto −$150 · 2 more"
+    func loweredDetail(_ lowered: [String: Cents]) -> String? {
+        let parts = lowered.filter { $0.value > 0 }.sorted { $0.value > $1.value }
+            .compactMap { id, amount in store.category(id).map { "\($0.name) −\(Money.short(amount))" } }
+        guard !parts.isEmpty else { return nil }
+        return parts.prefix(3).joined(separator: " · ") + (parts.count > 3 ? " · \(parts.count - 3) more" : "")
     }
 }

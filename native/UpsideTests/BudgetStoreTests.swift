@@ -2032,6 +2032,27 @@ final class OverrunTests: XCTestCase {
         XCTAssertTrue(s.attention().contains(.over(categoryId: "dining", amount: 10_000)))
     }
 
+    func testChoicesFromTheSameSourceAddUpToOneLine() {
+        let s = store()
+        let october = s.currentMonth
+        s.payForOverspending(from: .cards, amount: 4_000, categoryId: "dining", in: october)
+        s.payForOverspending(from: .room, amount: 2_000, categoryId: "dining", in: october)
+        s.payForOverspending(from: .cards, amount: 6_000, categoryId: "dining", in: october)
+        s.payForOverspending(from: .room, amount: 1_000, categoryId: "dining", in: october)
+        XCTAssertEqual(s.overrunCuts(in: october).count, 2, "one per source")
+        let groups = s.overrunCutsBySource(in: october)
+        XCTAssertEqual(groups.map(\.source), [.room, .cards])
+        XCTAssertEqual(groups.map(\.amount), [3_000, 10_000])
+        XCTAssertEqual(groups[0].lowered["shopping"], 3_000)
+        XCTAssertEqual(s.limit(s.category("shopping")!, in: october), 27_000)
+
+        // Undo puts all of it back.
+        s.undoOverspending(from: .room, in: october)
+        XCTAssertEqual(s.limit(s.category("shopping")!, in: october), 30_000)
+        s.undoOverspending(from: .cards, in: october)
+        XCTAssertTrue(s.overrunCuts(in: october).isEmpty)
+    }
+
     func testALimitLoweredToZeroCountsAsZeroEverywhere() {
         // Choosing what gives can lower a limit to $0. Budget, Plan and
         // Over the plan all count it as $0, not as the category's usual,

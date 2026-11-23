@@ -4,6 +4,7 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 
 ## Next (0.36.1): Fixes
 - Fixed: Plan could say "Limits are $33 more than you have" while Choose what gives had nothing to choose. A limit lowered to $0 (by choosing what gives) counted as $0 there but as the category's usual in Plan and on Budget. It's $0 everywhere now.
+- Over the plan lists one line per choice: "You paid $716 less on cards this month" instead of a new line each time you chose cards again, and lowered limits say which ones ("Groceries & Liquor −$190 · Gas & Auto −$150"). Undo puts back all of that choice.
 
 ## 0.36: Stop a bill
 - A bill that's ending (cancelled, paid off, the last daycare month) can be stopped: Bills & subscriptions › swipe left › Stop, or long-press it. If it hasn't charged yet this month, choose "It already stopped" or "After this month's payment".

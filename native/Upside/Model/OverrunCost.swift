@@ -172,8 +172,45 @@ extension BudgetStore {
             cut.lowered = lowered
             cut.amount = lowered.values.reduce(0, +)
         }
-        plan.cuts = (plan.cuts ?? []) + [cut]
+        // One choice per source: paying more from cards later in the month
+        // adds to "paid $X less on cards", it doesn't add another line.
+        var cuts = plan.cuts ?? []
+        if let i = cuts.firstIndex(where: { $0.source == source }) {
+            cuts[i].amount += cut.amount
+            if let lowered = cut.lowered {
+                cuts[i].lowered = (cuts[i].lowered ?? [:]).merging(lowered, uniquingKeysWith: +)
+            }
+        } else {
+            cuts.append(cut)
+        }
+        plan.cuts = cuts
         data.plan = plan
+    }
+
+    /// This month's choices, one per source (older budgets kept one per
+    /// choice), in the plan's order: room first, savings last.
+    struct CutGroup: Identifiable {
+        var source: PlanPriority
+        var amount: Cents
+        var lowered: [String: Cents]
+        var id: PlanPriority { source }
+    }
+
+    func overrunCutsBySource(in month: Date) -> [CutGroup] {
+        let cuts = overrunCuts(in: month)
+        return PlanPriority.allCases.compactMap { source in
+            let mine = cuts.filter { $0.source == source }
+            guard !mine.isEmpty else { return nil }
+            let lowered = mine.reduce(into: [String: Cents]()) { $0.merge($1.lowered ?? [:], uniquingKeysWith: +) }
+            return CutGroup(source: source, amount: mine.reduce(0) { $0 + $1.amount }, lowered: lowered)
+        }
+    }
+
+    /// Undoes every choice that took from `source` this month.
+    func undoOverspending(from source: PlanPriority, in month: Date) {
+        for cut in overrunCuts(in: month) where cut.source == source {
+            undoOverspendingCut(cut.id, in: month)
+        }
     }
 
     func undoOverspendingCut(_ id: String, in month: Date) {
