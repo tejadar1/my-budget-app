@@ -92,7 +92,7 @@ struct PlanView: View {
             - thisTrips - goals + base.rolledIn
         let total = limitsTotal(limits)
         // Same count as Budget: overspending uses money too.
-        let committed = store.committedSpending(limits: limits.mapValues { $0 * 100 }, in: month)
+        let committed = store.committedSpending(limits: setLimits(limits), in: month)
         return Numbers(base: base, usualIncome: usualIncome, income: income, extraSavings: extraSavings,
                        extraCards: leftoverCards, carried: base.carriedIn + base.rolledIn + base.fundedByGoals,
                        tripCost: tripCost, toSpend: toSpend,
@@ -505,9 +505,23 @@ struct PlanView: View {
 
     /// Limits plus usual spending for categories without one.
     private func limitsTotal(_ limits: [String: Int]) -> Cents {
-        store.everydayCategories.reduce(0) { sum, c in
+        let set = setLimits(limits)
+        return store.everydayCategories.reduce(0) { sum, c in
+            sum + (set[c.id] ?? store.averageSpent(c.id, before: month) ?? 0)
+        }
+    }
+
+    /// The limits that are set, in cents. In Plan, 0 means "no limit" (your
+    /// usual counts), except a limit already lowered to $0 this month (by
+    /// choosing what gives) and left alone: that one is $0, as on Budget.
+    private func setLimits(_ limits: [String: Int]) -> [String: Cents] {
+        store.everydayCategories.reduce(into: [:]) { result, c in
             let dollars = limits[c.id] ?? 0
-            return sum + (dollars > 0 ? dollars * 100 : (store.averageSpent(c.id, before: month) ?? 0))
+            if dollars > 0 {
+                result[c.id] = dollars * 100
+            } else if loadedLimits[c.id] == 0, store.plannedLimit(c, in: month) == 0 {
+                result[c.id] = 0
+            }
         }
     }
 

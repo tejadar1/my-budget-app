@@ -17,14 +17,14 @@ extension BudgetStore {
     }
 
     /// What the month's limits will use, given limits by category (cents;
-    /// 0 or missing = your usual): each limit, or what's already spent where
+    /// missing = your usual; a limit lowered to $0 is $0): each limit, or what's already spent where
     /// that's more. Plan, Budget and Adjust limit all count it this way, so
     /// money "not in any limit" never includes money overspending used.
     func committedSpending(limits: [String: Cents], in month: Date) -> Cents {
         everydayCategories.reduce(0) { sum, c in
-            let set = limits[c.id] ?? 0
-            // A set limit gets what rolled over into it, as on Budget.
-            let allowed = set > 0 ? set + rolledIn(c, to: month) : (averageSpent(c.id, before: month) ?? 0)
+            // A set limit gets what rolled over into it, as on Budget, the
+            // same as `limit(_:in:)`: $0 is a limit of $0, not "your usual".
+            let allowed = limits[c.id].map { $0 + rolledIn(c, to: month) } ?? (averageSpent(c.id, before: month) ?? 0)
             return sum + max(allowed, spent(c.id, in: month))
         }
     }

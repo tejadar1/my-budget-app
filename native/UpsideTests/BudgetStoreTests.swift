@@ -2032,6 +2032,19 @@ final class OverrunTests: XCTestCase {
         XCTAssertTrue(s.attention().contains(.over(categoryId: "dining", amount: 10_000)))
     }
 
+    func testALimitLoweredToZeroCountsAsZeroEverywhere() {
+        // Choosing what gives can lower a limit to $0. Budget, Plan and
+        // Over the plan all count it as $0, not as the category's usual,
+        // or Plan says "more than you have" with nothing left to choose.
+        let s = store()
+        let october = s.currentMonth
+        s.data.plan = SavingsPlan(month: october, goal: 0, limits: ["shopping": 0])
+        XCTAssertEqual(s.limit(s.category("shopping")!, in: october), 0)
+        XCTAssertEqual(s.committedSpending(in: october), s.overrunCost(in: october).committed)
+        XCTAssertEqual(s.committedSpending(limits: ["dining": 50_000, "shopping": 0], in: october),
+                       60_000 + 5_000, "dining's $600 spent, shopping's $50 spent past its $0")
+    }
+
     func testWhatHasToGiveIsRoundedLikeTheOverrunItself() {
         // $4.30 over reads "$4 over" and asks for $4, not $5.
         let s = store()

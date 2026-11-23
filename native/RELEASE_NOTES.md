@@ -2,6 +2,9 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.36.1): Fixes
+- Fixed: Plan could say "Limits are $33 more than you have" while Choose what gives had nothing to choose. A limit lowered to $0 (by choosing what gives) counted as $0 there but as the category's usual in Plan and on Budget. It's $0 everywhere now.
+
 ## 0.36: Stop a bill
 - A bill that's ending (cancelled, paid off, the last daycare month) can be stopped: Bills & subscriptions › swipe left › Stop, or long-press it. If it hasn't charged yet this month, choose "It already stopped" or "After this month's payment".
 - Its money is spending money again right away. Before, a stopped bill kept being planned for about three months, until its average caught up.
