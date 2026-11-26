@@ -38,13 +38,14 @@ enum BankSync {
         if needsHistory {
             for window in windows(from: now.addingTimeInterval(-Double(historyDays) * 86_400), to: now) {
                 let set = try await SimpleFIN.fetch(accessURL: access, since: window.start, until: window.end)
-                apply(set, to: store)
+                apply(set, to: store, window: window)
                 errors += set.errors ?? []
             }
             UserDefaults.standard.set(historyDays, forKey: historyKey)
         } else {
-            let set = try await SimpleFIN.fetch(accessURL: access, since: now.addingTimeInterval(-14 * 86_400))
-            apply(set, to: store)
+            let since = now.addingTimeInterval(-14 * 86_400)
+            let set = try await SimpleFIN.fetch(accessURL: access, since: since)
+            apply(set, to: store, window: DateInterval(start: since, end: now))
             errors = set.errors ?? []
         }
         // SimpleFIN says when a bank connection needs attention; keep it to show.
@@ -52,6 +53,9 @@ enum BankSync {
         let unique = errors.filter { seen.insert($0).inserted }
         store.data.syncErrors = unique.isEmpty ? nil : unique
         store.data.lastBankSync = now
+        // Only once everything is in, and only when every bank answered:
+        // a missing paycheck must never look like overspending to pay for.
+        if unique.isEmpty { store.keepPayingOverspending() }
     }
 
     /// Splits a date range into pieces of at most `days` days (the Bridge
@@ -74,8 +78,9 @@ enum BankSync {
     }
 
     @MainActor
-    static func apply(_ set: SimpleFIN.AccountSet, to store: BudgetStore) {
+    static func apply(_ set: SimpleFIN.AccountSet, to store: BudgetStore, window: DateInterval) {
         var data = store.data
+        var added = Set<String>()
         for sf in set.accounts {
             let balance = cents(sf.balance)
             let institution = sf.org.name ?? sf.org.domain ?? "Bank"
@@ -92,6 +97,10 @@ enum BankSync {
                     isOnBudget: kind.isOnBudgetByDefault, lastSynced: Date(), bankUpdated: bankDate(sf)))
             }
 
+            // A pending item the bank no longer sends was replaced (often by
+            // the posted one, under a new ID) or dropped: keep it, and it counts twice.
+            dropVanishedPending(&data, accountId: sf.id,
+                                returned: Set((sf.transactions ?? []).map { "\(sf.id):\($0.id)" }), window: window)
             let known = Set(data.transactions.map(\.id))
             for t in sf.transactions ?? [] {
                 let id = "\(sf.id):\(t.id)"
@@ -104,6 +113,7 @@ enum BankSync {
                     }
                     continue
                 }
+                added.insert(id)
                 let amount = cents(t.amount)
                 let isTransfer = looksLikeTransfer(payee)
                 let sorted = isTransfer ? (category: nil, autoSort: nil)
@@ -121,14 +131,26 @@ enum BankSync {
         }
         data.transactions.sort { $0.date > $1.date }
         markTransfers(&data)
-        for i in data.transactions.indices where BudgetStore.looksLikeReimbursement(data.transactions[i]) {
+        // New ones only: a deposit you said isn't a reimbursement stays that way.
+        for i in data.transactions.indices where added.contains(data.transactions[i].id)
+            && BudgetStore.looksLikeReimbursement(data.transactions[i]) {
             data.transactions[i].business = true
         }
         BudgetStore.fillHunches(&data)
         BudgetStore.keepNotBillsOutOfBills(&data)
         store.data = data
         store.detectSubscriptions()
-        store.keepPayingOverspending()
+    }
+
+    /// Removes pending transactions in `accountId` the bank didn't send
+    /// again for a range it was asked about. A day of margin each side, so
+    /// an item at the edge of the range is never dropped by mistake.
+    static func dropVanishedPending(_ data: inout BudgetData, accountId: String, returned: Set<String>, window: DateInterval) {
+        let inside = DateInterval(start: window.start.addingTimeInterval(86_400),
+                                  end: max(window.start.addingTimeInterval(86_400), window.end.addingTimeInterval(-86_400)))
+        data.transactions.removeAll { t in
+            t.accountId == accountId && t.isPending && !returned.contains(t.id) && inside.contains(t.date)
+        }
     }
 
     /// Payments between your own accounts aren't spending. Two signals:
@@ -142,9 +164,30 @@ enum BankSync {
         let transferRules = Set(data.rules.filter { $0.categoryId == transferCategory }.map(\.payeeKey))
 
         var matched = Set<String>()
-        // Unsorted purchases and hunches can turn out to be transfers.
+        let incomeIds = Set(data.categories.filter(\.isIncome).map(\.id))
+        func isIncome(_ t: Transaction) -> Bool { t.amount > 0 && t.categoryId.map(incomeIds.contains) == true }
+
+        // 0. A paycheck is never a transfer. Deposits from a payer that's
+        // income at least twice elsewhere, marked as a transfer by an earlier
+        // match, go back to income (unless you said that payer isn't income).
+        let paychecks = Dictionary(grouping: data.transactions.filter { isIncome($0) && !$0.isTransfer },
+                                   by: { BudgetStore.payeeKey($0.payee) }).filter { $0.value.count >= 2 }
+        for i in data.transactions.indices {
+            let t = data.transactions[i]
+            let key = BudgetStore.payeeKey(t.payee)
+            guard t.isTransfer, t.amount > 0, let same = paychecks[key], !transferRules.contains(key),
+                  !looksLikeTransfer(t.payee),
+                  !BudgetStore.isHouseholdPayment(t.payee, people: data.people, known: data.householdPayees ?? [:])
+            else { continue }
+            data.transactions[i].isTransfer = false
+            data.transactions[i].categoryId = same[0].categoryId
+            data.transactions[i].autoSort = "sure"
+        }
+
+        // Unsorted purchases and hunches can turn out to be transfers;
+        // money sorted as income never does.
         let candidates = data.transactions.indices.filter {
-            !data.transactions[$0].isTransfer
+            !data.transactions[$0].isTransfer && !isIncome(data.transactions[$0])
                 && (data.transactions[$0].categoryId == nil || data.transactions[$0].isHunch)
         }
         // 1. Matching pairs. The arriving side may already be known as a
@@ -152,6 +195,7 @@ enum BankSync {
         // Payments into a loan (mortgage, car) are bills, so they don't pair.
         let incoming = data.transactions.indices.filter {
             data.transactions[$0].amount > 0 && kinds[data.transactions[$0].accountId] != .loan
+                && !isIncome(data.transactions[$0])
                 && (data.transactions[$0].categoryId == nil || data.transactions[$0].isTransfer
                     || data.transactions[$0].isHunch)
         }

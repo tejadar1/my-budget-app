@@ -2,6 +2,12 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.36.2): Paychecks stay put
+- Fixed: a sync could turn a paycheck into a "transfer" (when the same amount moved between accounts within a few days), so it vanished from income and the month looked overspent. Money sorted as income is never matched as a transfer now, and paychecks marked that way before come back on the next sync.
+- Fixed: a pending item the bank later replaced (often with the posted one, under a new ID) stayed too, counting twice. It's removed once the bank stops sending it.
+- Fixed: a deposit you'd said isn't a reimbursement was marked as one again on every sync.
+- Overspending is only paid for on its own after a full sync with every bank answering, never partway through; and what it took is given back on its own when it turns out not to be needed (a late paycheck, a refund).
+
 ## 0.36.1: Choose once
 - Fixed: Plan could say "Limits are $33 more than you have" while Choose what gives had nothing to choose. A limit lowered to $0 (by choosing what gives) counted as $0 there but as the category's usual in Plan and on Budget. It's $0 everywhere now.
 - Over the plan lists one line per choice: "You paid $716 less on cards this month" instead of a new line each time you chose cards again, and lowered limits say which ones ("Groceries & Liquor −$190 · Gas & Auto −$150"). Undo puts back all of that choice.

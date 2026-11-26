@@ -1642,6 +1642,53 @@ final class BudgetStoreTests: XCTestCase {
 }
 
 final class TransferTests: XCTestCase {
+    func testAPaycheckIsNeverATransferAndOneMarkedByMistakeComesBack() {
+        var data = BudgetData()
+        data.accounts = [
+            Account(id: "c", name: "Checking", institution: "Chase", kind: .checking, balance: 0),
+            Account(id: "s", name: "Savings", institution: "Ally", kind: .savings, balance: 0),
+        ]
+        let day: TimeInterval = 86_400
+        let start = Date(timeIntervalSince1970: 1_790_000_000)
+        func t(_ id: String, _ acct: String, _ d: Double, _ amount: Cents, _ payee: String, _ cat: String?,
+               auto: String? = nil, transfer: Bool = false) -> Transaction {
+            Transaction(id: id, accountId: acct, date: start.addingTimeInterval(d * day), amount: amount,
+                        payee: payee, categoryId: cat, isTransfer: transfer, autoSort: auto)
+        }
+        data.transactions = [
+            t("p1", "c", 0, 300_000, "ACME CORP DES:PPD", "income", auto: "hunch"),
+            t("p2", "c", 14, 300_000, "ACME CORP DES:PPD", "income", auto: "hunch"),
+            // The whole check moved out the same day: still a paycheck.
+            t("p3", "c", 28, 300_000, "ACME CORP DES:PPD", "income", auto: "hunch"),
+            t("o3", "s", 28, -300_000, "INTERNAL MOVE", nil),
+            // Marked a transfer by an older version: back to income.
+            t("p4", "c", 42, 300_000, "ACME CORP DES:PPD", nil, transfer: true),
+        ]
+        BankSync.markTransfers(&data)
+        let byId = Dictionary(uniqueKeysWithValues: data.transactions.map { ($0.id, $0) })
+        XCTAssertFalse(byId["p3"]!.isTransfer)
+        XCTAssertEqual(byId["p3"]!.categoryId, "income")
+        XCTAssertFalse(byId["p4"]!.isTransfer)
+        XCTAssertEqual(byId["p4"]!.categoryId, "income")
+    }
+
+    func testAPendingItemTheBankReplacedIsDropped() {
+        var data = BudgetData()
+        let now = Date(timeIntervalSince1970: 1_790_000_000)
+        let window = DateInterval(start: now.addingTimeInterval(-14 * 86_400), end: now)
+        data.transactions = [
+            Transaction(id: "c:pend", accountId: "c", date: now.addingTimeInterval(-3 * 86_400), amount: 300_000,
+                        payee: "ACME", categoryId: "income", isPending: true),
+            Transaction(id: "c:old", accountId: "c", date: now.addingTimeInterval(-30 * 86_400), amount: -500,
+                        payee: "Old", categoryId: nil, isPending: true),
+            Transaction(id: "c:kept", accountId: "c", date: now.addingTimeInterval(-2 * 86_400), amount: -900,
+                        payee: "Still pending", categoryId: nil, isPending: true),
+        ]
+        BankSync.dropVanishedPending(&data, accountId: "c", returned: ["c:kept", "c:posted"], window: window)
+        XCTAssertEqual(Set(data.transactions.map(\.id)), ["c:old", "c:kept"],
+                       "the replaced one goes; one outside the range asked about stays")
+    }
+
     func testCardPaymentWordingFromBanks() {
         for payee in ["Payment to Chase card ending in 1234 11/01", "CHASE CREDIT CRD AUTOPAY", "CHASE CREDIT CRD EPAY",
                       "Online Banking payment to CRD 1234", "BA ELECTRONIC PAYMENT", "ONLINE PAYMENT, THANK YOU",
@@ -2053,6 +2100,20 @@ final class OverrunTests: XCTestCase {
         XCTAssertNil(s.plan(for: october)?.keepFrom)
         XCTAssertEqual(s.keepPayingOverspending(in: october), 0)
         XCTAssertFalse(s.attention().contains { if case .autoPaid = $0 { return true } else { return false } })
+    }
+
+    func testWhatWasTakenOnItsOwnGoesBackWhenItIsntNeeded() {
+        let s = store()
+        let october = s.currentMonth
+        s.payForOverspending(from: .cards, amount: 3_000, categoryId: "dining", in: october)
+        s.keepPayingOverspending(in: october)   // takes the other $70
+        XCTAssertEqual(s.plan(for: october)?.autoPaid, 7_000)
+        // A $50 dinner is refunded: $50 of that wasn't needed after all.
+        s.data.transactions.append(Transaction(id: "refund", accountId: "r", date: date(2026, 10, 19),
+                                               amount: 5_000, payee: "Nobu", categoryId: "dining"))
+        s.keepPayingOverspending(in: october)
+        XCTAssertEqual(s.plan(for: october)?.autoPaid, 2_000)
+        XCTAssertEqual(s.cut(.cards, in: october), 5_000, "your own $30, plus the $20 still needed")
     }
 
     func testChoicesFromTheSameSourceAddUpToOneLine() {

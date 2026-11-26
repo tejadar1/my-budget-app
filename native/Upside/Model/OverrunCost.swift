@@ -197,6 +197,21 @@ extension BudgetStore {
         let month = month ?? currentMonth
         guard let source = plan(for: month)?.keepFrom else { return 0 }
         let cost = overrunCost(in: month)
+        // It took more than turned out to be needed (a paycheck showed up
+        // late, a purchase was refunded or re-sorted): give the extra back.
+        if cost.needed == 0, let auto = plan(for: month)?.autoPaid, auto > 0 {
+            let spare = max(0, cost.toSpend - cost.committed) / 100 * 100
+            let back = min(spare, auto)
+            if back > 0, var plan = data.plan, isInMonth(plan.month, month),
+               let i = plan.cuts?.lastIndex(where: { $0.source == source }) {
+                plan.cuts![i].amount -= back
+                if plan.cuts![i].amount <= 0 { plan.cuts!.remove(at: i) }
+                if plan.cuts!.isEmpty { plan.cuts = nil }
+                plan.autoPaid = auto - back > 0 ? auto - back : nil
+                data.plan = plan
+            }
+            return 0
+        }
         guard cost.needed > 0, let option = cost.options.first(where: { $0.source == source }),
               option.amount > 0 else { return 0 }
         payForOverspending(from: source, amount: option.amount, categoryId: cost.overruns.first?.id, in: month)
