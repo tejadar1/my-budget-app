@@ -139,7 +139,8 @@ extension BudgetStore {
             // A paycheck since the month began means it hasn't stopped,
             // however long the gap before it.
             let paidSince = incomeTransactions.contains { $0.date >= month && payerKey($0) == key }
-            let stopped = regular && !paidSince && quietDays > (payer.cadence == .weekly ? 21 : 35)
+            let stillPaying = data.incomeStillPaying?.contains(key) == true
+            let stopped = regular && !paidSince && !stillPaying && quietDays > (payer.cadence == .weekly ? 21 : 35)
             if stopped { monthly = 0 }
             let accountOwner = account(latest.accountId)?.owner ?? .unassigned
             return IncomeSource(id: key, name: latest.payee, accountId: latest.accountId,

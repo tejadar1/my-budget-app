@@ -87,7 +87,10 @@ struct MonthPlanCard: View {
             : monthly == 0 ? "this month only"
             : "\(Money.short(monthly)) monthly + \(Money.short(plan.savingsExtra)) extra"
         return VStack(spacing: 8) {
-            line("Income", plan.income, note: incomeNote)
+            NavigationLink(value: Route.income) {
+                line("Income", plan.income, note: incomeNote, chevron: true)
+            }
+            .buttonStyle(.plain)
             NavigationLink(value: Route.bills) {
                 line("Bills", -plan.bills, note: billsNote, chevron: true)
             }

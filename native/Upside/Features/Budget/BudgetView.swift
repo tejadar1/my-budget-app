@@ -102,6 +102,7 @@ struct BudgetView: View {
                 case .trends: TrendsView()
                 case .year(let year): YearReviewView(year: year)
                 case .help(let topic): HowItWorksView(focus: topic)
+                case .income: IncomeView()
                 }
             }
             .sheet(item: $sheet, onDismiss: {
@@ -187,6 +188,7 @@ struct BudgetView: View {
         case "review": path.append(Route.review)
         case "trip": path.append(Route.trip(open.id))
         case "bills": path.append(Route.bills)
+        case "income": path.append(Route.income)
         case "cards": path.append(Route.cards)
         case "trends": path.append(Route.trends)
         case "help": path.append(Route.help(HelpTopic(rawValue: open.id)))
@@ -257,6 +259,7 @@ enum Route: Hashable {
     case trends
     case year(Int)
     case help(HelpTopic?)
+    case income
 }
 
 // MARK: - Month switcher
@@ -698,6 +701,13 @@ struct MoreList: View {
         VStack(alignment: .leading, spacing: 10) {
             SectionTitle(text: "More")
             RowGroup {
+                NavigationLink(value: Route.income) {
+                    ListRow(title: "Income", value: "\(Money.short(plan.incomeReceived)) in") {
+                        SymbolIcon(symbol: "dollarsign.circle.fill", color: .green)
+                    }
+                }
+                .buttonStyle(.plain)
+                RowDivider()
                 NavigationLink(value: Route.bills) {
                     ListRow(title: "Bills", value: "\(Money.short(plan.billsPaid)) of \(Money.short(plan.bills)) paid") {
                         SymbolIcon(symbol: "doc.text.fill", color: .blue)

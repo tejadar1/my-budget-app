@@ -1706,6 +1706,26 @@ final class TransferTests: XCTestCase {
         XCTAssertEqual(byId["p4"]!.categoryId, "income")
     }
 
+    func testIncomeScreenFindsADepositNotCountedAndCountsIt() {
+        var data = BudgetData()
+        data.accounts = [Account(id: "c", name: "Checking", institution: "Chase", kind: .checking, balance: 0)]
+        let s = BudgetStore(data: data, isDemo: true)
+        let today = Date()
+        s.now = { today }
+        s.data.transactions = [
+            Transaction(id: "pay", accountId: "c", date: today.addingTimeInterval(-3 * 86_400), amount: 250_000,
+                        payee: "DISNEY PAYROLL", categoryId: nil, isTransfer: true),
+            Transaction(id: "small", accountId: "c", date: today.addingTimeInterval(-2 * 86_400), amount: 2_000,
+                        payee: "Refund", categoryId: nil, isTransfer: true),
+        ]
+        XCTAssertEqual(s.uncountedDeposits().map(\.id), ["pay"], "$100 or more only")
+        XCTAssertEqual(s.whyNotIncome(s.uncountedDeposits()[0]), "Counted as a transfer")
+        s.countAsIncome("pay")
+        XCTAssertTrue(s.uncountedDeposits().isEmpty)
+        XCTAssertEqual(s.incomeTransactions.map(\.id), ["pay"])
+        XCTAssertEqual(s.lastPaid(s.payerKey(s.incomeTransactions[0]))?.id, "pay")
+    }
+
     func testAPendingItemTheBankReplacedIsDropped() {
         var data = BudgetData()
         let now = Date(timeIntervalSince1970: 1_790_000_000)

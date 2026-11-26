@@ -3,6 +3,7 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next (0.36.2): Paychecks stay put
+- New: an Income screen (tap Income on Budget, or Budget › More › Income). What's come in this month, each paycheck and what it adds to a usual month, when each last paid, the last six months, and "Deposits not counted": deposits of $100 or more marked as a transfer or sorted elsewhere, each with Count as income. A paycheck that went quiet can be kept with Still paying.
 - Fixed: a paycheck could show as "stopped" (and drop out of your usual income) because its recent checks had been mistaken for transfers. Those checks come back now, and a payer who has paid this month is never called stopped.
 - Fixed: when both phones changed the same purchase, one phone's copy replaced the other's whole. Since each phone syncs with the bank on its own (refreshing pending items, re-checking transfers), that could wipe out a "business" mark or an "Income" sort made on the other phone. The two copies now merge field by field, for purchases, accounts, categories, trips and rules, so both changes survive.
 - Fixed: a sync could turn a paycheck into a "transfer" (when the same amount moved between accounts within a few days), so it vanished from income and the month looked overspent. Money sorted as income is never matched as a transfer now, and paychecks marked that way before come back on the next sync.

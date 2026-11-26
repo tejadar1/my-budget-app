@@ -307,6 +307,8 @@ struct BudgetData: Codable {
     /// Whose paycheck each income source is (by payer key), for paychecks
     /// into a joint account.
     var incomeOwners: [String: Owner]?
+    /// Income sources you said are still paying, though they've gone quiet (payer keys).
+    var incomeStillPaying: [String]?
     /// Problems SimpleFIN reported on the last sync ("reconnect Bank of America").
     var syncErrors: [String]?
     /// Months whose unspent money you already decided about ("2026-10").
