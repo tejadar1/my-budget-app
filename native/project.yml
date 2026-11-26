@@ -57,12 +57,26 @@ targets:
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
+  # End to end: the app on the sample budget, driven like a person would.
+  UpsideUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: UpsideUITests
+    dependencies:
+      - target: Upside
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Upside
 schemes:
   Upside:
     build:
       targets:
         Upside: all
         UpsideTests: [test]
+        UpsideUITests: [test]
     test:
       targets:
         - UpsideTests
+        - UpsideUITests

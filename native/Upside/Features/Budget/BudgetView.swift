@@ -50,7 +50,7 @@ struct BudgetView: View {
                             if isCurrentMonth { AttentionList(open: open) }
                             SavingsRow(month: month) { sheet = .savings(month) }
                             CategoryList(month: month).id("categories")
-                            GoalsSection()
+                            VStack(alignment: .leading, spacing: 20) { GoalsSection() }.id("goals")
                             MoreList(month: month) { sheet = .recap($0) }.id("more")
                         }
                     }
@@ -103,6 +103,7 @@ struct BudgetView: View {
                 case .year(let year): YearReviewView(year: year)
                 case .help(let topic): HowItWorksView(focus: topic)
                 case .income: IncomeView()
+                case .trips: TripsListView()
                 }
             }
             .sheet(item: $sheet, onDismiss: {
@@ -189,6 +190,7 @@ struct BudgetView: View {
         case "trip": path.append(Route.trip(open.id))
         case "bills": path.append(Route.bills)
         case "income": path.append(Route.income)
+        case "trips": path.append(Route.trips)
         case "cards": path.append(Route.cards)
         case "trends": path.append(Route.trends)
         case "help": path.append(Route.help(HelpTopic(rawValue: open.id)))
@@ -260,6 +262,7 @@ enum Route: Hashable {
     case year(Int)
     case help(HelpTopic?)
     case income
+    case trips
 }
 
 // MARK: - Month switcher

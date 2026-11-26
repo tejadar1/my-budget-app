@@ -582,6 +582,7 @@ final class BudgetStore {
         updated.transactions[i].categoryId = isTransfer ? nil : categoryId
         updated.transactions[i].isTransfer = isTransfer
         updated.transactions[i].autoSort = nil
+        Self.rememberUserTransfer(&updated, updated.transactions[i], isTransfer)
         if remember && Self.isLearnable(updated.transactions[i].payee) {
             let key = Self.payeeKey(updated.transactions[i].payee)
             updated.rules.removeAll { $0.payeeKey == key }
@@ -944,11 +945,25 @@ final class BudgetStore {
     }
 
     /// Mark a purchase as moving money (card payment or transfer) or undo that.
+    /// A deposit you call "not spending" stays that way; one you take back
+    /// out of transfers is yours again.
+    static func rememberUserTransfer(_ data: inout BudgetData, _ t: Transaction, _ isTransfer: Bool) {
+        guard t.amount > 0 else { return }
+        var ids = Set(data.userTransfers ?? [])
+        if isTransfer { ids.insert(t.id) } else { ids.remove(t.id) }
+        data.userTransfers = ids.isEmpty ? nil : ids.sorted()
+    }
+
+    func rememberUserTransfer(_ t: Transaction, _ isTransfer: Bool) {
+        Self.rememberUserTransfer(&data, t, isTransfer)
+    }
+
     func setTransfer(_ transactionId: String, _ isTransfer: Bool) {
         guard let i = data.transactions.firstIndex(where: { $0.id == transactionId }) else { return }
         var t = data.transactions[i]
         t.isTransfer = isTransfer
         if isTransfer { t.categoryId = nil }
+        rememberUserTransfer(t, isTransfer)
         if !isTransfer && t.categoryId == nil {
             t.categoryId = BankSync.categorize(payee: t.payee, amount: t.amount,
                                                rules: data.rules.filter { $0.categoryId != BankSync.transferCategory })

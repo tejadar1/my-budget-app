@@ -176,6 +176,7 @@ enum BankSync {
             let t = data.transactions[i]
             let key = BudgetStore.payeeKey(t.payee)
             guard t.isTransfer, t.amount > 0, let same = paychecks[key], !transferRules.contains(key),
+                  !(data.userTransfers ?? []).contains(t.id),
                   !looksLikeTransfer(t.payee),
                   !BudgetStore.isHouseholdPayment(t.payee, people: data.people, known: data.householdPayees ?? [:])
             else { continue }

@@ -309,6 +309,9 @@ struct BudgetData: Codable {
     var incomeOwners: [String: Owner]?
     /// Income sources you said are still paying, though they've gone quiet (payer keys).
     var incomeStillPaying: [String]?
+    /// Deposits you marked "not spending" yourself (transaction ids), so a
+    /// sync never turns them back into income.
+    var userTransfers: [String]?
     /// Problems SimpleFIN reported on the last sync ("reconnect Bank of America").
     var syncErrors: [String]?
     /// Months whose unspent money you already decided about ("2026-10").

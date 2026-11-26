@@ -3,6 +3,10 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next (0.36.2): Paychecks stay put
+- Trips are one card on Budget, like a goal: the fund, the next trip with its progress, and whether you're on track ("$1,556 a month short" or "on track", "+2 more trips"). Tap it for every trip, the fund, and Add a trip.
+- Fixed: a trip said "$1,856/month more to cover it", but that was the whole monthly amount, not on top of what the trip fund already adds. It's now what's needed on top, and trips share the fund: money promised to an earlier trip isn't counted again for a later one.
+- Fixed: a deposit you mark "not spending" yourself is never turned back into income by a sync.
+- An emergency fund with nothing in it yet no longer says "covers 0.0 months".
 - New: an Income screen (tap Income on Budget, or Budget › More › Income). What's come in this month, each paycheck and what it adds to a usual month, when each last paid, the last six months, and "Deposits not counted": deposits of $100 or more marked as a transfer or sorted elsewhere, each with Count as income. A paycheck that went quiet can be kept with Still paying.
 - Fixed: a paycheck could show as "stopped" (and drop out of your usual income) because its recent checks had been mistaken for transfers. Those checks come back now, and a payer who has paid this month is never called stopped.
 - Fixed: when both phones changed the same purchase, one phone's copy replaced the other's whole. Since each phone syncs with the bank on its own (refreshing pending items, re-checking transfers), that could wipe out a "business" mark or an "Income" sort made on the other phone. The two copies now merge field by field, for purchases, accounts, categories, trips and rules, so both changes survive.

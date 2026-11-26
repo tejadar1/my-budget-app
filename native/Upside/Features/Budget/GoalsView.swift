@@ -26,7 +26,7 @@ struct GoalsSection: View {
                     Button("Delete goal", role: .destructive) { withAnimation { store.deleteGoal(goal.id) } }
                 }
         }
-        if tripsOn { TripRows() }
+        if tripsOn { TripsSummary() }
         let addLabel = Label(tripsOn ? "Add a goal or trip" : "Add a goal", systemImage: "plus.circle.fill")
             .frame(maxWidth: .infinity, alignment: .leading)
             .card()
@@ -76,7 +76,7 @@ private struct GoalCard: View {
             parts.append("\(Money.short(monthly)) a month")
         }
         if let due = goal.due { parts.append("by \(due.formatted(.dateTime.month(.abbreviated).year()))") }
-        if goal.kind == .emergency, let months = store.monthsCovered(goal) {
+        if goal.kind == .emergency, saved > 0, let months = store.monthsCovered(goal) {
             parts.append(String(format: "covers %.1f months of essentials", months))
         }
         return parts.joined(separator: " · ")

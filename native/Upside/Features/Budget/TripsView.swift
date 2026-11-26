@@ -1,7 +1,124 @@
 import SwiftUI
 
+/// Trips on Budget: one card, like a goal. The fund, the next trip and
+/// whether the fund will cover it; tap for every trip.
+struct TripsSummary: View {
+    @Environment(BudgetStore.self) private var store
+    @State private var editFund = false
+
+    var body: some View {
+        if store.data.tripFund == nil && store.data.trips.isEmpty {
+            Button { editFund = true } label: { TripFundCard() }
+                .buttonStyle(.plain)
+                .sheet(isPresented: $editFund) { TripFundEditor() }
+        } else {
+            NavigationLink(value: Route.trips) { TripsCard() }
+                .buttonStyle(.plain)
+        }
+    }
+}
+
+struct TripsCard: View {
+    @Environment(BudgetStore.self) private var store
+
+    var body: some View {
+        let now = store.now()
+        let upcoming = store.data.trips.filter { $0.end >= store.calendar.startOfDay(for: now) }
+            .sorted { $0.start < $1.start }
+        let next = upcoming.first
+        let outlook = store.tripOutlook()
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "suitcase.fill").foregroundStyle(.orange)
+                Text("Trips").font(.headline)
+                Spacer()
+                if let balance = store.tripFundBalance() {
+                    Text(balance >= 0 ? "Fund \(Money.short(balance))" : "Fund short \(Money.short(-balance))")
+                        .font(.subheadline).monospacedDigit()
+                        .foregroundStyle(balance >= 0 ? Color.secondary : Theme.over)
+                }
+                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+            }
+            if let next {
+                let spent = store.tripSpent(next.id)
+                let away = next.start <= now
+                Text([away ? "\(next.name) now" : "\(next.name) · \(next.start.formatted(.dateTime.month(.abbreviated).day()))",
+                      next.budget.map { "\(Money.short(spent)) of \(Money.short($0))" } ?? "\(Money.short(spent)) spent"]
+                    .joined(separator: " · "))
+                    .font(.subheadline)
+                if let budget = next.budget, budget > 0 {
+                    SplitBar(fraction: min(1, Double(spent) / Double(budget)), fill: Theme.accent, height: 6)
+                }
+            }
+            Text(status(next: next, outlook: outlook, more: max(0, upcoming.count - 1)))
+                .font(.footnote)
+                .foregroundStyle(isShort(next, outlook) ? Theme.warning : Color.secondary)
+        }
+        .card()
+        .accessibilityElement(children: .combine)
+    }
+
+    private func isShort(_ next: Trip?, _ outlook: [BudgetStore.TripNeed]) -> Bool {
+        guard let next else { return false }
+        return (outlook.first { $0.trip.id == next.id }?.extraPerMonth ?? 0) > 0
+    }
+
+    private func status(next: Trip?, outlook: [BudgetStore.TripNeed], more: Int) -> String {
+        var parts: [String] = []
+        if let fund = store.data.tripFund { parts.append("\(Money.short(fund.monthly)) a month") }
+        if let next, let need = outlook.first(where: { $0.trip.id == next.id }) {
+            parts.append(need.extraPerMonth == 0 ? "on track"
+                         : "\(Money.short(need.extraPerMonth)) a month short")
+        } else if store.data.tripFund == nil, let next, let plan = store.tripSchedule(next) {
+            parts.append("saving \(Money.short(plan.perMonth)) a month for it")
+        } else if next == nil {
+            parts.append("no trips planned")
+        }
+        if more > 0 { parts.append("+\(more) more trip\(more == 1 ? "" : "s")") }
+        return parts.joined(separator: " · ")
+    }
+}
+
+/// Every trip and the fund, from the Trips card.
+struct TripsListView: View {
+    @Environment(BudgetStore.self) private var store
+    @State private var editFund = false
+    @State private var adding = false
+
+    var body: some View {
+        let today = store.calendar.startOfDay(for: store.now())
+        let trips = store.data.trips.sorted { $0.start < $1.start }
+        let upcoming = trips.filter { $0.end >= today }
+        let past = trips.filter { $0.end < today }.reversed()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Button { editFund = true } label: { TripFundCard() }.buttonStyle(.plain)
+                if !upcoming.isEmpty { SectionTitle(text: "Coming up") }
+                ForEach(upcoming) { trip in
+                    NavigationLink(value: Route.trip(trip.id)) { TripCard(trip: trip) }.buttonStyle(.plain)
+                }
+                Button { adding = true } label: {
+                    Label("Add a trip", systemImage: "plus.circle.fill")
+                        .frame(maxWidth: .infinity, alignment: .leading).card()
+                }
+                .foregroundStyle(Theme.accent)
+                if !past.isEmpty { SectionTitle(text: "Past trips") }
+                ForEach(Array(past)) { trip in
+                    NavigationLink(value: Route.trip(trip.id)) { TripCard(trip: trip) }.buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16).padding(.vertical, 12)
+        }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle("Trips")
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $editFund) { TripFundEditor() }
+        .sheet(isPresented: $adding) { TripEditor(trip: nil) }
+    }
+}
+
 /// Trips live outside everyday spending, so a vacation month doesn't look
-/// like overspending and doesn't skew your averages. Shown under Goals.
+/// like overspending and doesn't skew your averages.
 struct TripRows: View {
     @Environment(BudgetStore.self) private var store
     @State private var editFund = false
@@ -121,13 +238,41 @@ extension BudgetStore {
     }
 
     /// For a trip with a budget that hasn't started: covered by the fund,
-    /// or the monthly amount that would cover it by the start date.
+    /// or how much more a month (on top of the fund's monthly amount)
+    /// would cover it by the time it starts.
     func tripFundNeed(_ trip: Trip) -> (covered: Bool, perMonth: Cents)? {
-        guard let budget = trip.budget, let balance = tripFundBalance(), trip.start > now() else { return nil }
-        let remaining = max(0, budget - tripSpent(trip.id))
-        if balance >= remaining { return (true, 0) }
-        let months = max(1, calendar.dateComponents([.month], from: currentMonth, to: monthStart(trip.start)).month ?? 1)
-        return (false, (remaining - max(0, balance)) / months)
+        tripOutlook().first { $0.trip.id == trip.id }.map { ($0.extraPerMonth == 0, $0.extraPerMonth) }
+    }
+
+    /// One upcoming trip, judged against the fund.
+    struct TripNeed {
+        var trip: Trip
+        /// Still to pay: its budget minus what's spent on it.
+        var remaining: Cents
+        /// Months of fund money still coming before it starts.
+        var monthsLeft: Int
+        /// More a month needed on top of the fund's amount (0 = on track).
+        var extraPerMonth: Cents
+    }
+
+    /// Upcoming trips with a budget, soonest first, sharing one fund: the
+    /// balance now (already less what's been spent on trips) plus what the
+    /// fund will add before each trip starts. Money promised to an earlier
+    /// trip isn't counted again for a later one.
+    func tripOutlook() -> [TripNeed] {
+        guard let fund = data.tripFund, data.tripsOff != true, let balance = tripFundBalance() else { return [] }
+        let upcoming = data.trips.filter { $0.budget != nil && $0.start > now() }.sorted { $0.start < $1.start }
+        var promised: Cents = 0
+        return upcoming.map { trip in
+            let remaining = max(0, (trip.budget ?? 0) - tripSpent(trip.id))
+            let months = max(0, calendar.dateComponents([.month], from: currentMonth, to: monthStart(trip.start)).month ?? 0)
+            let pot = balance + fund.monthly * months - promised
+            let short = max(0, remaining - pot)
+            promised += remaining
+            // Whole dollars, rounded up: "$1,556 more a month" should be enough.
+            let extra = short == 0 ? 0 : ((short + max(1, months) - 1) / max(1, months) + 99) / 100 * 100
+            return TripNeed(trip: trip, remaining: remaining, monthsLeft: months, extraPerMonth: extra)
+        }
     }
 
     func tripTransactions(_ tripId: String) -> [Transaction] {
@@ -168,7 +313,7 @@ struct TripCard: View {
                     .font(.footnote.weight(.semibold))
                     .padding(.top, 2)
                 if let need = store.tripFundNeed(trip) {
-                    Text(need.covered ? "The trip fund covers it" : "\(Money.short(need.perMonth))/month more to cover it")
+                    Text(need.covered ? "The trip fund covers it" : "\(Money.short(need.perMonth)) a month more than the fund to cover it")
                         .font(.caption)
                         .foregroundStyle(need.covered ? Theme.accent : Theme.warning)
                 } else if store.data.tripFund == nil, let plan = store.tripSchedule(trip), plan.end >= store.currentMonth {

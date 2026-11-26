@@ -598,10 +598,11 @@ final class BudgetStoreTests: XCTestCase {
         store.data.transactions.append(Transaction(id: "f", accountId: "r", date: date(2026, 9, 20), amount: -82_000,
                                                    payee: "JetBlue", categoryId: "travel", tripId: "m"))
         XCTAssertEqual(store.tripFundBalance(), 8_000)
-        // $1,680 left to cover, $80 in the fund, 3 months to January → $533 a month.
+        // $1,680 left to cover, $80 in the fund, and $900 more coming (3 × $300)
+        // before January: $700 short, so $234 a month on top of the $300.
         let need = store.tripFundNeed(store.data.trips[0])
         XCTAssertEqual(need?.covered, false)
-        XCTAssertEqual(need?.perMonth, 53_333)
+        XCTAssertEqual(need?.perMonth, 23_400)
     }
 
     func testOverspendingAMonthMeansLessForTrips() {
@@ -767,6 +768,47 @@ final class BudgetStoreTests: XCTestCase {
 
         // A bill paid on time never asks.
         XCTAssertFalse(store.missedBills().contains { $0.name == "Con Ed" })
+    }
+
+    func testTripsShareOneFundAndSayWhatMoreAMonthItNeeds() {
+        // Today is Oct 15. $300 a month into the fund from October; Aruba
+        // ($8,000, $2,133 already paid from the fund) starts in late January.
+        let store = makeStore()
+        store.data.tripFund = TripFund(monthly: 30_000, start: date(2026, 10, 1))
+        store.data.trips = [
+            Trip(id: "aruba", name: "Aruba", start: date(2027, 1, 24), end: date(2027, 1, 28), budget: 800_000),
+            Trip(id: "ski", name: "Ski", start: date(2027, 3, 10), end: date(2027, 3, 14), budget: 50_000),
+        ]
+        store.data.transactions.append(Transaction(id: "flight", accountId: "r", date: date(2026, 10, 10),
+                                                   amount: -213_300, payee: "JetBlue", categoryId: "travel", tripId: "aruba"))
+        XCTAssertEqual(store.tripFundBalance(), 30_000 - 213_300, "October's $300 in, the flight out")
+        let outlook = store.tripOutlook()
+        XCTAssertEqual(outlook.map(\.trip.id), ["aruba", "ski"], "soonest first")
+        // Aruba: $5,867 still to pay; the fund is $1,833 short and adds $900
+        // before January, so $6,800 more over 3 months: $2,267 a month.
+        XCTAssertEqual(outlook[0].remaining, 586_700)
+        XCTAssertEqual(outlook[0].monthsLeft, 3)
+        XCTAssertEqual(outlook[0].extraPerMonth, 226_700, "on top of the $300, rounded up to whole dollars")
+        // Ski can't count money already promised to Aruba.
+        XCTAssertEqual(outlook[1].extraPerMonth, 134_000)
+        XCTAssertEqual(store.tripFundNeed(store.data.trips[0])?.covered, false)
+    }
+
+    func testAFundThatCoversTheFirstTripOnlyHasTheRestForTheNext() {
+        let store = makeStore()
+        store.data.tripFund = TripFund(monthly: 30_000, start: date(2026, 10, 1), startingBalance: 1_000_000)
+        store.data.trips = [
+            Trip(id: "a", name: "Soon", start: date(2026, 12, 5), end: date(2026, 12, 8), budget: 300_000),
+            Trip(id: "b", name: "Later", start: date(2027, 3, 5), end: date(2027, 3, 8), budget: 900_000),
+        ]
+        let outlook = store.tripOutlook()
+        XCTAssertEqual(outlook[0].extraPerMonth, 0, "$10,300 now covers $3,000")
+        // $10,300 + $1,500 by March − $3,000 for the first = $8,800 for $9,000.
+        XCTAssertEqual(outlook[1].extraPerMonth, 4_000)
+        XCTAssertEqual(store.tripFundNeed(store.data.trips[0])?.covered, true)
+        // Trips off: nothing to judge.
+        store.data.tripsOff = true
+        XCTAssertTrue(store.tripOutlook().isEmpty)
     }
 
     func testFindsSubscriptionsByPattern() {
@@ -1724,6 +1766,58 @@ final class TransferTests: XCTestCase {
         XCTAssertTrue(s.uncountedDeposits().isEmpty)
         XCTAssertEqual(s.incomeTransactions.map(\.id), ["pay"])
         XCTAssertEqual(s.lastPaid(s.payerKey(s.incomeTransactions[0]))?.id, "pay")
+    }
+
+    func testADepositYouMarkedNotSpendingStaysThatWay() {
+        var data = BudgetData()
+        data.accounts = [Account(id: "c", name: "Checking", institution: "Chase", kind: .checking, balance: 0)]
+        let start = Date(timeIntervalSince1970: 1_790_000_000)
+        data.transactions = (0..<3).map { n in
+            Transaction(id: "p\(n)", accountId: "c", date: start.addingTimeInterval(Double(n) * 14 * 86_400),
+                        amount: 300_000, payee: "ACME CORP DES:PPD", categoryId: "income")
+        }
+        let s = BudgetStore(data: data, isDemo: true)
+        // A one-off from the same payer you say isn't income (an expense payback).
+        s.setTransfer("p2", true)
+        XCTAssertEqual(s.data.userTransfers, ["p2"])
+        BankSync.markTransfers(&s.data)
+        XCTAssertTrue(s.data.transactions.first { $0.id == "p2" }!.isTransfer, "your choice wins over the paycheck check")
+        s.setTransfer("p2", false)
+        XCTAssertNil(s.data.userTransfers)
+    }
+
+    func testDepositsNotCountedLeaveOutYourOwnMovesButNotAMissingPaycheck() {
+        var data = BudgetData()
+        data.people = People(p1: "Ron", p2: "Jadira")
+        data.accounts = [
+            Account(id: "c", name: "Checking", institution: "Chase", kind: .checking, balance: 0),
+            Account(id: "s", name: "Savings", institution: "Ally", kind: .savings, balance: 0),
+            Account(id: "k", name: "Card", institution: "Amex", kind: .credit, balance: 0),
+        ]
+        let s = BudgetStore(data: data, isDemo: true)
+        let today = Date()
+        s.now = { today }
+        func ago(_ d: Double) -> Date { today.addingTimeInterval(-d * 86_400) }
+        s.data.transactions = [
+            // Disney paid as income before; this one was taken for a transfer.
+            Transaction(id: "d1", accountId: "c", date: ago(40), amount: 250_000, payee: "DISNEY PAYROLL", categoryId: "income"),
+            Transaction(id: "d2", accountId: "c", date: ago(12), amount: 250_000, payee: "DISNEY PAYROLL", categoryId: nil, isTransfer: true),
+            Transaction(id: "d2out", accountId: "s", date: ago(11), amount: -250_000, payee: "INTERNAL", categoryId: nil, isTransfer: true),
+            // Savings → checking, by wording and by the matching amount.
+            Transaction(id: "mv", accountId: "c", date: ago(5), amount: 50_000, payee: "ONLINE TRANSFER FROM SAV 1234", categoryId: nil, isTransfer: true),
+            Transaction(id: "mvout", accountId: "s", date: ago(5), amount: -50_000, payee: "ONLINE TRANSFER TO CHK", categoryId: nil, isTransfer: true),
+            // Money from Jadira.
+            Transaction(id: "z", accountId: "c", date: ago(3), amount: 40_000, payee: "Zelle payment from JADIRA TEJADA", categoryId: nil, isTransfer: true),
+            // A card refund isn't a deposit.
+            Transaction(id: "ref", accountId: "k", date: ago(2), amount: 20_000, payee: "Amazon refund", categoryId: "shopping"),
+            // A tax refund sorted as something else: shown.
+            Transaction(id: "tax", accountId: "c", date: ago(1), amount: 90_000, payee: "IRS TREAS 310", categoryId: "shopping"),
+        ]
+        XCTAssertEqual(s.uncountedDeposits().map(\.id), ["tax", "d2"])
+        XCTAssertEqual(s.whyNotIncome(s.data.transactions.first { $0.id == "tax" }!), "Sorted as Shopping")
+        s.countAsIncome("d2")
+        XCTAssertEqual(s.uncountedDeposits().map(\.id), ["tax"])
+        XCTAssertEqual(Set(s.incomeTransactions.map(\.id)), ["d1", "d2"])
     }
 
     func testAPendingItemTheBankReplacedIsDropped() {

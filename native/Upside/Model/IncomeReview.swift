@@ -19,13 +19,29 @@ extension BudgetStore {
     /// Deposits of $100 or more in the last two months into checking or
     /// savings that don't count as income (marked as a transfer, business,
     /// or sorted elsewhere), newest first. Card payments and refunds on
-    /// cards aren't deposits, so cards are left out.
+    /// cards aren't deposits, so cards are left out. So the list stays short
+    /// enough to notice a missing paycheck, plain moves between your own
+    /// accounts (bank wording, or the same amount leaving another account)
+    /// and money between the two of you are left out, unless the payer has
+    /// paid you income before: that's the paycheck taken for a transfer.
     func uncountedDeposits(days: Int = 60) -> [Transaction] {
         let since = now().addingTimeInterval(-Double(days) * 86_400)
-        let counted = Set(incomeTransactions.map(\.id))
+        let income = incomeTransactions
+        let counted = Set(income.map(\.id))
+        let payers = Set(income.map { Self.payeeKey($0.payee) })
         let accounts = Set(data.accounts.filter { $0.countsInBudget && $0.kind != .credit && $0.kind != .loan }.map(\.id))
+        let userSaid = Set(data.userTransfers ?? [])
+        let outflows = data.transactions.filter { $0.amount < 0 && $0.date >= since.addingTimeInterval(-7 * 86_400) }
         return data.transactions.filter { t in
-            t.amount >= 10_000 && t.date >= since && accounts.contains(t.accountId) && !counted.contains(t.id)
+            guard t.amount >= 10_000, t.date >= since, accounts.contains(t.accountId), !counted.contains(t.id),
+                  !userSaid.contains(t.id) else { return false }
+            if payers.contains(Self.payeeKey(t.payee)) { return true }
+            if Self.isHouseholdPayment(t.payee, people: people, known: data.householdPayees ?? [:]) { return false }
+            if t.isTransfer && BankSync.looksLikeTransfer(t.payee) { return false }
+            let moved = outflows.contains { o in
+                o.accountId != t.accountId && o.amount == -t.amount && abs(o.date.timeIntervalSince(t.date)) <= 6 * 86_400
+            }
+            return !moved
         }
         .sorted { $0.date > $1.date }
     }
