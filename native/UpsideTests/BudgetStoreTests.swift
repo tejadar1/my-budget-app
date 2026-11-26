@@ -1388,6 +1388,40 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(restored.transactions.count, merged.transactions.count)
     }
 
+    func testOnePhonesRefreshDoesntWipeTheOthersBusinessOrIncome() {
+        let base = makeStore().data
+        let purchase = base.transactions.first { $0.amount < 0 }!.id
+        let deposit = base.transactions.first { $0.amount > 0 }!.id
+        var ron = base, jadira = base
+        // Ron marks a purchase as business and a deposit as income.
+        ron.transactions[ron.transactions.firstIndex { $0.id == purchase }!].business = true
+        ron.transactions[ron.transactions.firstIndex { $0.id == deposit }!].categoryId = "income"
+        // Jadira's phone syncs with the bank: the same two get refreshed.
+        let jp = jadira.transactions.firstIndex { $0.id == purchase }!
+        jadira.transactions[jp].isPending = !jadira.transactions[jp].isPending
+        let jd = jadira.transactions.firstIndex { $0.id == deposit }!
+        jadira.transactions[jd].bankCategory = "Deposit"
+
+        // Either way round, both changes survive.
+        for merged in [BudgetMerge.merge(local: jadira, remote: ron, base: base),
+                       BudgetMerge.merge(local: ron, remote: jadira, base: base)] {
+            let p = merged.transactions.first { $0.id == purchase }!
+            let d = merged.transactions.first { $0.id == deposit }!
+            XCTAssertEqual(p.business, true, "Ron's business mark kept")
+            XCTAssertEqual(p.isPending, jadira.transactions[jp].isPending, "the bank refresh kept")
+            XCTAssertEqual(d.categoryId, "income", "Ron's income kept")
+            XCTAssertEqual(d.bankCategory, "Deposit")
+        }
+
+        // Accounts too: Jadira hides one while Ron's sync updates its balance.
+        var ron2 = base, jadira2 = base
+        ron2.accounts[0].balance += 1_000
+        jadira2.accounts[0].hidden = true
+        let merged = BudgetMerge.merge(local: ron2, remote: jadira2, base: base)
+        XCTAssertEqual(merged.accounts[0].hidden, true)
+        XCTAssertEqual(merged.accounts[0].balance, base.accounts[0].balance + 1_000)
+    }
+
     func testRolloverCarriesUnspentIntoNextMonth() {
         let store = makeStore()
         store.setLimit("dining", 30_000)

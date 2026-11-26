@@ -3,6 +3,7 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next (0.36.2): Paychecks stay put
+- Fixed: when both phones changed the same purchase, one phone's copy replaced the other's whole. Since each phone syncs with the bank on its own (refreshing pending items, re-checking transfers), that could wipe out a "business" mark or an "Income" sort made on the other phone. The two copies now merge field by field, for purchases, accounts, categories, trips and rules, so both changes survive.
 - Fixed: a sync could turn a paycheck into a "transfer" (when the same amount moved between accounts within a few days), so it vanished from income and the month looked overspent. Money sorted as income is never matched as a transfer now, and paychecks marked that way before come back on the next sync.
 - Fixed: a pending item the bank later replaced (often with the posted one, under a new ID) stayed too, counting twice. It's removed once the bank stops sending it.
 - Fixed: a deposit you'd said isn't a reimbursement was marked as one again on every sync.
