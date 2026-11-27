@@ -46,7 +46,7 @@ extension BudgetStore {
         // One store can bill several things (Apple: iCloud and Apple One;
         // Tesla: charging and Connectivity). When the store as a whole isn't
         // monthly, each steady price is checked on its own.
-        return groups.flatMap { key, list -> [Recurring] in
+        let found = groups.flatMap { key, list -> [Recurring] in
             guard !dismissed.contains(key) else { return [] }
             if let whole = recurring(key, list, historyStart: historyStart, activeDays: days) { return [whole] }
             return Self.byPrice(list).compactMap { price, sub in
@@ -54,7 +54,71 @@ extension BudgetStore {
             }
         }
         .filter { !stopped.contains($0.id) }
-        .sorted { ($0.dueDate ?? $0.lastDate) < ($1.dueDate ?? $1.lastDate) }
+        return markPaidUnderOtherNames(found, charges: charges)
+            .sorted { ($0.dueDate ?? $0.lastDate) < ($1.dueDate ?? $1.lastDate) }
+    }
+
+    /// Banks word the same biller differently from month to month ("VEOLIA
+    /// NJ PMT", then "VEOLIA WATER NEW YORK INC"), and a payment can go
+    /// through bill pay or a card. A bill not yet seen this month counts as
+    /// paid when this month has a charge from the same company (same first
+    /// name word) or, failing that, one in its category for about its
+    /// amount, that no other bill has claimed. Or when you said it's paid.
+    private func markPaidUnderOtherNames(_ bills: [Recurring], charges: [Transaction]) -> [Recurring] {
+        let thisMonth = currentMonth
+        let said = Set(data.billsMarkedPaid ?? [])
+        let monthCharges = charges.filter { isInMonth($0.date, thisMonth) }
+        var claimed = Set(bills.filter(\.paidThisMonth).flatMap { bill in
+            monthCharges.filter { Self.charge($0, isFor: bill.id) }.map(\.id)
+        })
+        // Bills matched by name first, so a category match can't take another's payment.
+        var result = bills
+        for pass in 0..<2 {
+            for i in result.indices where !result[i].paidThisMonth {
+                let bill = result[i]
+                if pass == 0, said.contains(Self.paidKey(bill.id, thisMonth)) {
+                    result[i].paidThisMonth = true
+                    result[i].dueDate = nil
+                    continue
+                }
+                let word = Self.companyWord(bill.name)
+                let match = monthCharges.first { t in
+                    guard !claimed.contains(t.id) else { return false }
+                    let sameCategory = bill.categoryId != nil && t.categoryId == bill.categoryId
+                    let aboutTheAmount = abs(-t.amount - bill.amount) * 100 <= bill.amount * 35
+                    // Same company word, and it looks like that bill (its
+                    // category or its amount): "American Water" isn't paid
+                    // by a shirt from American Eagle.
+                    if pass == 0 { return word != nil && Self.companyWord(t.payee) == word && (sameCategory || aboutTheAmount) }
+                    return sameCategory && aboutTheAmount
+                }
+                if let match {
+                    claimed.insert(match.id)
+                    result[i].paidThisMonth = true
+                    result[i].dueDate = nil
+                    result[i].lastDate = match.date
+                }
+            }
+        }
+        return result
+    }
+
+    /// The word that names the company ("veolia" in "VEOLIA WATER NY PMT"):
+    /// the first name word that isn't generic. Nil for payments to people,
+    /// which are matched by who, not by a word.
+    static func companyWord(_ payee: String) -> String? {
+        guard personPayment(payee) == nil else { return nil }
+        return nameWords(payee).first { $0.count >= 3 && !genericWords.contains($0) }
+    }
+
+    static func paidKey(_ billId: String, _ month: Date) -> String { "\(monthKey(month)):\(billId)" }
+
+    /// "It's paid": a bill paid somewhere Upside can't see (cash, an
+    /// account that isn't connected) stops being due this month.
+    func markBillPaid(_ billId: String) {
+        var keys = Set(data.billsMarkedPaid ?? [])
+        keys.insert(Self.paidKey(billId, currentMonth))
+        data.billsMarkedPaid = keys.sorted()
     }
 
     /// Charges split by whole-dollar price, for stores that bill several things.

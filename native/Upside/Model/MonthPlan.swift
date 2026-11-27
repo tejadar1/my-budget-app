@@ -63,8 +63,13 @@ extension BudgetStore {
     /// haven't been paid yet are still counted. Past months: what was paid.
     func billLines(_ month: Date) -> [BillLine] {
         let isCurrent = month == currentMonth
-        let due = isCurrent ? Dictionary(grouping: recurringCharges().filter { !$0.paidThisMonth },
-                                         by: { $0.categoryId ?? "" }) : [:]
+        let bills = isCurrent ? recurringCharges() : []
+        let due = Dictionary(grouping: bills.filter { !$0.paidThisMonth }, by: { $0.categoryId ?? "" })
+        // Bills you marked paid somewhere Upside can't see: their usual is
+        // taken care of, so the category doesn't expect it again.
+        let said = Set(data.billsMarkedPaid ?? [])
+        let markedPaid = Dictionary(grouping: bills.filter { said.contains(Self.paidKey($0.id, month)) },
+                                    by: { $0.categoryId ?? "" }).mapValues { $0.reduce(0) { $0 + $1.amount } }
         let funded = goalFundedCategories
         return expenseCategories.filter { $0.group == "Bills" }.compactMap { c in
             let paid = spent(c.id, in: month)
@@ -73,7 +78,7 @@ extension BudgetStore {
             let knownDue = (due[c.id] ?? []).reduce(0) { $0 + $1.amount }
             // A bill with its own goal is saved for there; only count what's
             // actually charged, not its usual every month.
-            let floor = funded.contains(c.id) ? 0 : usual
+            let floor = funded.contains(c.id) ? 0 : max(0, usual - (markedPaid[c.id] ?? 0))
             let expected = isCurrent ? max(floor, paid + knownDue) : paid
             return expected > 0 || paid > 0 ? BillLine(category: c, paid: paid, usual: usual, expected: max(expected, paid)) : nil
         }

@@ -811,6 +811,58 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertTrue(store.tripOutlook().isEmpty)
     }
 
+    func testABillPaidUnderAnotherNameCountsAsPaid() {
+        let store = makeStore()   // today: Oct 15
+        for m in 7...9 {
+            store.data.transactions.append(Transaction(id: "v\(m)", accountId: "r", date: date(2026, m, 3),
+                                                       amount: -23_000, payee: "VEOLIA NJ PMT", categoryId: "utilities"))
+        }
+        XCTAssertEqual(store.recurringCharges().first { $0.name == "VEOLIA NJ PMT" }?.paidThisMonth, false)
+        // October's came through worded differently.
+        store.data.transactions.append(Transaction(id: "v10", accountId: "a", date: date(2026, 10, 4),
+                                                   amount: -23_063, payee: "VEOLIA WATER NEW YORK INC", categoryId: "utilities"))
+        let bill = store.recurringCharges().first { $0.name == "VEOLIA NJ PMT" }
+        XCTAssertEqual(bill?.paidThisMonth, true)
+        XCTAssertNil(bill?.dueDate)
+        XCTAssertEqual(store.billLines(store.currentMonth).first { $0.category.id == "utilities" }?.stillToCome, 0)
+    }
+
+    func testABillPaidThroughBillPayInItsCategoryForAboutItsAmountCountsAsPaid() {
+        let store = makeStore()
+        for m in 7...9 {
+            store.data.transactions.append(Transaction(id: "v\(m)", accountId: "r", date: date(2026, m, 3),
+                                                       amount: -23_000, payee: "VEOLIA NJ PMT", categoryId: "utilities"))
+        }
+        store.data.transactions.append(Transaction(id: "bp", accountId: "r", date: date(2026, 10, 5),
+                                                   amount: -24_000, payee: "ONLINE BILL PAY 88812", categoryId: "utilities"))
+        XCTAssertEqual(store.recurringCharges().first { $0.name == "VEOLIA NJ PMT" }?.paidThisMonth, true)
+    }
+
+    func testAShirtIsntAWaterBill() {
+        let store = makeStore()
+        for m in 7...9 {
+            store.data.transactions.append(Transaction(id: "w\(m)", accountId: "r", date: date(2026, m, 3),
+                                                       amount: -6_000, payee: "AMERICAN WATER CO", categoryId: "utilities"))
+        }
+        store.data.transactions.append(Transaction(id: "shirt", accountId: "r", date: date(2026, 10, 2),
+                                                   amount: -2_500, payee: "AMERICAN EAGLE", categoryId: "shopping"))
+        XCTAssertEqual(store.recurringCharges().first { $0.name == "AMERICAN WATER CO" }?.paidThisMonth, false)
+    }
+
+    func testABillYouSayIsPaidStopsBeingDue() {
+        let store = makeStore()
+        for m in 7...9 {
+            store.data.transactions.append(Transaction(id: "v\(m)", accountId: "r", date: date(2026, m, 3),
+                                                       amount: -23_000, payee: "VEOLIA NJ PMT", categoryId: "utilities"))
+        }
+        let before = store.monthPlan(store.currentMonth)
+        let bill = store.recurringCharges().first { $0.name == "VEOLIA NJ PMT" }!
+        store.markBillPaid(bill.id)
+        XCTAssertEqual(store.recurringCharges().first { $0.id == bill.id }?.paidThisMonth, true)
+        XCTAssertEqual(store.monthPlan(store.currentMonth).bills, before.bills - 23_000, "its money is free again")
+        XCTAssertFalse(store.missedBills().contains { $0.id == bill.id })
+    }
+
     func testFindsSubscriptionsByPattern() {
         let store = makeStore()
         for (m, d) in [(8, 3), (9, 4), (10, 3)] {

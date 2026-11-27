@@ -103,11 +103,16 @@ struct BillsView: View {
                 }
             }
             if !due.isEmpty {
-                Section("Still due") {
+                Section {
                     ForEach(due) { b in
                         BillRow(bill: b, when: b.dueDate.map { "Due \(day($0))" } ?? "").swipeActions { stopButton(b); notButton(b) }
-                            .contextMenu { stopButton(b); notButton(b) }
+                            .swipeActions(edge: .leading) { paidButton(b) }
+                            .contextMenu { paidButton(b); stopButton(b); notButton(b) }
                     }
+                } header: {
+                    Text("Still due")
+                } footer: {
+                    Text("Paid already? Upside looks for it under any name the bank uses. If it went through an account Upside can't see, swipe right: Paid.")
                 }
             }
             if !paid.isEmpty {
@@ -205,6 +210,14 @@ struct BillsView: View {
         withAnimation { store.stopBill(bill, afterThisMonth: afterThisMonth) }
         Haptics.success()
         stopping = nil
+    }
+
+    /// Swipe right: "Paid", for a bill paid somewhere Upside can't see.
+    private func paidButton(_ bill: Recurring) -> some View {
+        Button { withAnimation { store.markBillPaid(bill.id) }; Haptics.success() } label: {
+            Label("Paid", systemImage: "checkmark.circle")
+        }
+        .tint(Theme.accent)
     }
 
     /// Swipe: "Stop", for a bill that's ending (cancelled, paid off).
