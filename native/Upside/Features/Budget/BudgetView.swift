@@ -668,6 +668,9 @@ struct CategoryRow: View {
                              fill: status.color, height: 4, overflow: Theme.over)
                 }
             }
+            // Rows without a bar would otherwise shrink to their text and sit
+            // centered, out of line with the rest.
+            .frame(maxWidth: .infinity, alignment: .leading)
             Image(systemName: "chevron.right")
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.tertiary)

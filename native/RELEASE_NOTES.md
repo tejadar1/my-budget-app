@@ -3,6 +3,8 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next (0.36.3): Every number agrees
+- Fixed: a category whose limit was lowered to $0 this month said "Skipping this month" even after you spent there. It says "$X over $0 limit" now, like any category over its limit.
+- Fixed: categories with no bar (no limit, or skipping) sat indented, out of line with the rest.
 - Fixed: a bill paid under a different name than last month ("VEOLIA NJ PMT", then "VEOLIA WATER NEW YORK INC"), or through bill pay, stayed "Still due" and kept being counted. A bill now counts as paid when this month has a charge from the same company, or one in its category for about its amount. Paid somewhere Upside can't see? Swipe right on it: Paid. Its money is free again.
 - Fixed: Plan worked out "to spend" again from whole-dollar sliders, so it could disagree with Budget by a few dollars (or by a trip fund that starts later) with nothing changed. Plan now starts from Budget's exact number and adds only what you change.
 - Fixed: setting a limit to $0 "from now on" in Adjust limit removed the limit instead, so the category counted its usual and the month no longer fit. $0 is a $0 limit now.
