@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next (0.36.2): Paychecks stay put
+## 0.36.2: Paychecks stay put
 - Trips are one card on Budget, like a goal: the fund, the next trip with its progress, and whether you're on track ("$1,556 a month short" or "on track", "+2 more trips"). Tap it for every trip, the fund, and Add a trip.
 - Fixed: a trip said "$1,856/month more to cover it", but that was the whole monthly amount, not on top of what the trip fund already adds. It's now what's needed on top, and trips share the fund: money promised to an earlier trip isn't counted again for a later one.
 - Fixed: a deposit you mark "not spending" yourself is never turned back into income by a sync.
