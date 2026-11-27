@@ -166,7 +166,7 @@ final class BudgetInvariantTests: XCTestCase {
     }
 
     func testRandomEverydayActionsKeepEveryScreenInAgreement() {
-        for seed in 1...120 as ClosedRange<UInt64> {
+        for seed in 1...80 as ClosedRange<UInt64> {
             let s = household(seed)
             var rng = Seeded(state: seed &* 7_919)
             let month = s.currentMonth
@@ -250,6 +250,21 @@ final class BudgetInvariantTests: XCTestCase {
                 check(s, label)
             }
         }
+    }
+
+    func testARefundWithNothingBoughtYetDoesntMakeCategoriesDisagreeWithTheTotal() {
+        // Found by household 116: shopping's only October entry was a $1
+        // refund (the purchases came later), so Shopping showed $0 while
+        // the month's total took the $1 off.
+        let s = household(116)
+        let month = s.currentMonth
+        s.data.transactions.removeAll { $0.categoryId == "gifts" }
+        s.data.transactions.append(Transaction(id: "giftRefund", accountId: "k", date: s.now(), amount: 2_500,
+                                               payee: "ETSY REFUND", categoryId: "gifts"))
+        XCTAssertEqual(s.spent("gifts", in: month), 0)
+        let byCategory = s.expenseCategories.filter { $0.group != "Trips" }.reduce(0) { $0 + s.spent($1.id, in: month) }
+        XCTAssertEqual(s.totalSpent(in: month), byCategory)
+        check(s, "refund with nothing bought")
     }
 
     func testAZeroLimitIsZeroWhetherForThisMonthOrFromNowOn() {

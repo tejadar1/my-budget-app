@@ -3,6 +3,7 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next (0.36.3): Every number agrees
+- Fixed (found by the new checks): a refund in a category with nothing bought yet that month showed the category at $0 but still took the refund off the month's total, so categories didn't add up to Spent. Totals now add up category by category.
 - Fixed: a category whose limit was lowered to $0 this month said "Skipping this month" even after you spent there. It says "$X over $0 limit" now, like any category over its limit.
 - Fixed: categories with no bar (no limit, or skipping) sat indented, out of line with the rest.
 - Fixed: a bill paid under a different name than last month ("VEOLIA NJ PMT", then "VEOLIA WATER NEW YORK INC"), or through bill pay, stayed "Still due" and kept being counted. A bill now counts as paid when this month has a charge from the same company, or one in its category for about its amount. Paid somewhere Upside can't see? Swipe right on it: Paid. Its money is free again.

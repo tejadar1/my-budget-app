@@ -282,10 +282,14 @@ final class BudgetStore {
         income(in: month) - totalSpent(in: month, includeTrips: true)
     }
 
+    /// Everything spent in a month: each category's spending, added up.
+    /// A refund nets out within its own category, so a refund in a category
+    /// with nothing bought yet this month doesn't lower the total while the
+    /// category shows $0: the categories always add up to the total.
     func totalSpent(in month: Date, includeTrips: Bool = false) -> Cents {
-        max(0, -spendingTransactions
-            .filter { isInMonth($0.date, month) && (includeTrips || !isTripSpending($0)) }
-            .reduce(0) { $0 + $1.amount })
+        Dictionary(grouping: spendingTransactions.filter { isInMonth($0.date, month) && (includeTrips || !isTripSpending($0)) },
+                   by: { $0.categoryId ?? "" })
+            .values.reduce(0) { $0 + max(0, -$1.reduce(0) { $0 + $1.amount }) }
     }
 
     /// Previous months that have any data at all, so a new budget doesn't
