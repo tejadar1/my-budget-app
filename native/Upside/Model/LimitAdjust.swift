@@ -59,7 +59,9 @@ extension BudgetStore {
             plan.limits[categoryId] = value
             for (id, take) in taking { plan.limits[id] = max(0, (current[id] ?? 0) - take) }
         } else {
-            setLimit(categoryId, value > 0 ? value : nil)
+            // $0 here means a $0 limit, as Adjust limit showed it, not "no
+            // limit" (which would count the category's usual and not fit).
+            setLimit(categoryId, value)
             plan.limits[categoryId] = nil
             for (id, take) in taking {
                 let standing = category(id)?.limit ?? current[id] ?? 0

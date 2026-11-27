@@ -69,27 +69,47 @@ struct PlanView: View {
         func cut(_ p: PlanPriority) -> Cents { cuts[p] ?? 0 }
     }
 
+    /// The slider values as loaded, so Plan can start from Budget's exact
+    /// numbers and only add what you change.
+    private struct Loaded: Equatable {
+        var savings = 0, paydown = 0, trips = 0, extra = 0, plannedIncome = 0
+        var useUsual = true
+    }
+    @State private var loaded = Loaded()
+
     private func numbers() -> Numbers {
         let base = store.monthPlan(month)
         let usualIncome = store.averageIncome(before: month) ?? 0
-        let planned = useUsual || plannedIncome == 0 ? nil : plannedIncome * 100
-        // Same as Budget: extra income counts only once it has a job.
-        let income = BudgetStore.incomeToSpend(expected: BudgetStore.incomeToPlanOn(planned: planned, usual: usualIncome),
-                                               received: base.incomeReceived,
-                                               used: store.plan(for: month)?.extraIncomeUsed ?? 0)
-        let extraSavings = extra * 100
-        // $0 for trips means each trip saves its own share.
-        let tripCost = store.data.tripsOff == true ? 0 : trips > 0 ? trips * 100 : store.tripScheduleSetAside(in: month)
         let cuts = Dictionary(grouping: store.overrunCuts(in: month), by: \.source).mapValues { $0.reduce(0) { $0 + $1.amount } }
         // Paid-for overspending lowers this month's amounts, not the sliders.
         let goals = max(0, store.goalsSetAside(in: month) - (cuts[.goals] ?? 0))
         // Leftover from last month given a job adds back what it takes off.
         let leftoverCards = store.plan.flatMap { store.isInMonth($0.month, month) ? $0.cardExtra : nil } ?? 0
-        let thisSavings = max(0, savings * 100 + extraSavings - (cuts[.savings] ?? 0))
-        let thisCards = max(0, paydown * 100 + leftoverCards - (cuts[.cards] ?? 0))
-        let thisTrips = max(0, tripCost - (cuts[.trips] ?? 0))
-        let toSpend = income + base.carriedIn - base.bills + base.fundedByGoals - thisSavings - thisCards
-            - thisTrips - goals + base.rolledIn
+        /// The month worked out from slider values (whole dollars).
+        func work(_ v: Loaded) -> (income: Cents, savings: Cents, cards: Cents, trips: Cents, toSpend: Cents) {
+            let planned = v.useUsual || v.plannedIncome == 0 ? nil : v.plannedIncome * 100
+            // Same as Budget: extra income counts only once it has a job.
+            let income = BudgetStore.incomeToSpend(expected: BudgetStore.incomeToPlanOn(planned: planned, usual: usualIncome),
+                                                   received: base.incomeReceived,
+                                                   used: store.plan(for: month)?.extraIncomeUsed ?? 0)
+            // $0 for trips means each trip saves its own share.
+            let tripCost = store.data.tripsOff == true ? 0 : v.trips > 0 ? v.trips * 100 : store.tripScheduleSetAside(in: month)
+            let savings = max(0, v.savings * 100 + v.extra * 100 - (cuts[.savings] ?? 0))
+            let cards = max(0, v.paydown * 100 + leftoverCards - (cuts[.cards] ?? 0))
+            let trips = max(0, tripCost - (cuts[.trips] ?? 0))
+            return (income, savings, cards, trips,
+                    income + base.carriedIn - base.bills + base.fundedByGoals - savings - cards - trips - goals + base.rolledIn)
+        }
+        let now = Loaded(savings: savings, paydown: paydown, trips: trips, extra: extra,
+                         plannedIncome: plannedIncome, useUsual: useUsual)
+        let edited = work(now), before = work(loaded)
+        // Budget's exact number, plus only what you've changed here. Working it
+        // out again from whole-dollar sliders could disagree with Budget by
+        // cents, or by a trip fund that starts later, with nothing changed.
+        let income = base.income + edited.income - before.income
+        let extraSavings = extra * 100
+        let tripCost = store.data.tripsOff == true ? 0 : trips > 0 ? trips * 100 : store.tripScheduleSetAside(in: month)
+        let toSpend = base.toSpend + edited.toSpend - before.toSpend
         let total = limitsTotal(limits)
         // Same count as Budget: overspending uses money too.
         let committed = store.committedSpending(limits: setLimits(limits), in: month)
@@ -553,6 +573,8 @@ struct PlanView: View {
             ($0.id, (store.plannedLimit($0, in: month) ?? 0) / 100)
         })
         loadedLimits = limits
+        loaded = Loaded(savings: savings, paydown: paydown, trips: trips, extra: extra,
+                        plannedIncome: plannedIncome, useUsual: useUsual)
     }
 
     private func save() {

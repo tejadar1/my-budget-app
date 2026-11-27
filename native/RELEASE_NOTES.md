@@ -2,6 +2,12 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.36.3): Every number agrees
+- Fixed: Plan worked out "to spend" again from whole-dollar sliders, so it could disagree with Budget by a few dollars (or by a trip fund that starts later) with nothing changed. Plan now starts from Budget's exact number and adds only what you change.
+- Fixed: setting a limit to $0 "from now on" in Adjust limit removed the limit instead, so the category counted its usual and the month no longer fit. $0 is a $0 limit now.
+- Fixed: a category with no limit that went past its usual (or a $0 limit with spending) showed a gray "$45 spent" in Categories while Over the plan called it over. It now says "$20 over its usual $25", the same as everywhere else.
+- Behind the scenes: 200 made-up households, each put through 25 random everyday actions (choosing what gives, undo, adjusting limits, stopping bills, syncing, the other phone), checked after every step that every screen agrees and the month adds up.
+
 ## 0.36.2: Paychecks stay put
 - Trips are one card on Budget, like a goal: the fund, the next trip with its progress, and whether you're on track ("$1,556 a month short" or "on track", "+2 more trips"). Tap it for every trip, the fund, and Add a trip.
 - Fixed: a trip said "$1,856/month more to cover it", but that was the whole monthly amount, not on top of what the trip fund already adds. It's now what's needed on top, and trips share the fund: money promised to an earlier trip isn't counted again for a later one.

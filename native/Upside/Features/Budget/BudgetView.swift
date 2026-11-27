@@ -644,17 +644,22 @@ struct CategoryRow: View {
 
     var body: some View {
         let spent = store.spent(category.id, in: month)
-        let limit = store.limit(category, in: month) ?? 0
+        let set = store.limit(category, in: month)
+        let limit = set ?? 0
         let left = limit - spent
         let status = Status(limit: limit, left: left)
-        let skipping = limit == 0 && month == store.currentMonth && store.plan?.limits[category.id] == 0
+        let skipping = set == 0 && spent == 0 && month == store.currentMonth && store.plan?.limits[category.id] == 0
+        // No limit: the plan counts its usual, so past that it's over (as
+        // Over the plan and Needs attention say).
+        let usual = set == nil ? store.averageSpent(category.id, before: month) ?? 0 : 0
 
         HStack(spacing: 12) {
             CategoryIcon(categoryId: category.id, size: 30)
             VStack(alignment: .leading, spacing: 5) {
                 // Name on its own line so it's never cut short; amount under it.
                 Text(category.name).lineLimit(2)
-                amount(spent: spent, limit: limit, left: left, color: status.color, skipping: skipping)
+                amount(spent: spent, limit: limit, hasLimit: set != nil, usual: usual, left: left,
+                       color: status.color, skipping: skipping)
                     .font(.subheadline.monospacedDigit())
                     .lineLimit(1)
                 if limit > 0 {
@@ -673,9 +678,14 @@ struct CategoryRow: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func amount(spent: Cents, limit: Cents, left: Cents, color: Color, skipping: Bool) -> Text {
+    private func amount(spent: Cents, limit: Cents, hasLimit: Bool, usual: Cents, left: Cents,
+                        color: Color, skipping: Bool) -> Text {
         if skipping { return Text("Skipping this month").foregroundColor(.secondary) }
-        if limit == 0 { return Text("\(Money.short(spent)) spent").foregroundColor(.secondary) }
+        if !hasLimit {
+            guard spent > usual else { return Text("\(Money.short(spent)) spent").foregroundColor(.secondary) }
+            return Text("\(Money.short(spent - usual)) over").fontWeight(.semibold).foregroundColor(Theme.over)
+                + Text(" its usual \(Money.short(usual))").foregroundColor(.secondary)
+        }
         if left < 0 {
             return Text("\(Money.short(-left)) over").fontWeight(.semibold).foregroundColor(Theme.over)
                 + Text(" \(Money.short(limit)) limit").foregroundColor(.secondary)
