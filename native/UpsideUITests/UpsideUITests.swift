@@ -180,4 +180,26 @@ final class UpsideUITests: XCTestCase {
         row.tap()
         XCTAssertTrue(app.navigationBars["How Upside works"].waitForExistence(timeout: 5))
     }
+
+    func testTappingABillOpensIt() {
+        launch("-open", "bills")
+        XCTAssertTrue(app.navigationBars["Bills & subscriptions"].waitForExistence(timeout: 10))
+        let netflix = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Netflix'")).firstMatch
+        XCTAssertTrue(scrollTo(netflix), "a bill row is a button")
+        netflix.tap()
+        XCTAssertTrue(app.navigationBars["Netflix"].waitForExistence(timeout: 5), "its own page")
+        XCTAssertTrue(any("Charges").exists)
+        app.buttons["Done"].tap()
+    }
+
+    func testTappingAnIncomeSourceOpensIt() {
+        launch("-open", "income")
+        XCTAssertTrue(app.navigationBars["Income"].waitForExistence(timeout: 10))
+        let source = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Payroll Deposit'")).firstMatch
+        XCTAssertTrue(scrollTo(source))
+        source.tap()
+        XCTAssertTrue(app.navigationBars["Payroll Deposit"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Not income"].exists, "the action is right there, no long-press")
+        app.buttons["Done"].tap()
+    }
 }
