@@ -1,3 +1,4 @@
+import Charts
 import SwiftUI
 
 /// Savings, front and center: this month's goal, what's actually been
@@ -110,7 +111,13 @@ struct SavingsSheet: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView { SavingsCard(month: month, onChange: openPlan).padding() }
+            ScrollView {
+                VStack(spacing: 16) {
+                    SavingsCard(month: month, onChange: openPlan)
+                    SavingsHistoryCard(month: month)
+                }
+                .padding()
+            }
                 .background(Color(.systemGroupedBackground))
                 .navigationTitle("Savings")
                 .navigationBarTitleDisplayMode(.inline)
@@ -154,6 +161,66 @@ private struct SavingsMovesSheet: View {
             .navigationTitle("Saved in \(month.formatted(.dateTime.month(.wide)))")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+        }
+    }
+}
+
+/// Saved each month for the last year, with what the plan set aside as a
+/// line: "am I actually saving?" at a glance.
+struct SavingsHistoryCard: View {
+    @Environment(BudgetStore.self) private var store
+    let month: Date
+    @State private var selected: Date?
+
+    var body: some View {
+        let history = store.savingsHistory(endingAt: month)
+        let target = store.monthPlan(month).savings
+        if history.count >= 2 {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("SAVED EACH MONTH").font(.footnote.weight(.bold)).foregroundStyle(.secondary)
+                Chart {
+                    ForEach(history) { m in
+                        BarMark(x: .value("Month", m.month, unit: .month), y: .value("Saved", Double(m.saved) / 100))
+                            .foregroundStyle(m.planned > 0 && m.saved >= m.planned ? Theme.accent : Theme.accent.opacity(0.45))
+                            .cornerRadius(4)
+                    }
+                    if target > 0 {
+                        RuleMark(y: .value("Plan", Double(target) / 100))
+                            .foregroundStyle(.secondary)
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                    }
+                    if let selected, let m = history.first(where: { store.isInMonth($0.month, selected) }) {
+                        RuleMark(x: .value("Month", m.month, unit: .month))
+                            .foregroundStyle(.clear)
+                            .annotation(position: .top, overflowResolution: .init(x: .fit, y: .disabled)) {
+                                Text("\(m.month.formatted(.dateTime.month(.abbreviated))): \(Money.short(m.saved))")
+                                    .font(.caption.weight(.semibold))
+                            }
+                    }
+                }
+                .chartXSelection(value: $selected)
+                .chartXAxis {
+                    AxisMarks(values: .stride(by: .month)) { _ in
+                        AxisValueLabel(format: .dateTime.month(.narrow), centered: true)
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(position: .leading) { value in
+                        AxisGridLine()
+                        AxisValueLabel {
+                            if let dollars = value.as(Double.self) { Text(Money.short(Cents(dollars * 100))) }
+                        }
+                    }
+                }
+                .frame(height: 160)
+                .accessibilityLabel("Saved each month")
+                .accessibilityValue(history.map { "\($0.month.formatted(.dateTime.month(.wide))) \(Money.short($0.saved))" }
+                    .joined(separator: ", "))
+                Text(target > 0 ? "Dashed: the \(Money.short(target)) a month you plan to save. Full green: months that made it."
+                                : "Money moved into savings and investment accounts.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
+            .card()
         }
     }
 }

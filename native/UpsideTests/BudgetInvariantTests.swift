@@ -150,6 +150,16 @@ final class BudgetInvariantTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(b.expected, b.paid, "\(label): \(b.category.id) expects at least what's paid", file: file, line: line)
         }
         XCTAssertEqual(s.billLines(month).reduce(0) { $0 + $1.paid }, plan.billsPaid, "\(label)", file: file, line: line)
+        // Charts end where the cards are: the pace line's last point is the
+        // card's everyday spent; each category's is its spent.
+        XCTAssertEqual(s.runningEverydaySpent(in: month).last?.spent ?? 0, plan.everydaySpent,
+                       "\(label): the Budget pace chart ends at the card", file: file, line: line)
+        for c in s.everydayCategories {
+            XCTAssertEqual(s.runningSpent(c.id, in: month).last?.spent ?? 0, s.spent(c.id, in: month),
+                           "\(label): \(c.id)'s pace chart ends at its spent", file: file, line: line)
+        }
+        XCTAssertEqual(s.savingsHistory(endingAt: month).last?.saved, max(0, s.savedAndInvested(in: month)),
+                       "\(label): the savings chart's last bar is this month", file: file, line: line)
     }
 
     private func json(_ d: BudgetData) -> NSObject {

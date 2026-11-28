@@ -2,6 +2,12 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.38): See your pace
+- Budget card: a line of what you've spent so far this month against a dashed even pace to what there is to spend. Drag along it to read a day.
+- Each category, this month: the same line against an even pace to its limit, with last month in gray. "Dining is ahead of last month" before it goes over.
+- Savings: bars of what you saved each month for the last year, with your monthly plan as a dashed line; months that made it are full green.
+- Behind the scenes: every chart is checked to end exactly where its card's number is, in every made-up household after every step.
+
 ## 0.37: A calmer start
 - Simpler overspending: Over the plan offers savings, cards, trips or goals, nothing else, and nothing is taken on its own any more. Your last choice is offered first next time. Moving money between limits is in one place: open the category, Adjust limit.
 - Undo: Paid, Paid for the month, Stop, Not a bill, Not income, Count as income, and the answers to Needs attention questions show "Undo" for a few seconds.

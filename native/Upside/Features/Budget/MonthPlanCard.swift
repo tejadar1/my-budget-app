@@ -15,6 +15,7 @@ struct MonthPlanCard: View {
         let isPast = month < store.currentMonth
         VStack(alignment: .leading, spacing: 14) {
             header(plan, isPast: isPast)
+            pace(plan, isPast: isPast)
             bar(plan)
             ownerLegend
             planToggle(plan)
@@ -45,6 +46,16 @@ struct MonthPlanCard: View {
                 .minimumScaleFactor(0.6).lineLimit(1)
             Text(subtitle(plan, isPast: isPast))
                 .font(.subheadline).foregroundStyle(.white.opacity(0.86))
+        }
+    }
+
+    /// Spent so far against an even pace to what there is to spend, like
+    /// Screen Time's day: on pace or ahead, at a glance. This month only.
+    @ViewBuilder private func pace(_ plan: MonthPlan, isPast: Bool) -> some View {
+        if !isPast, plan.toSpend > 0 {
+            let days = store.calendar.range(of: .day, in: .month, for: month)?.count ?? 30
+            PaceChart(points: store.runningEverydaySpent(in: month), target: plan.toSpend,
+                      daysInMonth: days, tint: .white, faint: .white, height: 64)
         }
     }
 

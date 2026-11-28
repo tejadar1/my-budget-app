@@ -63,6 +63,21 @@ struct CategoryDetailView: View {
                 }
             }
 
+            if isCurrent {
+                let days = store.calendar.range(of: .day, in: .month, for: month)?.count ?? 30
+                let lastMonth = store.runningSpent(categoryId, in: store.month(-1, from: month))
+                Section {
+                    PaceChart(points: store.runningSpent(categoryId, in: month), target: limit,
+                              daysInMonth: days, compare: lastMonth, height: 110)
+                        .padding(.vertical, 6)
+                } header: {
+                    Text("This month so far")
+                } footer: {
+                    Text(limit > 0 ? "Dashed: an even pace to your \(Money.short(limit)) limit. Gray: last month."
+                                   : "Gray: last month.")
+                }
+            }
+
             TrendSection(categoryId: categoryId, month: month,
                          limit: limit > 0 ? limit : nil, isCurrent: isCurrent) { picked in
                 if picked != month { drill = MonthRef(date: picked) }
