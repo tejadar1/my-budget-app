@@ -3,6 +3,7 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next (0.37): A calmer start
+- Fixed: when choosing what gives used up all of a month's savings, the Savings card said "Nothing set aside yet. Pick an amount in Plan", as if you'd never set one. It says "$0 to save in November. You planned $700. All of it went to paying for overspending this month." When only part went, it says how much ("$700 every month, $400 less for overspending this month").
 - Start the month in three steps: in the first days of a month, Needs attention offers "Start December": wrap up November, check the income to plan on, then your plan. Each step opens the screen that already does it and comes back; done steps get a check. "Done for now" leaves the rest in Plan.
 - Calmer Budget: Needs attention shows the three most important things, with "Show 4 more" for the rest.
 - One vocabulary: "to spend" and "spending money", "left to spend", "limit", "not in a limit", "set aside", "held" mean one thing each, everywhere.

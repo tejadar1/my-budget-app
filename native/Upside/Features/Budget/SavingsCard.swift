@@ -12,6 +12,9 @@ struct SavingsCard: View {
     var body: some View {
         let plan = store.monthPlan(month)
         let goal = plan.savings
+        // Savings this month that went to paying for overspending.
+        let cut = store.cut(.savings, in: month)
+        let monthName = month.formatted(.dateTime.month(.wide))
         let saved = store.savedAndInvested(in: month)
         let usual = store.usual({ store.savedAndInvested(in: $0) }, before: month)
         let payoff = store.extraCardPayoff(in: month)
@@ -22,7 +25,7 @@ struct SavingsCard: View {
                     Text("SAVINGS").font(.footnote.weight(.bold)).foregroundStyle(.secondary)
                     Spacer()
                     if let onChange {
-                        Button(goal > 0 ? "Change in Plan" : "Set in Plan", action: onChange)
+                        Button(goal + cut > 0 ? "Change in Plan" : "Set in Plan", action: onChange)
                             .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.accent)
                     }
                 }
@@ -33,7 +36,13 @@ struct SavingsCard: View {
                         Text("saved of \(Money.short(goal))").foregroundStyle(.secondary)
                     }
                     SplitBar(fraction: Double(saved) / Double(goal), fill: Theme.accent, height: 6)
-                    Text(breakdown(plan, goal: goal) + ". Counts money moved into savings and investment accounts.")
+                    Text(breakdown(plan, goal: goal, cut: cut) + ". Counts money moved into savings and investment accounts.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                } else if cut > 0 {
+                    // Planned, then given up to pay for overspending: say so,
+                    // not "nothing set aside".
+                    Text("$0 to save in \(monthName)").font(.title3.weight(.semibold))
+                    Text("You planned \(Money.short(cut)). All of it went to paying for overspending this month. Next month goes back to your plan.")
                         .font(.footnote).foregroundStyle(.secondary)
                 } else {
                     Text("Nothing set aside yet").font(.title3.weight(.semibold))
@@ -69,11 +78,13 @@ struct SavingsCard: View {
             .sheet(isPresented: $showMoves) { SavingsMovesSheet(month: month) }
     }
 
-    private func breakdown(_ plan: MonthPlan, goal: Cents) -> String {
-        let monthly = goal - plan.savingsExtra
-        if plan.savingsExtra == 0 { return "\(Money.short(monthly)) every month" }
-        if monthly == 0 { return "\(Money.short(plan.savingsExtra)) just this month" }
-        return "\(Money.short(monthly)) every month + \(Money.short(plan.savingsExtra)) extra this month"
+    private func breakdown(_ plan: MonthPlan, goal: Cents, cut: Cents) -> String {
+        // What you planned, before anything went to overspending.
+        let monthly = goal + cut - plan.savingsExtra
+        let less = cut > 0 ? ", \(Money.short(cut)) less for overspending this month" : ""
+        if plan.savingsExtra == 0 { return "\(Money.short(monthly)) every month" + less }
+        if monthly == 0 { return "\(Money.short(plan.savingsExtra)) just this month" + less }
+        return "\(Money.short(monthly)) every month + \(Money.short(plan.savingsExtra)) extra this month" + less
     }
 
     private func status(_ plan: MonthPlan, left: Cents) -> String {
