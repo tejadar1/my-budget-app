@@ -14,6 +14,9 @@ struct MonthStartSheet: View {
         let lastName = store.month(-1, from: month).formatted(.dateTime.month(.wide))
         let start = store.monthStart()
         let plan = store.monthPlan(month)
+        // Last month's decisions, whether or not the start is still offered,
+        // so this page and Needs attention never disagree.
+        let wrapUpLeft = store.monthCheckIn().map { [$0.savingsShort, $0.cardsShort, $0.unspent, $0.overspent].filter { $0 > 0 }.count } ?? 0
         NavigationStack {
             List {
                 Section {
@@ -22,11 +25,11 @@ struct MonthStartSheet: View {
                         .listRowBackground(Color.clear)
                 }
 
-                step(1, "Wrap up \(lastName)", done: (start?.wrapUpLeft ?? 0) == 0,
-                     detail: (start?.wrapUpLeft ?? 0) == 0
+                step(1, "Wrap up \(lastName)", done: wrapUpLeft == 0,
+                     detail: wrapUpLeft == 0
                         ? "Nothing left to decide."
-                        : "\(start!.wrapUpLeft) thing\(start!.wrapUpLeft == 1 ? "" : "s") to decide: what was left, saved or paid.") {
-                    if (start?.wrapUpLeft ?? 0) > 0 {
+                        : "\(wrapUpLeft) thing\(wrapUpLeft == 1 ? "" : "s") to decide: what was left, saved or paid.") {
+                    if wrapUpLeft > 0 {
                         Button("Wrap up") { open(.checkIn) }.buttonStyle(.borderedProminent).tint(Theme.accent)
                     }
                 }
@@ -59,7 +62,7 @@ struct MonthStartSheet: View {
                         if start == nil || start!.allDone { dismiss() } else { store.finishMonthStart(); dismiss() }
                         Haptics.success()
                     } label: {
-                        Text(start == nil ? "All set for \(name)" : "Done for now")
+                        Text(start == nil && wrapUpLeft == 0 ? "All set for \(name)" : "Done for now")
                             .font(.headline).frame(maxWidth: .infinity, minHeight: 44)
                     }
                     .buttonStyle(.borderedProminent).buttonBorderShape(.capsule).tint(Theme.accent)

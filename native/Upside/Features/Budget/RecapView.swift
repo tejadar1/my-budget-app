@@ -83,11 +83,15 @@ struct RecapView: View {
 
     var body: some View {
         // Judged against the plan as made; mid-month adjustments show beside it.
-        let everyday = store.expenseCategories.filter { $0.group != "Trips" }
-        let limit = everyday.compactMap { store.originalLimit($0, in: month) }.reduce(0, +)
-        let adjusted = store.totalLimit(in: month)
-        let spent = store.totalSpent(in: month)
-        let usual = store.averageTotal(before: month)
+        // The verdict is everyday spending against everyday limits, as
+        // planned: bills and trips aren't in limits, so they're not in it.
+        // (Counting all spending against everyday limits made a month with
+        // rent look thousands over, or a light month look under.)
+        let planned = store.everydayCategories.filter { store.originalLimit($0, in: month) != nil }
+        let limit = planned.compactMap { store.originalLimit($0, in: month) }.reduce(0, +)
+        let spent = planned.reduce(0) { $0 + store.spent($1.id, in: month) }
+        let usual: Cents? = planned.isEmpty ? nil
+            : planned.reduce(0) { $0 + (store.averageSpent($1.id, before: month) ?? 0) }
         let income = store.income(in: month)
         let allSpent = store.totalSpent(in: month, includeTrips: true)
         let byOwner = store.spentByOwner(in: month)
