@@ -15,6 +15,7 @@ struct BudgetView: View {
     /// "Is Ronald Tejada one of you?" from Needs attention.
     @State private var askHousehold: String?
     @State private var askMissed: Recurring?
+    @State private var askSubscription: Recurring?
     /// "Ron's paycheck went down $500" from Needs attention.
     @State private var askPay: BudgetStore.PayChange?
 
@@ -151,6 +152,23 @@ struct BudgetView: View {
             } message: { bill in
                 Text("Ended: its \(Money.exact(bill.amount)) a month goes back to spending money. Not yet: it stays in your bills.")
             }
+            .confirmationDialog(askSubscription.map { "Keep \(Merchant.clean($0.name))?" } ?? "",
+                                isPresented: Binding(get: { askSubscription != nil }, set: { if !$0 { askSubscription = nil } }),
+                                titleVisibility: .visible, presenting: askSubscription) { bill in
+                Button("Keep it") { Haptics.success(); withAnimation { store.keepSubscription(bill) } }
+                Button("I'm cancelling it") {
+                    Haptics.success()
+                    // Its last charge was this month (or it's due): it stops after this one.
+                    withAnimation { store.stopBill(bill, afterThisMonth: true) }
+                }
+                Button(bill.isSubscription ? "Not a subscription" : "Not a bill") {
+                    Haptics.tap(); withAnimation { store.dismissRecurring(bill.id) }
+                }
+            } message: { bill in
+                Text(bill.priceIncrease.map { up in
+                    "Now \(Money.exact(bill.amount)) a month, up \(Money.exact(up)) (\(Money.short(up * 12)) a year). Cancelling stops counting it after this month."
+                } ?? "\(Money.exact(bill.amount)) a month, \(Money.short(bill.amount * 12)) a year. Cancelling stops counting it after this month.")
+            }
         }
     }
 
@@ -171,6 +189,7 @@ struct BudgetView: View {
         case .toCheck: path.append(Route.review)
         case .household(let name): askHousehold = name
         case .billMissed(let id): askMissed = store.missedBills().first { $0.id == id }
+        case .subscription(let id): askSubscription = store.subscriptionQuestions().first { $0.id == id }
         case .payChange(let id): askPay = store.payChanges().first { $0.sourceId == id }
         case .limitsOver: sheet = .overrun(nil)
         case .autoPaid: sheet = .overrun(nil)
@@ -492,6 +511,20 @@ struct AttentionList: View {
                             ? "\(change.inARow) in a row. Plan on \(Money.short(change.newMonthly)) a month from now on?"
                             : "Plan on \(Money.short(change.newMonthly)) a month, or was it a one-off?") {
                     SymbolIcon(symbol: "arrow.down.circle.fill", color: .orange)
+                }
+            }
+        case .subscription(let id):
+            if let bill = store.subscriptionQuestions().first(where: { $0.id == id }) {
+                if let up = bill.priceIncrease {
+                    ListRow(title: "\(Merchant.clean(bill.name)) went up \(Money.exact(up))",
+                            subtitle: "Now \(Money.exact(bill.amount)) a month. Keep it?") {
+                        SymbolIcon(symbol: "arrow.up.right.circle.fill", color: .orange)
+                    }
+                } else {
+                    ListRow(title: "New: \(Merchant.clean(bill.name))",
+                            subtitle: "\(Money.exact(bill.amount)) a month since \(bill.firstDate.formatted(.dateTime.month(.wide))). Keep it?") {
+                        SymbolIcon(symbol: "sparkles", color: .purple)
+                    }
                 }
             }
         case .billMissed(let id):

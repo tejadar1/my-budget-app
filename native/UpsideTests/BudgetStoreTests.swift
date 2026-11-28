@@ -911,6 +911,34 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertNil(store.billLines(store.currentMonth).first { $0.category.id == "utilities" }, "nothing held, nothing paid")
     }
 
+    func testNewSubscriptionsAndPriceIncreasesAreAskedOnce() {
+        let store = makeStore()
+        func add(_ payee: String, _ m: Int, _ d: Int, _ cents: Cents) {
+            store.data.transactions.append(Transaction(id: "\(payee)\(m)", accountId: "r", date: date(2026, m, d),
+                                                       amount: -cents, payee: payee, categoryId: "subscriptions"))
+        }
+        for m in 7...9 { add("Netflix", m, 8, 1_549) }
+        add("Netflix", 10, 8, 1_799)                     // up $2.50
+        for m in 8...9 { add("Peacock", m, 22, 799) }    // new
+        let asked = store.subscriptionQuestions().map(\.name)
+        XCTAssertEqual(asked, ["Netflix", "Peacock"], "the increase first")
+        XCTAssertTrue(store.attention().contains(.subscription(id: store.subscriptionQuestions()[0].id)))
+
+        // Keep Netflix at $17.99: not asked again...
+        store.keepSubscription(store.subscriptionQuestions()[0])
+        XCTAssertEqual(store.subscriptionQuestions().map(\.name), ["Peacock"])
+        // A later price is a different question.
+        var later = store.recurringCharges().first { $0.name == "Netflix" }!
+        later.amount = 1_999
+        XCTAssertNotEqual(BudgetStore.subscriptionKey(later), BudgetStore.subscriptionKey(store.recurringCharges().first { $0.name == "Netflix" }!))
+
+        // "I'm cancelling it" ends the question too.
+        let peacock = store.subscriptionQuestions()[0]
+        store.stopBill(peacock, afterThisMonth: true)
+        XCTAssertTrue(store.subscriptionQuestions().isEmpty)
+        XCTAssertFalse(store.attention().contains { if case .subscription = $0 { return true } else { return false } })
+    }
+
     func testFindsSubscriptionsByPattern() {
         let store = makeStore()
         for (m, d) in [(8, 3), (9, 4), (10, 3)] {

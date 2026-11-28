@@ -7,7 +7,7 @@ struct BillsRow: View {
     var body: some View {
         let bills = store.recurringCharges()
         let due = bills.filter { !$0.paidThisMonth }
-        let flagged = bills.filter { $0.priceIncrease != nil || ($0.isNew && $0.isSubscription) }
+        let flagged = store.subscriptionQuestions()
         if !bills.isEmpty {
             NavigationLink(value: Route.bills) {
                 HStack(spacing: 14) {
@@ -296,10 +296,10 @@ private struct BillRow: View {
                     Label("Last payment in \(last.formatted(.dateTime.month(.wide).year()))", systemImage: "stop.circle")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
-                if let up = bill.priceIncrease, let before = bill.previous {
+                if !store.isKept(bill), let up = bill.priceIncrease, let before = bill.previous {
                     Label("Up \(Money.exact(up)) from \(Money.exact(before))", systemImage: "arrow.up.right")
                         .font(.footnote.weight(.semibold)).foregroundStyle(Theme.warning)
-                } else if bill.isNew && bill.isSubscription {
+                } else if !store.isKept(bill), bill.isNew && bill.isSubscription {
                     Label("New since \(bill.firstDate.formatted(.dateTime.month(.wide))). Still using it?",
                           systemImage: "sparkle")
                         .font(.footnote.weight(.semibold)).foregroundStyle(Theme.warning)
