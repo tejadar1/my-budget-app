@@ -886,6 +886,13 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertEqual(line.usual, 80_000)
         XCTAssertEqual(line.paid, 40_000)
         XCTAssertEqual(line.stillToCome, 0, "the same two bills came: nothing more is held")
+        // What the category shows when you open it.
+        let breakdown = store.billBreakdown("utilities")
+        XCTAssertEqual(Set(breakdown.items.map(\.bill.name)), ["CON EDISON", "VEOLIA"])
+        XCTAssertEqual(breakdown.items.first { $0.bill.name == "CON EDISON" }?.paid, 25_000)
+        XCTAssertEqual(breakdown.knownUsual, 80_000)
+        XCTAssertTrue(breakdown.others.isEmpty)
+        XCTAssertEqual(breakdown.line?.stillToCome, 0)
     }
 
     func testABillsCategoryYouSayIsAllPaidStopsHolding() {
@@ -897,6 +904,9 @@ final class BudgetStoreTests: XCTestCase {
         ]
         let before = store.billLines(store.currentMonth).first { $0.category.id == "utilities" }
         XCTAssertEqual(before?.stillToCome, 30_000, "its usual is held")
+        let breakdown = store.billBreakdown("utilities")
+        XCTAssertTrue(breakdown.items.isEmpty, "no regular bill recognized")
+        XCTAssertTrue(breakdown.others.isEmpty, "nothing charged yet this month")
         store.markBillCategoryDone("utilities")
         XCTAssertNil(store.billLines(store.currentMonth).first { $0.category.id == "utilities" }, "nothing held, nothing paid")
     }

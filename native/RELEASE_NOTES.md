@@ -3,6 +3,7 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next (0.36.5): One charge, once
+- Tap any bills category (Bills & subscriptions › Counted in your plan) to see what it counts before saying it's all paid: the bills Upside knows with what each paid or is due (and what it usually is), other charges this month, and why anything is held ("These bills usually come to $830 of your usual $967 here, so $137 is held for anything else"). All paid for the month is at the bottom.
 - Fixed: a pending charge stayed next to its final charge when the bank named it "pending" without flagging it (an "Uber Pending Transaction" for $132.97 beside the $138.91 ride with the tip), or when it was older than the two weeks each sync re-reads. It counted twice, and in Commuting even though the ride was Business. A pending charge now goes once its final charge arrives (same account and company, within ten days, within 30% for a tip), however old; one the bank never finished goes after three weeks.
 
 ## 0.36.4: Room that's really spare

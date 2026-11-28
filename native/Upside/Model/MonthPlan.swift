@@ -102,6 +102,45 @@ extension BudgetStore {
         .sorted { $0.expected > $1.expected }
     }
 
+    /// What a bills category counts this month, for "what's in this number":
+    /// each bill Upside knows with what it paid (or is due), the charges no
+    /// known bill explains, and how much of the usual is held for them.
+    struct BillBreakdown {
+        struct Item: Identifiable {
+            var bill: Recurring
+            /// Paid this month under its usual name (0 if paid another way, or due).
+            var paid: Cents
+            var usual: Cents
+            var markedPaid: Bool
+            var id: String { bill.id }
+        }
+        var items: [Item]
+        /// This month's charges in the category that aren't a known bill's.
+        var others: [Transaction]
+        var usual: Cents
+        /// What the known bills usually come to.
+        var knownUsual: Cents
+        var line: BillLine?
+    }
+
+    func billBreakdown(_ categoryId: String) -> BillBreakdown {
+        let month = currentMonth
+        let known = recurringCharges().filter { $0.categoryId == categoryId }
+        let said = Set(data.billsMarkedPaid ?? [])
+        let charges = spendingTransactions.filter { $0.categoryId == categoryId && isInMonth($0.date, month) }
+        let items = known.map { bill in
+            BillBreakdown.Item(bill: bill,
+                               paid: max(0, -charges.filter { Self.charge($0, isFor: bill.id) }.reduce(0) { $0 + $1.amount }),
+                               usual: billUsual(bill, before: month),
+                               markedPaid: said.contains(Self.paidKey(bill.id, month)))
+        }
+        let others = charges.filter { t in !known.contains { Self.charge(t, isFor: $0.id) } }.sorted { $0.date > $1.date }
+        let usual = max(0, (averageSpent(categoryId, before: month) ?? 0) - stoppedShare(categoryId, before: month))
+        return BillBreakdown(items: items, others: others, usual: usual,
+                             knownUsual: items.reduce(0) { $0 + $1.usual },
+                             line: billLines(month).first { $0.category.id == categoryId })
+    }
+
     /// A known bill's usual month (3-month average of its own charges).
     func billUsual(_ bill: Recurring, before month: Date) -> Cents {
         let charges = spendingTransactions.filter { $0.categoryId == bill.categoryId && Self.charge($0, isFor: bill.id) }

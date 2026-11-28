@@ -99,13 +99,18 @@ struct BillsView: View {
                                 .monospacedDigit()
                                 .foregroundStyle(line.stillToCome > 0 ? Color.primary : Theme.accent)
                         }
+                        // Every category opens to what it counts; one still
+                        // holding money can be released from there (or by swipe).
+                        let open = Button { held = line } label: {
+                            HStack { row; Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary) }
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
                         if line.stillToCome > 0 {
-                            Button { held = line } label: { row.contentShape(Rectangle()) }
-                                .buttonStyle(.plain)
-                                .swipeActions { allPaidButton(line) }
+                            open.swipeActions { allPaidButton(line) }
                                 .contextMenu { allPaidButton(line) }
                         } else {
-                            row
+                            open
                         }
                     }
                 } header: {
@@ -223,12 +228,8 @@ struct BillsView: View {
         .sheet(item: $picking) { bill in
             LastPaymentSheet(bill: bill)
         }
-        .confirmationDialog(held.map { "\($0.category.name): \(Money.short($0.stillToCome)) held" } ?? "",
-                            isPresented: Binding(get: { held != nil }, set: { if !$0 { held = nil } }),
-                            titleVisibility: .visible, presenting: held) { line in
-            Button("All paid for \(monthName)") { release(line) }
-        } message: { line in
-            Text(heldReason(line))
+        .sheet(item: $held) { line in
+            BillCategorySheet(categoryId: line.category.id, monthName: monthName) { release(line) }
         }
     }
 
@@ -236,19 +237,6 @@ struct BillsView: View {
         withAnimation { store.stopBill(bill, afterThisMonth: afterThisMonth) }
         Haptics.success()
         stopping = nil
-    }
-
-    /// Why a category still holds money: the bills still to come, or a
-    /// usual its known bills don't explain.
-    private func heldReason(_ line: BudgetStore.BillLine) -> String {
-        let bills = store.recurringCharges().filter { $0.categoryId == line.category.id }
-        let due = bills.filter { !$0.paidThisMonth }.map { Merchant.clean($0.name) }
-        let paid = bills.filter(\.paidThisMonth).map { Merchant.clean($0.name) }
-        if !due.isEmpty {
-            return "Still to come: \(due.joined(separator: ", ")). If you've paid already, tap All paid."
-        }
-        let paidText = paid.isEmpty ? "" : "\(paid.joined(separator: " and ")) \(paid.count == 1 ? "is" : "are") paid. "
-        return paidText + "Held because this usually comes to \(Money.short(line.usual)) a month. Nothing else coming? Tap All paid."
     }
 
     /// Swipe on a category: everything this month is paid, stop holding money.
@@ -363,5 +351,106 @@ private struct LastPaymentSheet: View {
             }
         }
         .presentationDetents([.medium])
+    }
+}
+
+/// What one bills category counts this month, before you say it's all paid:
+/// the bills Upside knows (paid, due, marked paid), other charges, and the
+/// part of the usual that's held for anything else.
+private struct BillCategorySheet: View {
+    @Environment(BudgetStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    let categoryId: String
+    let monthName: String
+    let release: () -> Void
+
+    var body: some View {
+        let b = store.billBreakdown(categoryId)
+        let held = b.line?.stillToCome ?? 0
+        let name = store.category(categoryId)?.name ?? "Bills"
+        NavigationStack {
+            List {
+                Section {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(held > 0 ? "\(Money.short(held)) held" : "Nothing held").heroNumber(34)
+                        Text("paid \(Money.short(b.line?.paid ?? 0)) in \(monthName) · usually \(Money.short(b.usual))")
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 4)
+                }
+
+                if !b.items.isEmpty {
+                    Section {
+                        ForEach(b.items) { item in
+                            HStack(alignment: .firstTextBaseline) {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(Merchant.clean(item.bill.name))
+                                    Text(status(item)).font(.footnote)
+                                        .foregroundStyle(item.bill.paidThisMonth ? Theme.accent : .secondary)
+                                }
+                                Spacer()
+                                VStack(alignment: .trailing, spacing: 3) {
+                                    Text(Money.exact(item.paid > 0 ? item.paid : item.bill.amount)).monospacedDigit()
+                                    Text("usually \(Money.short(item.usual))").font(.footnote).foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    } header: {
+                        Text("Bills Upside knows")
+                    }
+                }
+
+                if !b.others.isEmpty {
+                    Section("Other charges this month") {
+                        ForEach(b.others) { TransactionRow(transaction: $0) }
+                    }
+                }
+
+                Section {
+                    Text(explanation(b, held: held)).font(.subheadline)
+                    if held > 0 {
+                        Button {
+                            release()
+                            dismiss()
+                        } label: {
+                            Text("All paid for \(monthName)").font(.headline).frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .buttonStyle(.borderedProminent).buttonBorderShape(.capsule).tint(Theme.accent)
+                        .listRowBackground(Color.clear)
+                    }
+                } footer: {
+                    if held > 0 { Text("Only \(monthName). The \(Money.short(held)) goes back to your spending money.") }
+                }
+            }
+            .navigationTitle(name)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    private func status(_ item: BudgetStore.BillBreakdown.Item) -> String {
+        if item.markedPaid { return "Marked paid" }
+        if item.bill.paidThisMonth {
+            return item.paid > 0 ? "Paid \(item.bill.lastDate.formatted(.dateTime.month(.abbreviated).day()))"
+                                 : "Paid under another name"
+        }
+        if let due = item.bill.dueDate { return "Due \(due.formatted(.dateTime.month(.abbreviated).day()))" }
+        return "Not yet this month"
+    }
+
+    private func explanation(_ b: BudgetStore.BillBreakdown, held: Cents) -> String {
+        let due = b.items.filter { !$0.bill.paidThisMonth }
+        if held == 0 { return "Everything expected here this month is in." }
+        if !due.isEmpty {
+            return "Held for \(due.map { Merchant.clean($0.bill.name) }.joined(separator: " and ")), still to come. Paid somewhere Upside can't see? All paid releases it."
+        }
+        let other = max(0, b.usual - b.knownUsual)
+        if b.items.isEmpty {
+            return "Upside doesn't recognize a regular bill here yet, so it holds your usual \(Money.short(b.usual)). Nothing else coming? All paid releases it."
+        }
+        return "These bills usually come to \(Money.short(b.knownUsual)) of your usual \(Money.short(b.usual)) here, so \(Money.short(other)) is held for anything else. Nothing else coming? All paid releases it."
     }
 }
