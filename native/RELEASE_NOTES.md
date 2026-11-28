@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next (0.36.3): Every number agrees
+## 0.36.3: Every number agrees
 - Fixed (found by the new checks): a refund in a category with nothing bought yet that month showed the category at $0 but still took the refund off the month's total, so categories didn't add up to Spent. Totals now add up category by category.
 - Fixed: a category whose limit was lowered to $0 this month said "Skipping this month" even after you spent there. It says "$X over $0 limit" now, like any category over its limit.
 - Fixed: categories with no bar (no limit, or skipping) sat indented, out of line with the rest.
