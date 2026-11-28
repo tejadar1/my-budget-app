@@ -7,6 +7,8 @@ Newest first. The top section goes into TestFlight's "What to Test" for each bui
 - Undo: Paid, Paid for the month, Stop, Not a bill, Not income, Count as income, and the answers to Needs attention questions show "Undo" for a few seconds.
 - Bills have two actions: swipe right Paid, swipe left Stop. "It's not a bill" is one of Stop's choices.
 - Savings: card paydown is labeled as not savings.
+- One place for saving: Budget's "Saving & trips" shows Savings (moved this month of what you planned), each goal, and Trips together, with one total a month at the top. Savings used to sit alone above Categories, apart from goals.
+- Trips read the same with or without a trip fund: "$417 a month · on track", or how much a month short.
 - Fixed: the month recap judged all spending, bills included, against everyday limits, so a month with rent could look far over (or a light one under). It now compares everyday spending in categories with a limit to those limits, and to their usual.
 - Fixed: when choosing what gives used up all of a month's savings, the Savings card said "Nothing set aside yet. Pick an amount in Plan", as if you'd never set one. It says "$0 to save in November. You planned $700. All of it went to paying for overspending this month." When only part went, it says how much ("$700 every month, $400 less for overspending this month").
 - Start the month in three steps: in the first days of a month, Needs attention offers "Start December": wrap up November, check the income to plan on, then your plan. Each step opens the screen that already does it and comes back; done steps get a check. "Done for now" leaves the rest in Plan.

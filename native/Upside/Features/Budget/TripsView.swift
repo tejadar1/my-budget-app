@@ -70,7 +70,10 @@ struct TripsCard: View {
             parts.append(need.extraPerMonth == 0 ? "on track"
                          : "\(Money.short(need.extraPerMonth)) a month short")
         } else if store.data.tripFund == nil, let next, let plan = store.tripSchedule(next) {
-            parts.append("saving \(Money.short(plan.perMonth)) a month for it")
+            // Without a fund each trip sets aside its own share: the same
+            // story as a fund, "$X a month · on track".
+            parts.append("\(Money.short(plan.perMonth)) a month")
+            parts.append("on track")
         } else if next == nil {
             parts.append("no trips planned")
         }
@@ -317,7 +320,7 @@ struct TripCard: View {
                         .font(.caption)
                         .foregroundStyle(need.covered ? Theme.accent : Theme.warning)
                 } else if store.data.tripFund == nil, let plan = store.tripSchedule(trip), plan.end >= store.currentMonth {
-                    Text("Saving \(Money.short(plan.perMonth))/month · \(plan.start.formatted(.dateTime.month(.abbreviated)))–\(plan.end.formatted(.dateTime.month(.abbreviated)))")
+                    Text("\(Money.short(plan.perMonth)) a month until \(plan.end.formatted(.dateTime.month(.abbreviated))) · on track")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }

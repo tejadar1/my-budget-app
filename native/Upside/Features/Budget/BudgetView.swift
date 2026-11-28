@@ -51,9 +51,10 @@ struct BudgetView: View {
                         if !store.data.transactions.isEmpty {
                             MonthPlanCard(month: month, onSavings: isCurrentMonth ? { sheet = .plan } : nil)
                             if isCurrentMonth { AttentionList(open: open) }
-                            SavingsRow(month: month) { sheet = .savings(month) }
                             CategoryList(month: month).id("categories")
-                            VStack(alignment: .leading, spacing: 20) { GoalsSection() }.id("goals")
+                            VStack(alignment: .leading, spacing: 20) {
+                                GoalsSection(month: month) { sheet = .savings(month) }
+                            }.id("goals")
                             MoreList(month: month) { sheet = .recap($0) }.id("more")
                         }
                     }

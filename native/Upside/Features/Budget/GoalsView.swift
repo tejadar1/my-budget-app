@@ -1,17 +1,26 @@
 import SwiftUI
 
-/// Goals on Budget: each with its progress and what it takes a month,
-/// then the trip fund and trips (unless trips are off). One Add button.
+/// Everything set aside on Budget, in one place: savings, each goal, and
+/// trips (unless they're off). One Add button. Savings and goals used to
+/// sit apart, which made "how much am I saving?" two answers.
 struct GoalsSection: View {
     @Environment(BudgetStore.self) private var store
+    var month: Date? = nil
+    /// Opens the Savings sheet.
+    var openSavings: () -> Void = {}
     @State private var editing: Goal?
     @State private var adding = false
     @State private var addingTrip = false
 
     var body: some View {
         let tripsOn = store.data.tripsOff != true
-        SectionTitle(text: tripsOn ? "Goals & trips" : "Goals",
-                     trailing: store.goals.isEmpty ? nil : "\(Money.short(store.goalsSetAside(in: store.currentMonth))) a month")
+        let m = month ?? store.currentMonth
+        let plan = store.monthPlan(m)
+        let monthly = plan.savings + plan.goals + (tripsOn ? plan.trips : 0)
+        SectionTitle(text: tripsOn ? "Saving & trips" : "Saving",
+                     trailing: monthly > 0 ? "\(Money.short(monthly)) a month" : nil)
+        Button(action: openSavings) { SavingsGoalCard(month: m) }
+            .buttonStyle(.plain)
         ForEach(store.goals) { goal in
             Button { editing = goal } label: { GoalCard(goal: goal) }
                 .buttonStyle(.plain)
@@ -225,5 +234,42 @@ struct GoalEditor: View {
             TextField("$0", value: value, format: .currency(code: "USD").precision(.fractionLength(0)))
                 .keyboardType(.numberPad).multilineTextAlignment(.trailing).frame(maxWidth: 140)
         }
+    }
+}
+
+/// Savings, shown like a goal: what's been moved into savings this month
+/// against what the plan sets aside.
+private struct SavingsGoalCard: View {
+    @Environment(BudgetStore.self) private var store
+    let month: Date
+
+    var body: some View {
+        let plan = store.monthPlan(month)
+        let goal = plan.savings
+        let cut = store.cut(.savings, in: month)
+        let saved = store.savedAndInvested(in: month)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "banknote.fill").foregroundStyle(Theme.accent)
+                Text("Savings").font(.headline)
+                Spacer()
+                Text(goal > 0 ? "\(Money.short(saved)) of \(Money.short(goal))"
+                              : goal + cut > 0 ? "$0 this month" : "Not set")
+                    .font(.subheadline).monospacedDigit().foregroundStyle(.secondary)
+                Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
+            }
+            if goal > 0 {
+                SplitBar(fraction: min(1, Double(max(0, saved)) / Double(goal)), fill: Theme.accent, height: 6)
+            }
+            Text(detail(goal: goal, cut: cut, saved: saved)).font(.footnote).foregroundStyle(.secondary)
+        }
+        .card()
+    }
+
+    private func detail(goal: Cents, cut: Cents, saved: Cents) -> String {
+        if goal == 0 && cut > 0 { return "All \(Money.short(cut)) went to paying for overspending this month" }
+        if goal == 0 { return "Pay yourself first: set an amount in Plan" }
+        let less = cut > 0 ? " · \(Money.short(cut)) less for overspending" : ""
+        return (saved >= goal ? "Done for the month" : "Money moved into savings and investments") + less
     }
 }
