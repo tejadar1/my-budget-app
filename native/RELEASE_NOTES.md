@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next (0.36.5): One charge, once
+## 0.36.5: One charge, once
 - New subscriptions and price increases ask once, in Needs attention: "New: Peacock, $7.99 a month since August. Keep it?" or "Netflix went up $2.50. Now $17.99 a month. Keep it?" Keep it, I'm cancelling it (it stops counting after this month), or Not a subscription. A later increase asks again.
 - Income: swipe left on a source that isn't income (a friend paying you back) and tap Not income. Its deposits leave income and wait in Check these to be sorted, and Upside forgets that they're income.
 - Tap any bills category (Bills & subscriptions › Counted in your plan) to see what it counts before saying it's all paid: the bills Upside knows with what each paid or is due (and what it usually is), other charges this month, and why anything is held ("These bills usually come to $830 of your usual $967 here, so $137 is held for anything else"). All paid for the month is at the bottom.
