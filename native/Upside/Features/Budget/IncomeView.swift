@@ -5,6 +5,7 @@ import SwiftUI
 /// aren't counted, so a paycheck taken for a transfer is easy to spot.
 struct IncomeView: View {
     @Environment(BudgetStore.self) private var store
+    @State private var opened: BudgetStore.IncomeSource?
 
     var body: some View {
         let month = store.currentMonth
@@ -33,14 +34,14 @@ struct IncomeView: View {
             if !sources.isEmpty {
                 Section {
                     ForEach(sources) { source in
-                        SourceRow(source: source)
+                        Button { opened = source } label: { SourceRow(source: source).contentShape(Rectangle()) }
+                            .buttonStyle(.plain)
                             .swipeActions { notIncomeButton(source) }
-                            .contextMenu { notIncomeButton(source) }
                     }
                 } header: {
                     Text("Where it comes from")
                 } footer: {
-                    Text("A usual month from each. Tap a name to change whose it is. Not income? Swipe left.")
+                    Text("A usual month from each. Tap one for its paychecks; not income? Swipe left.")
                 }
             }
 
@@ -109,6 +110,7 @@ struct IncomeView: View {
         }
         .navigationTitle("Income")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $opened) { IncomeSourceSheet(source: $0) }
     }
 
     /// Swipe: a source that isn't income (someone paying you back).
@@ -168,5 +170,48 @@ private struct SourceRow: View {
         case .biweekly: return who + " · every 2 weeks"
         case .other: return source.estimated ? who + " · estimated" : who
         }
+    }
+}
+
+/// One income source: whose it is, what it adds to a usual month, every
+/// paycheck from it, and the things you can do (still paying, not income).
+private struct IncomeSourceSheet: View {
+    @Environment(BudgetStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    let source: BudgetStore.IncomeSource
+
+    var body: some View {
+        let checks = store.incomeTransactions.filter { store.payerKey($0) == source.id }.sorted { $0.date > $1.date }
+        NavigationStack {
+            List {
+                Section {
+                    LabeledContent("A usual month", value: source.stopped ? "not counted" : Money.short(source.monthly))
+                    Picker("Whose", selection: Binding(get: { source.owner }, set: { store.setIncomeOwner(source.id, $0) })) {
+                        ForEach(Owner.pickable) { Text(store.people.name($0)).tag($0) }
+                    }
+                }
+                Section("Paychecks") {
+                    ForEach(checks.prefix(24)) { TransactionRow(transaction: $0) }
+                }
+                Section {
+                    if source.stopped {
+                        Button("It's still paying") {
+                            store.undoable("\(Merchant.clean(source.name)) still counted") { store.setStillPaying(source.id, true) }
+                            dismiss()
+                        }
+                    }
+                    Button("Not income", role: .destructive) {
+                        store.undoable("\(Merchant.clean(source.name)) isn't income") { store.removeIncomeSource(source.id) }
+                        dismiss()
+                    }
+                } footer: {
+                    Text("Not income: someone paying you back, or your own money moving. Its deposits go to Check these to sort.")
+                }
+            }
+            .navigationTitle(Merchant.clean(source.name))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+        }
+        .presentationDetents([.medium, .large])
     }
 }

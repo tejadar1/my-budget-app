@@ -83,7 +83,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
             return [
                 "Upside sorts a purchase by what you chose for that store before, then by stores it knows, then by your bank's hint.",
                 "Anything it isn't sure about goes to Check these. Confirm it once and the store is remembered.",
-                "Fix any purchase in place: swipe it for Move or Business, or long-press to move it straight to a category.",
+                "Fix any purchase in place: tap it to move it to another category, or swipe left for Business or Transfer.",
                 "Business purchases stay out of your budget, and money paid back for them isn't income.",
             ]
         case .people:

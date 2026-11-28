@@ -484,13 +484,6 @@ struct AttentionList: View {
                                 .accessibilityLabel("Hide until it changes")
                             }
                         }
-                        .contextMenu {
-                            if item.hideableAmount != nil {
-                                Button("Hide until it changes", systemImage: "eye.slash") {
-                                    withAnimation { store.hideAttention(item) }
-                                }
-                            }
-                        }
                         if item != items.last { RowDivider() }
                     }
                     if all.count > Self.shown {
@@ -685,19 +678,6 @@ struct CategoryList: View {
                             CategoryRow(category: category, month: month)
                         }
                         .buttonStyle(.plain)
-                        .contextMenu {
-                            if month == store.currentMonth {
-                                Button("Adjust limit", systemImage: "slider.horizontal.3") {
-                                    adjusting = CategoryRef(id: category.id)
-                                }
-                            }
-                            NavigationLink(value: Route.category(category.id, month)) {
-                                Label("See purchases", systemImage: "list.bullet")
-                            }
-                            NavigationLink(value: Route.trends) {
-                                Label("Trends", systemImage: "chart.line.uptrend.xyaxis")
-                            }
-                        }
                         if category.id != visible.last?.id || rows.count > shown { RowDivider() }
                     }
                     if rows.count > shown {

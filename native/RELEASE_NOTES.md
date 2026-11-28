@@ -2,6 +2,13 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.38.1): Tap or swipe
+- Nothing is hidden behind a long-press any more. Everything is a tap or a swipe:
+  - Goals: Add an extra $100, Bill paid start over, and Delete are on the goal's page.
+  - Transactions: swipe left for Business or Transfer; tap a purchase to move it.
+  - Categories: tap one, then Adjust limit. Needs attention: the ✕ hides.
+- Things that look tappable now open: an income source (its paychecks, whose it is, Still paying, Not income), a bill (its charges, usual amount, Paid this month, Stop), and Trips on the Budget card.
+
 ## 0.38: See your pace
 - Budget card: a line of what you've spent so far this month against a dashed even pace to what there is to spend. Drag along it to read a day.
 - Each category, this month: the same line against an even pace to its limit, with last month in gray. "Dining is ahead of last month" before it goes over.

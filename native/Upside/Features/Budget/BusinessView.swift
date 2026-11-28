@@ -35,7 +35,7 @@ struct BusinessView: View {
         .overlay {
             if all.isEmpty {
                 ContentUnavailableView("No business expenses", systemImage: "briefcase",
-                                       description: Text("Long-press a purchase in Transactions and choose Business expense."))
+                                       description: Text("Swipe left on a purchase in Transactions and tap Business."))
             }
         }
         .navigationTitle("Business")

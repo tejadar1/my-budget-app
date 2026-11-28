@@ -59,6 +59,8 @@ struct BillsView: View {
     @State private var picking: Recurring?
     /// The bills category tapped, to say what's held and offer Paid for the month.
     @State private var held: BudgetStore.BillLine?
+    /// A bill tapped: its history and what you can do.
+    @State private var openedBill: Recurring?
     /// Just released with Paid for the month: said once, where the money went.
     @State private var released: (name: String, amount: Cents)?
 
@@ -108,7 +110,6 @@ struct BillsView: View {
                         .buttonStyle(.plain)
                         if line.stillToCome > 0 {
                             open.swipeActions { allPaidButton(line) }
-                                .contextMenu { allPaidButton(line) }
                         } else {
                             open
                         }
@@ -129,9 +130,8 @@ struct BillsView: View {
             if !due.isEmpty {
                 Section {
                     ForEach(due) { b in
-                        BillRow(bill: b, when: b.dueDate.map { "Due \(day($0))" } ?? "").swipeActions { stopButton(b) }
+                        Button { openedBill = b } label: { BillRow(bill: b, when: b.dueDate.map { "Due \(day($0))" } ?? "").contentShape(Rectangle()) }.buttonStyle(.plain).swipeActions { stopButton(b) }
                             .swipeActions(edge: .leading) { paidButton(b) }
-                            .contextMenu { paidButton(b); stopButton(b) }
                     }
                 } header: {
                     Text("Still due")
@@ -142,16 +142,14 @@ struct BillsView: View {
             if !paid.isEmpty {
                 Section("Paid in \(monthName)") {
                     ForEach(paid) { b in
-                        BillRow(bill: b, when: "Paid \(day(b.lastDate))").swipeActions { stopButton(b) }
-                            .contextMenu { stopButton(b) }
+                        Button { openedBill = b } label: { BillRow(bill: b, when: "Paid \(day(b.lastDate))").contentShape(Rectangle()) }.buttonStyle(.plain).swipeActions { stopButton(b) }
                     }
                 }
             }
             if !subscriptions.isEmpty {
                 Section {
                     ForEach(subscriptions) { s in
-                        BillRow(bill: s, when: "\(Money.short(s.amount * 12)) a year").swipeActions { stopButton(s) }
-                            .contextMenu { stopButton(s) }
+                        Button { openedBill = s } label: { BillRow(bill: s, when: "\(Money.short(s.amount * 12)) a year").contentShape(Rectangle()) }.buttonStyle(.plain).swipeActions { stopButton(s) }
                     }
                 } header: {
                     Text("Subscriptions")
@@ -232,6 +230,9 @@ struct BillsView: View {
         }
         .sheet(item: $picking) { bill in
             LastPaymentSheet(bill: bill)
+        }
+        .sheet(item: $openedBill) { bill in
+            BillSheet(bill: bill, stop: { openedBill = nil; DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { stopping = bill } })
         }
         .sheet(item: $held) { line in
             BillCategorySheet(categoryId: line.category.id, monthName: monthName) { release(line) }
@@ -450,5 +451,49 @@ private struct BillCategorySheet: View {
             return "Upside doesn't recognize a regular bill here yet, so it holds your usual \(Money.short(b.usual)). Nothing else coming? Paid for the month releases it."
         }
         return "These bills usually come to \(Money.short(b.knownUsual)) of your usual \(Money.short(b.usual)) here, so \(Money.short(other)) is held for anything else. Nothing else coming? Paid for the month releases it."
+    }
+}
+
+/// One bill: what it usually is, its recent charges, and Paid / Stop.
+private struct BillSheet: View {
+    @Environment(BudgetStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    let bill: Recurring
+    /// Opens Stop's question (when it stops) on the Bills screen.
+    let stop: () -> Void
+
+    var body: some View {
+        let charges = store.spendingTransactions
+            .filter { $0.amount < 0 && BudgetStore.charge($0, isFor: bill.id) }
+            .sorted { $0.date > $1.date }
+        NavigationStack {
+            List {
+                Section {
+                    LabeledContent("Latest", value: Money.exact(bill.amount))
+                    LabeledContent("Usually", value: Money.short(store.billUsual(bill, before: store.currentMonth)))
+                    LabeledContent("This month", value: bill.paidThisMonth ? "Paid"
+                                   : bill.dueDate.map { "Due \($0.formatted(.dateTime.month(.abbreviated).day()))" } ?? "Not yet")
+                    if let category = store.category(bill.categoryId) { LabeledContent("Category", value: category.name) }
+                }
+                Section("Charges") {
+                    ForEach(charges.prefix(12)) { TransactionRow(transaction: $0) }
+                }
+                Section {
+                    if !bill.paidThisMonth {
+                        Button("Paid this month") {
+                            store.undoable("\(Merchant.clean(bill.name)) marked paid") { store.markBillPaid(bill.id) }
+                            dismiss()
+                        }
+                    }
+                    Button("Stop…", role: .destructive) { stop() }
+                } footer: {
+                    Text("Paid: paid somewhere Upside can't see. Stop: cancelled, paid off, or not a bill.")
+                }
+            }
+            .navigationTitle(Merchant.clean(bill.name))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+        }
+        .presentationDetents([.medium, .large])
     }
 }

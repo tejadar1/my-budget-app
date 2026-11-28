@@ -24,16 +24,6 @@ struct GoalsSection: View {
         ForEach(store.goals) { goal in
             Button { editing = goal } label: { GoalCard(goal: goal) }
                 .buttonStyle(.plain)
-                .contextMenu {
-                    if goal.accountId == nil {
-                        // Each month's set-aside is added on its own; this is extra.
-                        Button("Add an extra $100") { withAnimation { store.addToGoal(goal.id, 10_000) } }
-                    }
-                    if goal.kind == .bill {
-                        Button("Bill paid, start over") { withAnimation { store.goalUsed(goal.id) } }
-                    }
-                    Button("Delete goal", role: .destructive) { withAnimation { store.deleteGoal(goal.id) } }
-                }
         }
         if tripsOn { TripsSummary() }
         let addLabel = Label(tripsOn ? "Add a goal or trip" : "Add a goal", systemImage: "plus.circle.fill")
@@ -167,7 +157,23 @@ struct GoalEditor: View {
                 }
                 if let goal {
                     Section {
-                        Button("Delete goal", role: .destructive) { store.deleteGoal(goal.id); dismiss() }
+                        if goal.accountId == nil {
+                            // Each month's set-aside is added on its own; this is extra.
+                            Button("Add an extra $100") {
+                                store.undoable("$100 added to \(goal.name)") { store.addToGoal(goal.id, 10_000) }
+                                dismiss()
+                            }
+                        }
+                        if goal.kind == .bill {
+                            Button("Bill paid, start over") {
+                                store.undoable("\(goal.name) starts over") { store.goalUsed(goal.id) }
+                                dismiss()
+                            }
+                        }
+                        Button("Delete goal", role: .destructive) {
+                            store.undoable("\(goal.name) deleted") { store.deleteGoal(goal.id) }
+                            dismiss()
+                        }
                     }
                 }
             }

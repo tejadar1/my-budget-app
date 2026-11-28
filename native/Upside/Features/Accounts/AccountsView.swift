@@ -43,12 +43,6 @@ struct AccountsView: View {
                                 WalletCard(account: account)
                             }
                             .buttonStyle(.plain)
-                            // Long-press to hide without opening the account.
-                            .contextMenu {
-                                Button { withAnimation { store.setHidden(account.id, true) } } label: {
-                                    Label("Hide account", systemImage: "eye.slash")
-                                }
-                            }
                         }
                     }
 

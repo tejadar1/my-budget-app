@@ -40,7 +40,6 @@ struct TransactionsView: View {
                     Section {
                         ForEach(entry.value) { t in
                             TransactionRow(transaction: t)
-                                .contextMenu { categoryMenu(for: t) }
                                 .swipeActions(edge: .leading) {
                                     if t.isHunch {
                                         Button { withAnimation { store.confirm(t.id) } } label: {
@@ -50,6 +49,14 @@ struct TransactionsView: View {
                                     }
                                 }
                                 .swipeActions(edge: .trailing) {
+                                    // Tap the purchase to move it to another category.
+                                    Button {
+                                        Haptics.tap()
+                                        withAnimation { store.setBusiness(t.id, !t.isBusiness) }
+                                    } label: {
+                                        Label(t.isBusiness ? "Not business" : "Business", systemImage: "briefcase.fill")
+                                    }
+                                    .tint(.brown)
                                     Button {
                                         withAnimation {
                                             if t.isTransfer { store.setTransfer(t.id, false) }

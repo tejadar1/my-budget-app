@@ -117,7 +117,10 @@ struct MonthPlanCard: View {
                 }
                 .buttonStyle(.plain)
             }
-            if plan.trips > 0 { line("Trips", -plan.trips, note: nil) }
+            if plan.trips > 0 {
+                NavigationLink(value: Route.trips) { line("Trips", -plan.trips, note: nil, chevron: true) }
+                    .buttonStyle(.plain)
+            }
             Divider().overlay(Color.white.opacity(0.4))
             line("To spend", plan.toSpend, note: nil, bold: true)
             // Money nothing uses: not limits, and not spending past them (as Plan counts it).

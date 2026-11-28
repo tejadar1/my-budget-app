@@ -682,29 +682,6 @@ private struct QuickActions: ViewModifier {
                     }
                     .tint(.indigo)
                 }
-                .contextMenu {
-                    Menu {
-                        ForEach(store.groupedCategories) { group in
-                            Section(group.name) {
-                                ForEach(group.categories.filter { $0.id != transaction.categoryId }) { c in
-                                    Button(c.name) {
-                                        Haptics.tap()
-                                        withAnimation { store.setCategory(transaction.id, c.id, remember: false) }
-                                    }
-                                }
-                            }
-                        }
-                    } label: {
-                        Label("Move to", systemImage: "arrow.right.circle")
-                    }
-                    Button {
-                        Haptics.tap()
-                        withAnimation { store.setBusiness(transaction.id, !transaction.isBusiness) }
-                    } label: {
-                        Label(transaction.isBusiness ? "Not a business expense" : "Business expense", systemImage: "briefcase")
-                    }
-                    Button("Edit…", systemImage: "pencil", action: edit)
-                }
         } else {
             content
         }

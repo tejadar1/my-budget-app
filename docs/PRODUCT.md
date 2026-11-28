@@ -51,3 +51,10 @@ The same thing has one name everywhere: on every screen, in How Upside works, in
 | **over**, **overspending** | Spent past a limit (or past its usual, with no limit) | "overrun", "deficit" |
 | **held** | A bill expected but not paid yet, still counted | "reserved", "pending" |
 | **choose what gives** | Paying for being over, by less savings, cards, trips, goals or limits with room left | "rebalance", "fix" |
+
+## Touch
+
+Every action is a tap or a swipe. No long-press menus: nothing on screen says
+they're there. A row that looks tappable opens; a row you'd swipe has swipe
+actions (left: the main action, e.g. Stop, Business; right: the positive one,
+e.g. Paid). Anything that changes money shows Undo.
