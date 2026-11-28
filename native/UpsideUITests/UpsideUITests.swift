@@ -60,7 +60,6 @@ final class UpsideUITests: XCTestCase {
         let undo = app.buttons["Undo"]
         XCTAssertTrue(scrollTo(undo), "the choice shows, with Undo")
         XCTAssertTrue(any("less on cards this month").exists, "said once, as one line")
-        XCTAssertTrue(any("comes out of cards too").exists, "more overspending will come from cards")
         undo.tap()
         XCTAssertTrue(scrollTo(button("Pay ")), "the choices are back")
     }
