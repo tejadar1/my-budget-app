@@ -114,8 +114,10 @@ struct BillsView: View {
                     if let released {
                         Text("\(Money.short(released.amount)) from \(released.name) is back in your spending money. Plan can save it.")
                             .foregroundStyle(Theme.accent)
+                    } else if lines.contains(where: { $0.stillToCome > 0 }) {
+                        Text("Bills still to come are held from your spending money. All paid already? Tap it.")
                     } else {
-                        Text("Bills still to come are held from your spending money. All paid already? Swipe left: All paid.")
+                        Text("Every bill this month is paid. Nothing is being held.")
                     }
                 }
             }
