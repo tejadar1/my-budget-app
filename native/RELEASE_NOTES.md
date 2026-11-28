@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next (0.38): See your pace
+## 0.38: See your pace
 - Budget card: a line of what you've spent so far this month against a dashed even pace to what there is to spend. Drag along it to read a day.
 - Each category, this month: the same line against an even pace to its limit, with last month in gray. "Dining is ahead of last month" before it goes over.
 - Savings: bars of what you saved each month for the last year, with your monthly plan as a dashed line; months that made it are full green.
