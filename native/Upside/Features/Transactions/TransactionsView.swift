@@ -126,38 +126,4 @@ struct TransactionsView: View {
         [categoryId.flatMap { store.category($0)?.name }, owner.map { store.people.name($0) }]
             .compactMap { $0 }.joined(separator: ", ")
     }
-
-    /// Long-press: pick a category right from the list.
-    @ViewBuilder private func categoryMenu(for t: Transaction) -> some View {
-        if t.isHunch, let c = store.category(t.categoryId) {
-            Button { withAnimation { store.confirm(t.id) } } label: {
-                Label("\(c.name) is right", systemImage: "checkmark")
-            }
-        }
-        Button { prompt = store.sort(t.id, as: BankSync.transferCategory) } label: {
-            Label("Card payment or transfer", systemImage: "arrow.left.arrow.right")
-        }
-        if t.isTransfer && t.amount < 0 && !BankSync.isInvestmentPayee(t.payee) {
-            Button { withAnimation { store.setSaving(t.id, !store.isMarkedSaving(t)) } } label: {
-                Label(store.isMarkedSaving(t) ? "Not savings" : "Saved & invested", systemImage: "chart.line.uptrend.xyaxis")
-            }
-        }
-        Menu {
-            ForEach(store.expenseCategories.filter { $0.group == "Bills" }) { c in
-                Button(c.name) { prompt = store.markAsBill(t.id, as: c.id) }
-            }
-        } label: {
-            Label("It's a bill", systemImage: "calendar.badge.clock")
-        }
-        Button { withAnimation { store.setBusiness(t.id, !t.isBusiness) } } label: {
-            Label(t.isBusiness ? "Not business" : "Business expense", systemImage: "briefcase")
-        }
-        ForEach(store.groupedCategories) { group in
-            Menu(group.name) {
-                ForEach(group.categories) { c in
-                    Button(c.name) { prompt = store.sort(t.id, as: c.id) }
-                }
-            }
-        }
-    }
 }

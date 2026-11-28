@@ -139,7 +139,7 @@ struct UndoToast: View {
             .background(.regularMaterial, in: Capsule())
             .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
             .padding(.horizontal, 16).padding(.bottom, 96)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .transition(.slide(from: .bottom))
             .task(id: item.id) {
                 try? await Task.sleep(for: .seconds(6))
                 withAnimation { if store.undo?.id == item.id { store.undo = nil } }

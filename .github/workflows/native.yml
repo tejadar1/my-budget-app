@@ -154,6 +154,15 @@ jobs:
             shot $mode 1g-budget-goals -demo -tab budget -scrollTo goals
             shot $mode 9-first-run -tab budget
           done
+          # The largest accessibility Text Size: nothing important cut off.
+          BIG="-UIPreferredContentSizeCategoryName UIContentSizeCategoryAccessibilityExtraExtraExtraLarge"
+          shot light big-1-budget -demo -tab budget $BIG
+          shot light big-2-accounts -demo -tab accounts $BIG
+          shot light big-2b-transactions -demo -tab transactions $BIG
+          shot light big-4-category -demo -tab budget -open category:groceries $BIG
+          shot light big-7e-bills -demo -tab budget -open bills $BIG
+          shot light big-7p-income -demo -tab budget -open income $BIG
+          shot light big-7i-plan -demo -tab budget -open priorities $BIG
           echo "Built from ${GITHUB_SHA}" > "$OUT/COMMIT.txt"
 
       - name: Publish screenshots to the previews-native branch

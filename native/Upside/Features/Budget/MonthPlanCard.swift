@@ -20,7 +20,7 @@ struct MonthPlanCard: View {
             ownerLegend
             planToggle(plan)
             if showLines {
-                lines(plan).transition(.opacity.combined(with: .move(edge: .top)))
+                lines(plan).transition(.slide(from: .top))
             }
         }
         .foregroundStyle(.white)
