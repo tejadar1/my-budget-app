@@ -59,7 +59,7 @@ struct SavingsCard: View {
                     HStack(alignment: .top) {
                         if let usual { figure("Usually moved", usual) }
                         Spacer()
-                        if payoff > 0 { figure("Extra paid on cards", payoff) }
+                        if payoff > 0 { figure("Card paydown, not savings", payoff) }
                     }
                 }
                 if !moves.isEmpty {

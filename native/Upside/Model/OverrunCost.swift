@@ -114,15 +114,18 @@ extension BudgetStore {
         let roomTotal = room.reduce(0) { $0 + $1.room }
         var options: [OverrunCost.Option] = []
         if needed > 0 {
-            if roomTotal > 0 {
-                // Limits move in $10s, so say what will really be lowered.
-                options.append(.init(source: .room, planned: roomTotal,
-                                     amount: min((needed + 999) / 1_000 * 1_000, roomTotal)))
-            }
+            // Lowering other limits isn't offered here: changing limits is
+            // Adjust limit's job (one place for it), and taking "room" was
+            // how a category ended up at $0 with the month still to go.
+            _ = roomTotal
             for (source, amount) in [(PlanPriority.goals, plan.goals), (.trips, plan.trips),
                                      (.cards, plan.cardPaydown), (.savings, plan.savings)] where amount >= 100 {
                 options.append(.init(source: source, planned: amount, amount: min(needed, amount / 100 * 100)))
             }
+        }
+        // What you chose last time this month comes first, ready to pick again.
+        if let keep = self.plan(for: month)?.keepFrom, let i = options.firstIndex(where: { $0.source == keep }) {
+            options.insert(options.remove(at: i), at: 0)
         }
         return OverrunCost(overruns: overs, total: total, fromUnassigned: fromUnassigned, paid: paid,
                            committed: committed, toSpend: plan.toSpend,
@@ -203,39 +206,6 @@ extension BudgetStore {
         data.plan = plan
     }
 
-    /// Once you've chosen what gives this month, more overspending comes
-    /// from the same place on its own (Budget says so), instead of asking
-    /// again for every few dollars. Lowering limits is never automatic.
-    /// When that runs out, you're asked again. Returns what it took.
-    @discardableResult
-    func keepPayingOverspending(in month: Date? = nil) -> Cents {
-        let month = month ?? currentMonth
-        guard let source = plan(for: month)?.keepFrom else { return 0 }
-        let cost = overrunCost(in: month)
-        // It took more than turned out to be needed (a paycheck showed up
-        // late, a purchase was refunded or re-sorted): give the extra back.
-        if cost.needed == 0, let auto = plan(for: month)?.autoPaid, auto > 0 {
-            let spare = max(0, cost.toSpend - cost.committed) / 100 * 100
-            let back = min(spare, auto)
-            if back > 0, var plan = data.plan, isInMonth(plan.month, month),
-               let i = plan.cuts?.lastIndex(where: { $0.source == source }) {
-                plan.cuts![i].amount -= back
-                if plan.cuts![i].amount <= 0 { plan.cuts!.remove(at: i) }
-                if plan.cuts!.isEmpty { plan.cuts = nil }
-                plan.autoPaid = auto - back > 0 ? auto - back : nil
-                data.plan = plan
-            }
-            return 0
-        }
-        guard cost.needed > 0, let option = cost.options.first(where: { $0.source == source }),
-              option.amount > 0 else { return 0 }
-        payForOverspending(from: source, amount: option.amount, categoryId: cost.overruns.first?.id, in: month)
-        guard var plan = data.plan, isInMonth(plan.month, month) else { return option.amount }
-        plan.autoPaid = (plan.autoPaid ?? 0) + option.amount
-        data.plan = plan
-        return option.amount
-    }
-
     /// This month's choices, one per source (older budgets kept one per
     /// choice), in the plan's order: room first, savings last.
     struct CutGroup: Identifiable {
@@ -297,13 +267,10 @@ extension BudgetStore {
     func overrunNote(in month: Date) -> String {
         let cost = overrunCost(in: month)
         if cost.needed > 0 {
-            let names = cost.options.filter { $0.source != .room }.map(\.source.noun)
-            let room = cost.options.contains { $0.source == .room }
-            guard !names.isEmpty else {
-                return room ? "Choose which limits with room left to lower" : "Nothing left to take it from: it's past the plan"
-            }
+            let names = cost.options.map(\.source.noun)
+            guard !names.isEmpty else { return "Nothing left to take it from: it's past the plan" }
             let list = names.count > 1 ? names.dropLast().joined(separator: ", ") + " or " + names.last! : names[0]
-            return "Comes out of \(list)" + (room ? ", or lower limits with room left" : "")
+            return "Comes out of \(list)"
         }
         if let summary = cutsSummary(in: month) { return "Paid for: " + summary }
         return "Money not in a limit covers it: \(Money.short(cost.fromUnassigned)) less left at month end"

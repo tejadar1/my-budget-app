@@ -67,7 +67,7 @@ struct IncomeView: View {
                             VStack(alignment: .trailing, spacing: 4) {
                                 Text(Money.exact(t.amount)).monospacedDigit()
                                 Button("Count as income") {
-                                    withAnimation { store.countAsIncome(t.id) }
+                                    withAnimation { store.undoable("Counted as income") { store.countAsIncome(t.id) } }
                                     Haptics.success()
                                 }
                                 .font(.footnote.weight(.semibold))
@@ -114,7 +114,7 @@ struct IncomeView: View {
     /// Swipe: a source that isn't income (someone paying you back).
     private func notIncomeButton(_ source: BudgetStore.IncomeSource) -> some View {
         Button(role: .destructive) {
-            withAnimation { store.removeIncomeSource(source.id) }
+            withAnimation { store.undoable("\(Merchant.clean(source.name)) isn't income") { store.removeIncomeSource(source.id) } }
             Haptics.success()
         } label: {
             Label("Not income", systemImage: "minus.circle")
@@ -151,7 +151,7 @@ private struct SourceRow: View {
                     .monospacedDigit().foregroundStyle(source.stopped ? .secondary : .primary)
                 if source.stopped {
                     Button("Still paying") {
-                        withAnimation { store.setStillPaying(source.id, true) }
+                        withAnimation { store.undoable("\(Merchant.clean(source.name)) still counted") { store.setStillPaying(source.id, true) } }
                         Haptics.success()
                     }
                     .font(.footnote.weight(.semibold)).buttonStyle(.borderless)

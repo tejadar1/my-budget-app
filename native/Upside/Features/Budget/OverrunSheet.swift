@@ -73,10 +73,6 @@ struct OverrunSheet: View {
                                     .font(.footnote.weight(.semibold)).buttonStyle(.borderless)
                             }
                         }
-                        if let keep = store.plan(for: month)?.keepFrom {
-                            Text("More overspending in \(monthName) comes out of \(keep.noun) too, until it runs out. Undo to stop.")
-                                .font(.footnote).foregroundStyle(.secondary)
-                        }
                         if cost.needed > 0 {
                             Text(cost.fromUnassigned > 0 || !cost.cuts.isEmpty
                                  ? "\(Money.short(cost.needed)) still has to come from somewhere. Pick one:"

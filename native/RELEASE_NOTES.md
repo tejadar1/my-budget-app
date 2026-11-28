@@ -3,6 +3,10 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next (0.37): A calmer start
+- Simpler overspending: Over the plan offers savings, cards, trips or goals, nothing else, and nothing is taken on its own any more. Your last choice is offered first next time. Moving money between limits is in one place: open the category, Adjust limit.
+- Undo: Paid, Paid for the month, Stop, Not a bill, Not income, Count as income, and the answers to Needs attention questions show "Undo" for a few seconds.
+- Bills have two actions: swipe right Paid, swipe left Stop. "It's not a bill" is one of Stop's choices.
+- Savings: card paydown is labeled as not savings.
 - Fixed: the month recap judged all spending, bills included, against everyday limits, so a month with rent could look far over (or a light one under). It now compares everyday spending in categories with a limit to those limits, and to their usual.
 - Fixed: when choosing what gives used up all of a month's savings, the Savings card said "Nothing set aside yet. Pick an amount in Plan", as if you'd never set one. It says "$0 to save in November. You planned $700. All of it went to paying for overspending this month." When only part went, it says how much ("$700 every month, $400 less for overspending this month").
 - Start the month in three steps: in the first days of a month, Needs attention offers "Start December": wrap up November, check the income to plan on, then your plan. Each step opens the screen that already does it and comes back; done steps get a check. "Done for now" leaves the rest in Plan.

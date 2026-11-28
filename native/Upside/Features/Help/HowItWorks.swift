@@ -66,7 +66,8 @@ enum HelpTopic: String, CaseIterable, Identifiable {
             return [
                 "When a category goes past its limit, it stays over. Upside never raises the limit to hide it.",
                 "Money not in a limit covers it first, and you'll have that much less at month end.",
-                "If there isn't any, something has to give, and you choose: limits that still have room, then goals, trips, cards, and savings last. Savings is never chosen for you.",
+                "If there isn't any, something has to give, and you choose: goals, trips, cards, or savings. Nothing is chosen for you, and next time your last choice is offered first.",
+                "To move money from one limit to another, open the category and Adjust limit.",
                 "Your choice changes this month only and can be undone. Once it's paid for, it leaves Needs attention, still shows as over in Categories, and the recap names it.",
                 "Limits that add up to more than you have work the same way: Choose what gives.",
                 "After the first week, Upside warns when a category is on pace to go over.",

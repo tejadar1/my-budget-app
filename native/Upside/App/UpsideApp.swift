@@ -87,6 +87,7 @@ struct RootView: View {
                 .tabItem { Label("Settings", systemImage: "gearshape.fill") }
                 .tag(AppTab.settings)
         }
+        .overlay(alignment: .bottom) { UndoToast() }
         // Bank sync runs whenever Upside comes to the front (at most hourly).
         .onChange(of: scenePhase) { _, phase in
             switch phase {
@@ -115,5 +116,35 @@ struct RootView: View {
         if let last = store.data.lastBankSync, Date().timeIntervalSince(last) < 3600 { return }
         try? await BankSync.sync(store: store)
         await Alerts.check(store)
+    }
+}
+
+/// "Paid · Undo": a few seconds to take back a one-tap change.
+struct UndoToast: View {
+    @Environment(BudgetStore.self) private var store
+
+    var body: some View {
+        if let item = store.undo {
+            HStack(spacing: 14) {
+                Text(item.label).font(.subheadline).lineLimit(2)
+                Spacer(minLength: 8)
+                Button("Undo") {
+                    Haptics.tap()
+                    withAnimation { store.undoLast() }
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Theme.accent)
+            }
+            .padding(.horizontal, 18).padding(.vertical, 14)
+            .background(.regularMaterial, in: Capsule())
+            .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
+            .padding(.horizontal, 16).padding(.bottom, 96)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .task(id: item.id) {
+                try? await Task.sleep(for: .seconds(6))
+                withAnimation { if store.undo?.id == item.id { store.undo = nil } }
+            }
+            .accessibilityElement(children: .combine)
+        }
     }
 }

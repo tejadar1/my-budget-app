@@ -219,13 +219,10 @@ final class BudgetInvariantTests: XCTestCase {
                     XCTAssertEqual(json(s.data), once, "\(label): the transfer check settles")
                     XCTAssertEqual(s.income(in: month), income, "\(label): income untouched")
                 case 5:
-                    // More overspending comes from the last choice; again does nothing.
-                    s.keepPayingOverspending(in: month)
-                    XCTAssertEqual(s.keepPayingOverspending(in: month), 0, "\(label): settles after one go")
-                    let after = s.overrunCost(in: month)
-                    if let keep = s.plan(for: month)?.keepFrom, after.needed > 0 {
-                        XCTAssertFalse(after.options.contains { $0.source == keep }, "\(label): only short when \(keep) ran out")
-                    }
+                    // Choosing the first option offered (the last choice, if any) helps.
+                    guard let first = beforeCost.options.first else { break }
+                    s.payForOverspending(from: first.source, amount: first.amount, categoryId: nil, in: month)
+                    XCTAssertLessThan(s.overrunCost(in: month).needed, beforeCost.needed, "\(label): the first choice helps")
                 case 6:
                     // The other phone: merging with an unchanged or identical copy changes nothing.
                     let base = s.data

@@ -44,14 +44,11 @@ extension BudgetStore {
         case subscription(id: String)
         /// Everyday limits add up to more than there is to spend.
         case limitsOver(amount: Cents)
-        /// More overspending came out of what you chose, on its own.
-        case autoPaid(source: PlanPriority, amount: Cents)
 
         /// Warnings you can hide, and the amount that brings one back if it grows.
         var hideableAmount: Cents? {
             switch self {
-            case .over(_, let amount), .rebalance(_, let amount), .onPace(_, let amount), .limitsOver(let amount),
-                 .autoPaid(_, let amount): amount
+            case .over(_, let amount), .rebalance(_, let amount), .onPace(_, let amount), .limitsOver(let amount): amount
             default: nil
             }
         }
@@ -71,7 +68,6 @@ extension BudgetStore {
             case .subscription(let id): "subscription-\(id)"
             case .payChange(let id): "pay-\(id)"
             case .limitsOver: "limits"
-            case .autoPaid: "auto-paid"
             }
         }
     }
@@ -96,9 +92,6 @@ extension BudgetStore {
             }
         }
         // You chose what gives; more overspending came from it on its own.
-        if let p = plan(for: currentMonth), let source = p.keepFrom, let auto = p.autoPaid, auto > 0 {
-            items.append(.autoPaid(source: source, amount: auto))
-        }
         if let pace = onPaceToGoOver(in: currentMonth).first {
             items.append(.onPace(categoryId: pace.id, amount: pace.over))
         }

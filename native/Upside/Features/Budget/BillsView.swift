@@ -57,9 +57,9 @@ struct BillsView: View {
     @State private var stopping: Recurring?
     /// The bill whose last month is being picked.
     @State private var picking: Recurring?
-    /// The bills category tapped, to say what's held and offer All paid.
+    /// The bills category tapped, to say what's held and offer Paid for the month.
     @State private var held: BudgetStore.BillLine?
-    /// Just released with All paid: said once, where the money went.
+    /// Just released with Paid for the month: said once, where the money went.
     @State private var released: (name: String, amount: Cents)?
 
     var body: some View {
@@ -120,7 +120,7 @@ struct BillsView: View {
                         Text("\(Money.short(released.amount)) from \(released.name) is back in your spending money. Plan can save it.")
                             .foregroundStyle(Theme.accent)
                     } else if lines.contains(where: { $0.stillToCome > 0 }) {
-                        Text("Bills still to come are held from your spending money. All paid already? Tap it.")
+                        Text("Bills still to come are held from your spending money. Already paid? Tap it.")
                     } else {
                         Text("Every bill this month is paid. Nothing is being held.")
                     }
@@ -129,9 +129,9 @@ struct BillsView: View {
             if !due.isEmpty {
                 Section {
                     ForEach(due) { b in
-                        BillRow(bill: b, when: b.dueDate.map { "Due \(day($0))" } ?? "").swipeActions { stopButton(b); notButton(b) }
+                        BillRow(bill: b, when: b.dueDate.map { "Due \(day($0))" } ?? "").swipeActions { stopButton(b) }
                             .swipeActions(edge: .leading) { paidButton(b) }
-                            .contextMenu { paidButton(b); stopButton(b); notButton(b) }
+                            .contextMenu { paidButton(b); stopButton(b) }
                     }
                 } header: {
                     Text("Still due")
@@ -142,21 +142,21 @@ struct BillsView: View {
             if !paid.isEmpty {
                 Section("Paid in \(monthName)") {
                     ForEach(paid) { b in
-                        BillRow(bill: b, when: "Paid \(day(b.lastDate))").swipeActions { stopButton(b); notButton(b) }
-                            .contextMenu { stopButton(b); notButton(b) }
+                        BillRow(bill: b, when: "Paid \(day(b.lastDate))").swipeActions { stopButton(b) }
+                            .contextMenu { stopButton(b) }
                     }
                 }
             }
             if !subscriptions.isEmpty {
                 Section {
                     ForEach(subscriptions) { s in
-                        BillRow(bill: s, when: "\(Money.short(s.amount * 12)) a year").swipeActions { stopButton(s); notButton(s) }
-                            .contextMenu { stopButton(s); notButton(s) }
+                        BillRow(bill: s, when: "\(Money.short(s.amount * 12)) a year").swipeActions { stopButton(s) }
+                            .contextMenu { stopButton(s) }
                     }
                 } header: {
                     Text("Subscriptions")
                 } footer: {
-                    Text("\(Money.short(subscriptions.reduce(0) { $0 + $1.amount } * 12)) a year. Swipe left to stop one you cancelled.")
+                    Text("\(Money.short(subscriptions.reduce(0) { $0 + $1.amount } * 12)) a year. Swipe left to stop one.")
                 }
             }
 
@@ -222,6 +222,11 @@ struct BillsView: View {
                 // After the dialog has closed: a sheet asked for while one closes can be dropped.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { picking = bill }
             }
+            // "Not a bill" lives here now: one Stop, not two swipe buttons.
+            Button(bill.isSubscription ? "It's not a subscription" : "It's not a bill") {
+                withAnimation { store.undoable("\(Merchant.clean(bill.name)) isn't a bill") { store.dismissRecurring(bill.id) } }
+                stopping = nil
+            }
         } message: { bill in
             Text("\(Money.exact(bill.amount)) a month goes back to spending money once it stops.")
         }
@@ -234,7 +239,7 @@ struct BillsView: View {
     }
 
     private func stop(_ bill: Recurring, afterThisMonth: Bool) {
-        withAnimation { store.stopBill(bill, afterThisMonth: afterThisMonth) }
+        withAnimation { store.undoable("\(Merchant.clean(bill.name)) stopped") { store.stopBill(bill, afterThisMonth: afterThisMonth) } }
         Haptics.success()
         stopping = nil
     }
@@ -243,21 +248,21 @@ struct BillsView: View {
     private func release(_ line: BudgetStore.BillLine) {
         withAnimation {
             released = (line.category.name, line.stillToCome)
-            store.markBillCategoryDone(line.category.id)
+            store.undoable("\(line.category.name) paid for the month") { store.markBillCategoryDone(line.category.id) }
         }
         Haptics.success()
     }
 
     private func allPaidButton(_ line: BudgetStore.BillLine) -> some View {
         Button { release(line) } label: {
-            Label("All paid", systemImage: "checkmark.circle")
+            Label("Paid", systemImage: "checkmark.circle")
         }
         .tint(Theme.accent)
     }
 
     /// Swipe right: "Paid", for a bill paid somewhere Upside can't see.
     private func paidButton(_ bill: Recurring) -> some View {
-        Button { withAnimation { store.markBillPaid(bill.id) }; Haptics.success() } label: {
+        Button { withAnimation { store.undoable("\(Merchant.clean(bill.name)) marked paid") { store.markBillPaid(bill.id) } }; Haptics.success() } label: {
             Label("Paid", systemImage: "checkmark.circle")
         }
         .tint(Theme.accent)
@@ -267,13 +272,6 @@ struct BillsView: View {
     private func stopButton(_ bill: Recurring) -> some View {
         Button { stopping = bill } label: { Label("Stop", systemImage: "stop.circle") }
             .tint(.orange)
-    }
-
-    /// Swipe: "Not a bill" / "Not a subscription".
-    private func notButton(_ bill: Recurring) -> some View {
-        Button(bill.isSubscription ? "Not a subscription" : "Not a bill", role: .destructive) {
-            withAnimation { store.dismissRecurring(bill.id) }
-        }
     }
 
     private func day(_ date: Date) -> String {
@@ -413,7 +411,7 @@ private struct BillCategorySheet: View {
                             release()
                             dismiss()
                         } label: {
-                            Text("All paid for \(monthName)").font(.headline).frame(maxWidth: .infinity, minHeight: 44)
+                            Text("Paid for \(monthName)").font(.headline).frame(maxWidth: .infinity, minHeight: 44)
                         }
                         .buttonStyle(.borderedProminent).buttonBorderShape(.capsule).tint(Theme.accent)
                         .listRowBackground(Color.clear)
@@ -445,12 +443,12 @@ private struct BillCategorySheet: View {
         let due = b.items.filter { !$0.bill.paidThisMonth }
         if held == 0 { return "Everything expected here this month is in." }
         if !due.isEmpty {
-            return "Held for \(due.map { Merchant.clean($0.bill.name) }.joined(separator: " and ")), still to come. Paid somewhere Upside can't see? All paid releases it."
+            return "Held for \(due.map { Merchant.clean($0.bill.name) }.joined(separator: " and ")), still to come. Paid somewhere Upside can't see? Paid for the month releases it."
         }
         let other = max(0, b.usual - b.knownUsual)
         if b.items.isEmpty {
-            return "Upside doesn't recognize a regular bill here yet, so it holds your usual \(Money.short(b.usual)). Nothing else coming? All paid releases it."
+            return "Upside doesn't recognize a regular bill here yet, so it holds your usual \(Money.short(b.usual)). Nothing else coming? Paid for the month releases it."
         }
-        return "These bills usually come to \(Money.short(b.knownUsual)) of your usual \(Money.short(b.usual)) here, so \(Money.short(other)) is held for anything else. Nothing else coming? All paid releases it."
+        return "These bills usually come to \(Money.short(b.knownUsual)) of your usual \(Money.short(b.usual)) here, so \(Money.short(other)) is held for anything else. Nothing else coming? Paid for the month releases it."
     }
 }

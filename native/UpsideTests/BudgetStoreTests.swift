@@ -2396,52 +2396,39 @@ final class OverrunTests: XCTestCase {
         XCTAssertEqual(cost.total, 10_000)
         XCTAssertEqual(cost.fromUnassigned, 0, "every dollar after savings and cards is in a limit")
         XCTAssertEqual(cost.needed, 10_000)
-        XCTAssertEqual(cost.options.map(\.source), [.room, .cards, .savings],
-                       "room in other limits, then cards before savings; nothing set for trips or goals")
-        XCTAssertEqual(cost.options.map(\.amount), [10_000, 10_000, 10_000])
+        XCTAssertEqual(cost.options.map(\.source), [.cards, .savings],
+                       "cards before savings; nothing set for trips or goals")
+        XCTAssertEqual(cost.options.map(\.amount), [10_000, 10_000])
         XCTAssertEqual(cost.room.map(\.id), ["shopping"])
         // $250 unspent, but $106 of it is Shopping's usual $300 for the last
         // 11 of October's 31 days: $144 is spare, in $10s.
         XCTAssertEqual(cost.room.first?.room, 14_000)
-        XCTAssertEqual(s.overrunNote(in: october), "Comes out of cards or savings, or lower limits with room left")
+        XCTAssertEqual(s.overrunNote(in: october), "Comes out of cards or savings")
         XCTAssertTrue(s.attention().contains(.over(categoryId: "dining", amount: 10_000)))
     }
 
-    func testMoreOverspendingComesFromWhatYouChoseUntilItRunsOut() {
+    func testAOneTapChangeCanBeUndone() {
         let s = store()
         let october = s.currentMonth
-        // Lowering limits is never automatic.
-        s.payForOverspending(from: .room, amount: 2_000, categoryId: "dining", in: october)
-        XCTAssertEqual(s.keepPayingOverspending(in: october), 0)
-
-        // Cards, chosen for part of it: the rest comes from cards on its own.
-        s.payForOverspending(from: .cards, amount: 3_000, categoryId: "dining", in: october)
-        XCTAssertEqual(s.overrunCost(in: october).needed, 5_000)
-        XCTAssertEqual(s.keepPayingOverspending(in: october), 5_000)
-        XCTAssertEqual(s.overrunCost(in: october).needed, 0)
-        XCTAssertEqual(s.overrunCutsBySource(in: october).first { $0.source == .cards }?.amount, 8_000)
-        XCTAssertTrue(s.attention().contains(.autoPaid(source: .cards, amount: 5_000)))
-        XCTAssertEqual(s.keepPayingOverspending(in: october), 0, "nothing more to pay")
-
-        // Undo stops it.
-        s.undoOverspending(from: .cards, in: october)
-        XCTAssertNil(s.plan(for: october)?.keepFrom)
-        XCTAssertEqual(s.keepPayingOverspending(in: october), 0)
-        XCTAssertFalse(s.attention().contains { if case .autoPaid = $0 { return true } else { return false } })
+        let before = s.monthPlan(october)
+        s.undoable("Savings less") { s.payForOverspending(from: .savings, amount: 5_000, categoryId: nil, in: october) }
+        XCTAssertEqual(s.undo?.label, "Savings less")
+        XCTAssertNotEqual(s.monthPlan(october).toSpend, before.toSpend)
+        s.undoLast()
+        XCTAssertEqual(s.monthPlan(october).toSpend, before.toSpend, "exactly as before")
+        XCTAssertNil(s.undo)
+        s.undoLast()   // nothing to undo: no change
+        XCTAssertEqual(s.monthPlan(october).toSpend, before.toSpend)
     }
 
-    func testWhatWasTakenOnItsOwnGoesBackWhenItIsntNeeded() {
+    func testTheLastChoiceComesFirstNextTime() {
         let s = store()
         let october = s.currentMonth
-        s.payForOverspending(from: .cards, amount: 3_000, categoryId: "dining", in: october)
-        s.keepPayingOverspending(in: october)   // takes the other $70
-        XCTAssertEqual(s.plan(for: october)?.autoPaid, 7_000)
-        // A $50 dinner is refunded: $50 of that wasn't needed after all.
-        s.data.transactions.append(Transaction(id: "refund", accountId: "r", date: date(2026, 10, 19),
-                                               amount: 5_000, payee: "Nobu", categoryId: "dining"))
-        s.keepPayingOverspending(in: october)
-        XCTAssertEqual(s.plan(for: october)?.autoPaid, 2_000)
-        XCTAssertEqual(s.cut(.cards, in: october), 5_000, "your own $30, plus the $20 still needed")
+        s.payForOverspending(from: .savings, amount: 3_000, categoryId: "dining", in: october)
+        // $70 still short: savings, chosen last time, is offered first.
+        XCTAssertEqual(s.overrunCost(in: october).options.first?.source, .savings)
+        XCTAssertFalse(s.overrunCost(in: october).options.contains { $0.source == .room },
+                       "lowering other limits is Adjust limit's job")
     }
 
     func testChoicesFromTheSameSourceAddUpToOneLine() {
@@ -2484,8 +2471,8 @@ final class OverrunTests: XCTestCase {
         let october = s.currentMonth
         s.data.priorities?.savings -= 10_000 - 430   // $4.30 short instead of $100
         XCTAssertEqual(s.overrunCost(in: october).needed, 400)
-        XCTAssertEqual(s.overrunCost(in: october).options.first { $0.source == .room }?.amount, 1_000,
-                       "limits move in $10s, so the choice says the $10 it really lowers")
+        XCTAssertNil(s.overrunCost(in: october).options.first { $0.source == .room },
+                       "lowering other limits isn't a choice here any more")
         // Paying the $4 leaves 30¢: nothing left to choose.
         s.payForOverspending(from: .cards, amount: 400, categoryId: "dining", in: october)
         XCTAssertEqual(s.overrunCost(in: october).needed, 0)
@@ -2602,7 +2589,7 @@ final class OverrunTests: XCTestCase {
         let cost = s.overrunCost(in: october)
         XCTAssertEqual(cost.needed, 20_000)
         XCTAssertEqual(cost.committed, 100_000)
-        XCTAssertEqual(cost.options.first?.source, .room)
+        XCTAssertEqual(cost.options.first?.source, .cards)
         XCTAssertEqual(cost.options.first?.amount, 20_000)
         XCTAssertTrue(s.attention().contains(.limitsOver(amount: 20_000)))
     }

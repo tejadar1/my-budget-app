@@ -9,6 +9,30 @@ final class BudgetStore {
         didSet { if !isDemo { save() } }
     }
 
+    /// The last one-tap change, for a few seconds' Undo (not saved).
+    struct UndoItem: Equatable {
+        var label: String
+        var before: BudgetData
+        var id = UUID()
+        static func == (a: UndoItem, b: UndoItem) -> Bool { a.id == b.id }
+    }
+    var undo: UndoItem?
+
+    /// Makes a change that can be undone right after: Paid, Stop, Not
+    /// income… The toast says `label` and offers Undo.
+    func undoable(_ label: String, _ change: () -> Void) {
+        let before = data
+        change()
+        undo = UndoItem(label: label, before: before)
+    }
+
+    /// Puts everything back as it was before the last undoable change.
+    func undoLast() {
+        guard let item = undo else { return }
+        data = item.before
+        undo = nil
+    }
+
     /// Demo mode (sample data, never saved).
     let isDemo: Bool
     /// Called after each save; iCloud uses it to send changes.

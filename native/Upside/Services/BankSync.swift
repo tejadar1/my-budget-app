@@ -53,9 +53,6 @@ enum BankSync {
         let unique = errors.filter { seen.insert($0).inserted }
         store.data.syncErrors = unique.isEmpty ? nil : unique
         store.data.lastBankSync = now
-        // Only once everything is in, and only when every bank answered:
-        // a missing paycheck must never look like overspending to pay for.
-        if unique.isEmpty { store.keepPayingOverspending() }
     }
 
     /// Splits a date range into pieces of at most `days` days (the Bridge

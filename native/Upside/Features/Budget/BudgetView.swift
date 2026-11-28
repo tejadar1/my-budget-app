@@ -151,9 +151,9 @@ struct BudgetView: View {
                                 isPresented: Binding(get: { askPay != nil }, set: { if !$0 { askPay = nil } }),
                                 titleVisibility: .visible, presenting: askPay) { change in
                 Button("Plan on \(Money.short(change.newMonthly)) a month") {
-                    Haptics.success(); withAnimation { store.acceptPayChange(change) }
+                    Haptics.success(); withAnimation { store.undoable("Planning on the new paycheck") { store.acceptPayChange(change) } }
                 }
-                Button("Just this once") { Haptics.tap(); withAnimation { store.dismissPayChange(change) } }
+                Button("Just this once") { Haptics.tap(); withAnimation { store.undoable("Kept your usual paycheck") { store.dismissPayChange(change) } } }
             } message: { change in
                 Text("This check: \(Money.short(change.latestAmount)), \(Money.short(change.perCheckDrop)) less than usual. From this month on: \(Money.short(change.oldMonthly)) → \(Money.short(change.newMonthly)) a month.")
             }
@@ -161,8 +161,8 @@ struct BudgetView: View {
                                 isPresented: Binding(get: { askHousehold != nil }, set: { if !$0 { askHousehold = nil } }),
                                 titleVisibility: .visible) {
                 if let name = askHousehold {
-                    Button("Yes, one of us") { Haptics.success(); withAnimation { store.answerHousehold(name, isUs: true) } }
-                    Button("No, someone we pay") { Haptics.tap(); withAnimation { store.answerHousehold(name, isUs: false) } }
+                    Button("Yes, one of us") { Haptics.success(); withAnimation { store.undoable("\(name) is one of you") { store.answerHousehold(name, isUs: true) } } }
+                    Button("No, someone we pay") { Haptics.tap(); withAnimation { store.undoable("\(name) is someone you pay") { store.answerHousehold(name, isUs: false) } } }
                 }
             } message: {
                 Text("Yes: Zelles with them are transfers. No: they're spending.")
@@ -170,22 +170,22 @@ struct BudgetView: View {
             .confirmationDialog(askMissed.map { "Did \(Merchant.clean($0.name)) end?" } ?? "",
                                 isPresented: Binding(get: { askMissed != nil }, set: { if !$0 { askMissed = nil } }),
                                 titleVisibility: .visible, presenting: askMissed) { bill in
-                Button("It ended") { Haptics.success(); withAnimation { store.answerMissedBill(bill, ended: true) } }
-                Button("Not yet, still expect it") { Haptics.tap(); withAnimation { store.answerMissedBill(bill, ended: false) } }
+                Button("It ended") { Haptics.success(); withAnimation { store.undoable("\(Merchant.clean(bill.name)) stopped") { store.answerMissedBill(bill, ended: true) } } }
+                Button("Not yet, still expect it") { Haptics.tap(); withAnimation { store.undoable("Still expecting \(Merchant.clean(bill.name))") { store.answerMissedBill(bill, ended: false) } } }
             } message: { bill in
                 Text("Ended: its \(Money.exact(bill.amount)) a month goes back to spending money. Not yet: it stays in your bills.")
             }
             .confirmationDialog(askSubscription.map { "Keep \(Merchant.clean($0.name))?" } ?? "",
                                 isPresented: Binding(get: { askSubscription != nil }, set: { if !$0 { askSubscription = nil } }),
                                 titleVisibility: .visible, presenting: askSubscription) { bill in
-                Button("Keep it") { Haptics.success(); withAnimation { store.keepSubscription(bill) } }
+                Button("Keep it") { Haptics.success(); withAnimation { store.undoable("Keeping \(Merchant.clean(bill.name))") { store.keepSubscription(bill) } } }
                 Button("I'm cancelling it") {
                     Haptics.success()
                     // Its last charge was this month (or it's due): it stops after this one.
-                    withAnimation { store.stopBill(bill, afterThisMonth: true) }
+                    withAnimation { store.undoable("\(Merchant.clean(bill.name)) stops after this month") { store.stopBill(bill, afterThisMonth: true) } }
                 }
                 Button(bill.isSubscription ? "Not a subscription" : "Not a bill") {
-                    Haptics.tap(); withAnimation { store.dismissRecurring(bill.id) }
+                    Haptics.tap(); withAnimation { store.undoable("\(Merchant.clean(bill.name)) isn't a subscription") { store.dismissRecurring(bill.id) } }
                 }
             } message: { bill in
                 Text(Self.subscriptionMessage(bill))
@@ -220,7 +220,6 @@ struct BudgetView: View {
         case .subscription(let id): askSubscription = store.subscriptionQuestions().first { $0.id == id }
         case .payChange(let id): askPay = store.payChanges().first { $0.sourceId == id }
         case .limitsOver: sheet = .overrun(nil)
-        case .autoPaid: sheet = .overrun(nil)
         }
     }
 
@@ -595,11 +594,6 @@ struct AttentionList: View {
             ListRow(title: count == 1 ? "1 purchase to check" : "\(count) purchases to check",
                     subtitle: "Sorted on a hunch") {
                 SymbolIcon(symbol: "checklist", color: .orange)
-            }
-        case .autoPaid(let source, let amount):
-            ListRow(title: "\(Money.short(amount)) more overspending came out of \(source.noun)",
-                    subtitle: "As you chose this month. Change it in Over the plan") {
-                SymbolIcon(symbol: "arrow.uturn.down.circle.fill", color: .orange)
             }
         case .limitsOver(let amount):
             ListRow(title: "Limits are \(Money.short(amount)) more than you have",
