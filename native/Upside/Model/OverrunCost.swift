@@ -129,14 +129,29 @@ extension BudgetStore {
                            needed: needed, options: options, room: room, cuts: cuts)
     }
 
-    /// Limits with room not spent yet this month (whole $10s), most first.
+    /// Limits with room to spare this month (whole $10s), most first.
+    /// Room is what's left after keeping enough for the rest of the month
+    /// at the category's usual pace (its limit's, with no history): taking
+    /// everything unspent mid-month left Gifts at $0 and Commuting at $10,
+    /// and the next purchase there was over.
     func roomLeft(in month: Date, excluding: Set<String> = []) -> [CoverSource] {
         everydayCategories.compactMap { c -> CoverSource? in
             guard !excluding.contains(c.id), let limit = limit(c, in: month) else { return nil }
-            let left = (limit - spent(c.id, in: month)) / 1_000 * 1_000
+            let left = (limit - spent(c.id, in: month) - restOfMonthNeed(c, limit: limit, in: month)) / 1_000 * 1_000
             return left >= 1_000 ? CoverSource(id: c.id, name: c.name, room: left) : nil
         }
         .sorted { $0.room != $1.room ? $0.room > $1.room : $0.id < $1.id }
+    }
+
+    /// What a category usually needs for the days left in the month (0 for
+    /// a month that's over): its usual monthly spending, or its limit if it
+    /// has no history, spread over the month.
+    func restOfMonthNeed(_ c: Category, limit: Cents, in month: Date) -> Cents {
+        guard month == currentMonth else { return 0 }
+        let days = calendar.range(of: .day, in: .month, for: month)?.count ?? 30
+        let left = max(0, days - calendar.component(.day, from: now()))
+        let pace = averageSpent(c.id, before: month).flatMap { $0 > 0 ? $0 : nil } ?? limit
+        return pace * left / days
     }
 
     /// Which limits lowering `amount` of room would touch, most room first,

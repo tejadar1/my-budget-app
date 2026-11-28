@@ -2,6 +2,9 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.36.4): Room that's really spare
+- "Lower limits with room left" only takes what's truly spare: each category keeps enough for the rest of the month at its usual pace. Before, it took everything unspent, so mid-month Gifts could drop to $0 and Commuting to $10, and the next purchase there was over. On the 20th, a $300 Gifts limit that usually sees $150 offers $250, not $300; on the last day of the month, all of it.
+
 ## 0.36.3: Every number agrees
 - Fixed (found by the new checks): a refund in a category with nothing bought yet that month showed the category at $0 but still took the refund off the month's total, so categories didn't add up to Spent. Totals now add up category by category.
 - Fixed: a category whose limit was lowered to $0 this month said "Skipping this month" even after you spent there. It says "$X over $0 limit" now, like any category over its limit.

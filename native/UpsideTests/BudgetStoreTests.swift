@@ -2274,7 +2274,9 @@ final class OverrunTests: XCTestCase {
                        "room in other limits, then cards before savings; nothing set for trips or goals")
         XCTAssertEqual(cost.options.map(\.amount), [10_000, 10_000, 10_000])
         XCTAssertEqual(cost.room.map(\.id), ["shopping"])
-        XCTAssertEqual(cost.room.first?.room, 25_000)
+        // $250 unspent, but $106 of it is Shopping's usual $300 for the last
+        // 11 of October's 31 days: $144 is spare, in $10s.
+        XCTAssertEqual(cost.room.first?.room, 14_000)
         XCTAssertEqual(s.overrunNote(in: october), "Comes out of cards or savings, or lower limits with room left")
         XCTAssertTrue(s.attention().contains(.over(categoryId: "dining", amount: 10_000)))
     }
@@ -2589,12 +2591,35 @@ final class OverrunTests: XCTestCase {
         XCTAssertEqual(s.monthPlan(october).toSpend - s.committedSpending(in: october), 0, "no spare to save")
     }
 
+    func testRoomLeftKeepsEnoughForTheRestOfTheMonth() {
+        // November 20: Gifts has a $300 limit, nothing spent, and usually $150.
+        let s = store()
+        s.now = { self.date(2026, 11, 20) }
+        s.setLimit("gifts", 30_000)
+        for m in 8...10 {
+            s.data.transactions.append(Transaction(id: "g\(m)", accountId: "r", date: date(2026, m, 12), amount: -15_000,
+                                                   payee: "Etsy", categoryId: "gifts"))
+        }
+        let november = s.currentMonth
+        // 10 of 30 days left at $150 a month keeps $50: $250 is spare.
+        XCTAssertEqual(s.restOfMonthNeed(s.category("gifts")!, limit: 30_000, in: november), 5_000)
+        XCTAssertEqual(s.roomLeft(in: november).first { $0.id == "gifts" }?.room, 25_000)
+        // Taking all the room leaves Gifts at $50, not $0.
+        s.payForOverspending(from: .room, amount: 1_000_000, categoryId: nil, in: november)
+        XCTAssertEqual(s.limit(s.category("gifts")!, in: november), 5_000)
+        // On the last day there's nothing left to keep.
+        s.now = { self.date(2026, 11, 30) }
+        XCTAssertEqual(s.restOfMonthNeed(s.category("gifts")!, limit: 30_000, in: november), 0)
+        // A month that's over keeps nothing back.
+        XCTAssertEqual(s.restOfMonthNeed(s.category("gifts")!, limit: 30_000, in: s.month(-1, from: november)), 0)
+    }
+
     func testLoweringALimitToPayForOverspendingDoesntSetOffAlerts() {
         let s = store()
         let october = s.currentMonth
-        // All of Shopping's room: its limit drops to the $50 already spent (100%).
+        // All of Shopping's room: $140, keeping its usual pace for the rest of October.
         s.payForOverspending(from: .room, amount: 25_000, categoryId: "dining", in: october)
-        XCTAssertEqual(s.limit(s.category("shopping")!, in: october), 5_000)
+        XCTAssertEqual(s.limit(s.category("shopping")!, in: october), 16_000, "never down to what's already spent")
         XCTAssertFalse(s.pendingLimitAlerts().contains { $0.categoryName == "Shopping" }, "lowered by you, not news")
         XCTAssertTrue(s.pendingLimitAlerts().contains { $0.categoryName == "Dining & Bars" && $0.percent == 100 })
         // Going past the lowered limit is news.
