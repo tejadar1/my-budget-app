@@ -73,4 +73,24 @@ extension BudgetStore {
         if on { keys.insert(sourceId) } else { keys.remove(sourceId) }
         data.incomeStillPaying = keys.isEmpty ? nil : keys.sorted()
     }
+
+    /// "Not income": a source sorted as income by mistake (a friend paying
+    /// you back). Its deposits leave income and wait to be sorted (Check
+    /// these for money from a person; Deposits not counted otherwise), and
+    /// the rule that made them income is forgotten so new ones don't come back.
+    func removeIncomeSource(_ sourceId: String) {
+        let incomeIds = Set(data.categories.filter(\.isIncome).map(\.id))
+        var keys = Set<String>()
+        for i in data.transactions.indices {
+            let t = data.transactions[i]
+            guard t.amount > 0, payerKey(t) == sourceId, t.categoryId.map(incomeIds.contains) == true else { continue }
+            keys.insert(Self.payeeKey(t.payee))
+            data.transactions[i].categoryId = nil
+            data.transactions[i].autoSort = nil
+        }
+        data.rules.removeAll { keys.contains($0.payeeKey) && incomeIds.contains($0.categoryId) }
+        data.incomeOwners?[sourceId] = nil
+        data.incomeLevels?[sourceId] = nil
+        data.incomeStillPaying = data.incomeStillPaying?.filter { $0 != sourceId }
+    }
 }

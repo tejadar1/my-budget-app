@@ -1948,6 +1948,28 @@ final class TransferTests: XCTestCase {
         XCTAssertEqual(Set(data.transactions.map(\.id)), ["c:posted", "c:recent", "c:cafe"])
     }
 
+    func testAFriendSortedAsIncomeByMistakeCanBeTakenOut() {
+        var data = BudgetData()
+        data.accounts = [Account(id: "c", name: "Checking", institution: "Chase", kind: .checking, balance: 0)]
+        let s = BudgetStore(data: data, isDemo: true)
+        let today = Date()
+        s.now = { today }
+        s.data.transactions = [
+            Transaction(id: "z1", accountId: "c", date: today.addingTimeInterval(-30 * 86_400), amount: 25_500,
+                        payee: "Zelle payment from MATTHEW SPRING", categoryId: nil),
+            Transaction(id: "pay", accountId: "c", date: today.addingTimeInterval(-3 * 86_400), amount: 300_000,
+                        payee: "ACME PAYROLL", categoryId: "income"),
+        ]
+        s.categorize("z1", as: "income")          // the mistake, remembered as a rule
+        XCTAssertEqual(Set(s.incomeTransactions.map(\.id)), ["z1", "pay"])
+        let matthew = s.payerKey(s.data.transactions.first { $0.id == "z1" }!)
+        s.removeIncomeSource(matthew)
+        XCTAssertEqual(s.incomeTransactions.map(\.id), ["pay"], "only the paycheck is income")
+        XCTAssertTrue(s.toCheck.contains { $0.id == "z1" }, "waits to be sorted")
+        XCTAssertFalse(s.data.rules.contains { $0.categoryId == "income" && $0.payeeKey.contains("matthew") },
+                       "the next Zelle from him isn't income either")
+    }
+
     func testAPendingItemTheBankReplacedIsDropped() {
         var data = BudgetData()
         let now = Date(timeIntervalSince1970: 1_790_000_000)

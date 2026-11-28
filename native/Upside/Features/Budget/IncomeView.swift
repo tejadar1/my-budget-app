@@ -34,11 +34,13 @@ struct IncomeView: View {
                 Section {
                     ForEach(sources) { source in
                         SourceRow(source: source)
+                            .swipeActions { notIncomeButton(source) }
+                            .contextMenu { notIncomeButton(source) }
                     }
                 } header: {
                     Text("Where it comes from")
                 } footer: {
-                    Text("A usual month from each. Tap a name to change whose it is.")
+                    Text("A usual month from each. Tap a name to change whose it is. Not income? Swipe left.")
                 }
             }
 
@@ -107,6 +109,16 @@ struct IncomeView: View {
         }
         .navigationTitle("Income")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    /// Swipe: a source that isn't income (someone paying you back).
+    private func notIncomeButton(_ source: BudgetStore.IncomeSource) -> some View {
+        Button(role: .destructive) {
+            withAnimation { store.removeIncomeSource(source.id) }
+            Haptics.success()
+        } label: {
+            Label("Not income", systemImage: "minus.circle")
+        }
     }
 }
 
