@@ -59,6 +59,8 @@ struct BillsView: View {
     @State private var picking: Recurring?
     /// The bills category tapped, to say what's held and offer All paid.
     @State private var held: BudgetStore.BillLine?
+    /// Just released with All paid: said once, where the money went.
+    @State private var released: (name: String, amount: Cents)?
 
     var body: some View {
         let all = store.recurringCharges()
@@ -109,7 +111,12 @@ struct BillsView: View {
                 } header: {
                     Text("Counted in your plan")
                 } footer: {
-                    Text("Bills still to come are held from your spending money. All paid already? Swipe left: All paid.")
+                    if let released {
+                        Text("\(Money.short(released.amount)) from \(released.name) is back in your spending money. Plan can save it.")
+                            .foregroundStyle(Theme.accent)
+                    } else {
+                        Text("Bills still to come are held from your spending money. All paid already? Swipe left: All paid.")
+                    }
                 }
             }
             if !due.isEmpty {
@@ -217,10 +224,7 @@ struct BillsView: View {
         .confirmationDialog(held.map { "\($0.category.name): \(Money.short($0.stillToCome)) held" } ?? "",
                             isPresented: Binding(get: { held != nil }, set: { if !$0 { held = nil } }),
                             titleVisibility: .visible, presenting: held) { line in
-            Button("All paid for \(monthName)") {
-                withAnimation { store.markBillCategoryDone(line.category.id) }
-                Haptics.success()
-            }
+            Button("All paid for \(monthName)") { release(line) }
         } message: { line in
             Text(heldReason(line))
         }
@@ -246,11 +250,16 @@ struct BillsView: View {
     }
 
     /// Swipe on a category: everything this month is paid, stop holding money.
+    private func release(_ line: BudgetStore.BillLine) {
+        withAnimation {
+            released = (line.category.name, line.stillToCome)
+            store.markBillCategoryDone(line.category.id)
+        }
+        Haptics.success()
+    }
+
     private func allPaidButton(_ line: BudgetStore.BillLine) -> some View {
-        Button {
-            withAnimation { store.markBillCategoryDone(line.category.id) }
-            Haptics.success()
-        } label: {
+        Button { release(line) } label: {
             Label("All paid", systemImage: "checkmark.circle")
         }
         .tint(Theme.accent)

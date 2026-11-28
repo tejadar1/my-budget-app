@@ -877,7 +877,11 @@ final class BudgetStoreTests: XCTestCase {
                                                    amount: -25_000, payee: "CON EDISON", categoryId: "utilities"))
         store.data.transactions.append(Transaction(id: "v10", accountId: "r", date: date(2026, 10, 10),
                                                    amount: -15_000, payee: "VEOLIA", categoryId: "utilities"))
-        XCTAssertTrue(store.recurringCharges().contains { $0.name == "CON EDISON" }, "a bill, whatever it comes to")
+        let conEd = store.recurringCharges().first { $0.name == "CON EDISON" }
+        XCTAssertNotNil(conEd, "a bill, whatever it comes to")
+        XCTAssertNil(conEd?.priceIncrease, "a utility going up and down isn't a price increase")
+        XCTAssertEqual(conEd?.isSubscription, false)
+        XCTAssertFalse(store.missedBills().contains { $0.name == "CON EDISON" }, "it came this month")
         let line = store.billLines(store.currentMonth).first { $0.category.id == "utilities" }!
         XCTAssertEqual(line.usual, 80_000)
         XCTAssertEqual(line.paid, 40_000)
