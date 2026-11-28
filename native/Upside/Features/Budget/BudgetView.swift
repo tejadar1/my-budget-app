@@ -124,6 +124,14 @@ struct BudgetView: View {
                 }
             }
             .onAppear(perform: openFromLaunchArgs)
+            .apply { questions($0) }
+        }
+    }
+
+    /// The one-tap questions Needs attention asks. Kept out of `body` so
+    /// the compiler checks them on their own (together they were too much).
+    private func questions<Content: View>(_ content: Content) -> some View {
+        content
             .confirmationDialog("Plan on the new paycheck?",
                                 isPresented: Binding(get: { askPay != nil }, set: { if !$0 { askPay = nil } }),
                                 titleVisibility: .visible, presenting: askPay) { change in
@@ -165,11 +173,15 @@ struct BudgetView: View {
                     Haptics.tap(); withAnimation { store.dismissRecurring(bill.id) }
                 }
             } message: { bill in
-                Text(bill.priceIncrease.map { up in
-                    "Now \(Money.exact(bill.amount)) a month, up \(Money.exact(up)) (\(Money.short(up * 12)) a year). Cancelling stops counting it after this month."
-                } ?? "\(Money.exact(bill.amount)) a month, \(Money.short(bill.amount * 12)) a year. Cancelling stops counting it after this month.")
+                Text(Self.subscriptionMessage(bill))
             }
+    }
+
+    private static func subscriptionMessage(_ bill: Recurring) -> String {
+        if let up = bill.priceIncrease {
+            return "Now \(Money.exact(bill.amount)) a month, up \(Money.exact(up)) (\(Money.short(up * 12)) a year). Cancelling stops counting it after this month."
         }
+        return "\(Money.exact(bill.amount)) a month, \(Money.short(bill.amount * 12)) a year. Cancelling stops counting it after this month."
     }
 
     /// Closes the open sheet, then opens `next`.
@@ -832,4 +844,9 @@ struct MoreList: View {
 /// A category id that can drive `.sheet(item:)`.
 struct CategoryRef: Identifiable, Hashable {
     let id: String
+}
+
+extension View {
+    /// Applies a function's modifiers, to split up a long chain.
+    func apply<V: View>(_ transform: (Self) -> V) -> V { transform(self) }
 }
