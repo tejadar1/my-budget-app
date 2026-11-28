@@ -2,7 +2,7 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
-## Next (0.37): A calmer start
+## 0.37: A calmer start
 - Simpler overspending: Over the plan offers savings, cards, trips or goals, nothing else, and nothing is taken on its own any more. Your last choice is offered first next time. Moving money between limits is in one place: open the category, Adjust limit.
 - Undo: Paid, Paid for the month, Stop, Not a bill, Not income, Count as income, and the answers to Needs attention questions show "Undo" for a few seconds.
 - Bills have two actions: swipe right Paid, swipe left Stop. "It's not a bill" is one of Stop's choices.
