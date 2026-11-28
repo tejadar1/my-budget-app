@@ -186,7 +186,8 @@ extension BudgetStore {
             savings: max(0, (snapshot?.savings ?? data.priorities?.savings ?? 0) + (monthsPlan?.goal ?? 0) - cut(.savings, in: month)),
             savingsExtra: monthsPlan?.goal ?? 0,
             cardPaydown: max(0, (snapshot?.cardPaydown ?? data.priorities?.cardPaydown ?? 0) + (monthsPlan?.cardExtra ?? 0) - cut(.cards, in: month)),
-            trips: max(0, tripSetAside(in: month) - cut(.trips, in: month)),
+            // A finished month keeps the trip money it had then, too.
+            trips: max(0, (snapshot?.trips ?? tripSetAside(in: month)) - cut(.trips, in: month)),
             everydaySpent: totalSpent(in: month) - billsPaid,
             everydayLimits: everydayLimits,
             daysLeft: isCurrent ? daysLeftInMonth : nil,

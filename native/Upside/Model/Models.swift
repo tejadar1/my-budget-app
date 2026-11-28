@@ -211,6 +211,8 @@ struct MonthSnapshot: Codable, Equatable {
     var savings: Cents
     var cardPaydown: Cents
     var goals: Cents
+    /// Set aside for trips that month (optional: older snapshots lack it).
+    var trips: Cents? = nil
 }
 
 struct CategoryGroup: Identifiable {

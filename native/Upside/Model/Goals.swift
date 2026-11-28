@@ -125,7 +125,8 @@ extension BudgetStore {
         let key = Self.monthKey(currentMonth)
         let snapshot = MonthSnapshot(savings: data.priorities?.savings ?? 0,
                                      cardPaydown: data.priorities?.cardPaydown ?? 0,
-                                     goals: goalsSetAside(in: currentMonth))
+                                     goals: goalsSetAside(in: currentMonth),
+                                     trips: tripSetAside(in: currentMonth))
         guard data.monthSnapshots?[key] != snapshot else { return }
         var all = data.monthSnapshots ?? [:]
         all[key] = snapshot

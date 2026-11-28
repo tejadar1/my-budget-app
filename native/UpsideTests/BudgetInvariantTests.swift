@@ -294,3 +294,129 @@ final class BudgetInvariantTests: XCTestCase {
         }
     }
 }
+
+// MARK: - The past, syncs, Undo, and the next month
+
+extension BudgetInvariantTests {
+    /// A finished month keeps the plan it had: changing savings, cards, the
+    /// trip fund or a limit today doesn't rewrite last month.
+    func testThePastDoesntChangeWhenSettingsDo() {
+        for seed in 1...60 as ClosedRange<UInt64> {
+            let s = household(seed)
+            let september = s.month(-1, from: s.currentMonth)
+            let today = s.now()
+            // September, as it was planned then.
+            s.now = { self.date(2026, 9, 15) }
+            s.recordMonthSnapshot()
+            s.now = { today }
+            let before = s.monthPlan(september)
+            // Today's changes.
+            s.data.priorities = Priorities(savings: 123_400, cardPaydown: 56_700)
+            s.data.tripFund = TripFund(monthly: 77_700, start: date(2026, 6, 1))
+            s.setLimit("dining", 1_000)
+            let after = s.monthPlan(september)
+            let label = "household \(seed)"
+            XCTAssertEqual(after.savings, before.savings, "\(label): September's savings")
+            XCTAssertEqual(after.cardPaydown, before.cardPaydown, "\(label): September's card paydown")
+            XCTAssertEqual(after.trips, before.trips, "\(label): September's trips")
+            XCTAssertEqual(after.income, before.income, "\(label): September's income")
+            XCTAssertEqual(after.bills, before.bills, "\(label): September's bills")
+            XCTAssertEqual(after.toSpend, before.toSpend, "\(label): September's to spend")
+        }
+    }
+
+    /// Every one-tap change undoes to exactly what was there before.
+    func testEveryOneTapChangeUndoesExactly() {
+        for seed in 1...60 as ClosedRange<UInt64> {
+            let s = household(seed)
+            var rng = Seeded(state: seed &* 104_729)
+            let month = s.currentMonth
+            for step in 1...10 {
+                let before = json(s.data)
+                let bills = s.recurringCharges()
+                let lines = s.billLines(month)
+                let sources = s.incomeSources(before: month)
+                let options = s.overrunCost(in: month).options
+                switch Int.random(in: 0...5, using: &rng) {
+                case 0:
+                    guard let b = bills.randomElement(using: &rng) else { continue }
+                    s.undoable("stop") { s.stopBill(b, afterThisMonth: Bool.random(using: &rng)) }
+                case 1:
+                    guard let b = bills.randomElement(using: &rng) else { continue }
+                    s.undoable("paid") { s.markBillPaid(b.id) }
+                case 2:
+                    guard let l = lines.randomElement(using: &rng) else { continue }
+                    s.undoable("paid for the month") { s.markBillCategoryDone(l.category.id) }
+                case 3:
+                    guard let src = sources.randomElement(using: &rng) else { continue }
+                    s.undoable("not income") { s.removeIncomeSource(src.id) }
+                case 4:
+                    guard let o = options.randomElement(using: &rng) else { continue }
+                    s.undoable("what gives") { s.payForOverspending(from: o.source, amount: o.amount, categoryId: nil, in: month) }
+                default:
+                    guard let b = bills.randomElement(using: &rng) else { continue }
+                    s.undoable("not a bill") { s.dismissRecurring(b.id) }
+                }
+                s.undoLast()
+                XCTAssertEqual(json(s.data), before, "household \(seed), step \(step): Undo puts everything back")
+            }
+        }
+    }
+
+    /// A new month: last month is finished and this one still adds up.
+    func testTheNextMonthStillAddsUp() {
+        for seed in 1...60 as ClosedRange<UInt64> {
+            let s = household(seed)
+            let october = s.currentMonth
+            let octoberIncome = s.income(in: october)
+            s.recordMonthSnapshot()
+            s.now = { self.date(2026, 11, 3) }
+            XCTAssertNotEqual(s.currentMonth, october)
+            XCTAssertEqual(s.monthPlan(october).income, octoberIncome, "household \(seed): a finished month counts what came in")
+            check(s, "household \(seed), November 3")
+            // The month start is offered, and finishing it takes it away.
+            if s.monthStart() != nil {
+                s.finishMonthStart()
+                XCTAssertNil(s.monthStart(), "household \(seed)")
+            }
+        }
+    }
+
+    /// The same bank data twice changes nothing; a pending charge replaced by
+    /// its final charge leaves one charge.
+    @MainActor
+    func testABankSyncAppliedTwiceChangesNothing() throws {
+        func set(_ transactions: String) throws -> SimpleFIN.AccountSet {
+            let json = """
+            {"accounts":[{"id":"chk","name":"Checking","balance":"1000.00","org":{"name":"Chase"},
+              "transactions":[\(transactions)]}]}
+            """
+            return try JSONDecoder().decode(SimpleFIN.AccountSet.self, from: Data(json.utf8))
+        }
+        let now = Date()
+        let t = Int(now.timeIntervalSince1970)
+        let window = DateInterval(start: now.addingTimeInterval(-14 * 86_400), end: now)
+        let s = BudgetStore(data: BudgetData(), isDemo: true)
+        let first = try set("""
+            {"id":"a","posted":\(t - 5 * 86_400),"amount":"-42.10","description":"KROGER #12"},
+            {"id":"p","posted":\(t - 2 * 86_400),"amount":"-132.97","description":"UBER PENDING TRANSACTION","pending":true},
+            {"id":"pay","posted":\(t - 3 * 86_400),"amount":"3000.00","description":"ACME PAYROLL"}
+            """)
+        BankSync.apply(first, to: s, window: window)
+        let once = s.data.transactions.map(\.id).sorted()
+        BankSync.apply(first, to: s, window: window)
+        XCTAssertEqual(s.data.transactions.map(\.id).sorted(), once, "the same data twice adds nothing")
+        XCTAssertEqual(s.data.transactions.count, 3)
+
+        // Next sync: the pending ride became a $138.91 charge under a new ID.
+        let second = try set("""
+            {"id":"a","posted":\(t - 5 * 86_400),"amount":"-42.10","description":"KROGER #12"},
+            {"id":"f","posted":\(t - 1 * 86_400),"amount":"-138.91","description":"UBER *TRIP"},
+            {"id":"pay","posted":\(t - 3 * 86_400),"amount":"3000.00","description":"ACME PAYROLL"}
+            """)
+        BankSync.apply(second, to: s, window: window)
+        let uber = s.data.transactions.filter { $0.payee.uppercased().contains("UBER") }
+        XCTAssertEqual(uber.map(\.amount), [-13_891], "one ride, the final amount")
+        XCTAssertTrue(s.data.transactions.contains { $0.amount == 300_000 }, "the paycheck is still there")
+    }
+}

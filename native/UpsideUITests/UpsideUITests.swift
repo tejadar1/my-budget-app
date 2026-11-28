@@ -93,4 +93,91 @@ final class UpsideUITests: XCTestCase {
         XCTAssertTrue(title.waitForExistence(timeout: 5))
         XCTAssertTrue(title.isHittable, "the topic's title isn't under the bar")
     }
+
+    func testStoppingABillCanBeUndoneFromTheToast() {
+        launch("-open", "bills")
+        XCTAssertTrue(app.navigationBars["Bills & subscriptions"].waitForExistence(timeout: 10))
+        let netflix = any("Netflix")
+        XCTAssertTrue(scrollTo(netflix))
+        netflix.swipeLeft()
+        XCTAssertTrue(app.buttons["Stop"].waitForExistence(timeout: 5))
+        app.buttons["Stop"].tap()
+        let choice = [app.buttons["After this month"], app.buttons["It already stopped"]]
+        XCTAssertTrue(choice[0].waitForExistence(timeout: 5) || choice[1].exists)
+        (choice[0].exists ? choice[0] : choice[1]).tap()
+        XCTAssertTrue(any("stopped").waitForExistence(timeout: 3), "the toast says what happened")
+        let undo = app.buttons["Undo"]
+        XCTAssertTrue(undo.waitForExistence(timeout: 3))
+        undo.tap()
+        XCTAssertFalse(app.buttons["Restart"].waitForExistence(timeout: 2), "nothing stopped after Undo")
+    }
+
+    func testAnIncomeSourceCanBeTakenOutAndPutBack() {
+        launch("-open", "income")
+        XCTAssertTrue(app.navigationBars["Income"].waitForExistence(timeout: 10))
+        let source = any("Payroll Deposit")
+        XCTAssertTrue(scrollTo(source))
+        source.swipeLeft()
+        let notIncome = app.buttons["Not income"]
+        XCTAssertTrue(notIncome.waitForExistence(timeout: 5), "Not income is a swipe away")
+        notIncome.tap()
+        let undo = app.buttons["Undo"]
+        XCTAssertTrue(undo.waitForExistence(timeout: 3))
+        undo.tap()
+        XCTAssertTrue(any("Payroll Deposit").waitForExistence(timeout: 3), "back after Undo")
+    }
+
+    func testStartTheMonthShowsThreeStepsAndCloses() {
+        launch("-open", "monthstart")
+        let bar = app.navigationBars.matching(NSPredicate(format: "identifier BEGINSWITH 'Start '")).firstMatch
+        XCTAssertTrue(bar.waitForExistence(timeout: 10))
+        XCTAssertTrue(any("Wrap up").exists)
+        XCTAssertTrue(any("Income for").exists)
+        XCTAssertTrue(any("Your plan").exists)
+        app.buttons["Later"].tap()
+        XCTAssertFalse(bar.waitForExistence(timeout: 2))
+    }
+
+    func testSavingAndTripsAreOneSection() {
+        launch()
+        XCTAssertTrue(scrollTo(app.staticTexts["Saving & trips"]), "one section for everything set aside")
+        let savings = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Savings'")).firstMatch
+        XCTAssertTrue(scrollTo(savings))
+        savings.tap()
+        XCTAssertTrue(app.navigationBars["Savings"].waitForExistence(timeout: 5))
+    }
+
+    func testAdjustLimitOpensFromACategory() {
+        launch("-open", "category:groceries")
+        let adjust = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Adjust limit' OR label CONTAINS 'Set a limit'")).firstMatch
+        XCTAssertTrue(adjust.waitForExistence(timeout: 10))
+        adjust.tap()
+        XCTAssertTrue(app.navigationBars["Adjust limit"].waitForExistence(timeout: 5))
+        app.buttons["Cancel"].tap()
+    }
+
+    func testASubscriptionQuestionIsAnsweredInOneTap() {
+        launch()
+        var question = any("went up")
+        if !question.waitForExistence(timeout: 5) {
+            let more = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Show '")).firstMatch
+            if scrollTo(more) { more.tap() }
+            question = any("went up")
+        }
+        XCTAssertTrue(scrollTo(question), "Netflix's price increase is asked about")
+        question.tap()
+        let keep = app.buttons["Keep it"]
+        XCTAssertTrue(keep.waitForExistence(timeout: 5))
+        keep.tap()
+        XCTAssertTrue(app.buttons["Undo"].waitForExistence(timeout: 3), "and can be undone")
+    }
+
+    func testHowUpsideWorksOpensFromSettings() {
+        app.launchArguments = ["-demo", "-tab", "settings"]
+        app.launch()
+        let row = any("How Upside works")
+        XCTAssertTrue(scrollTo(row))
+        row.tap()
+        XCTAssertTrue(app.navigationBars["How Upside works"].waitForExistence(timeout: 5))
+    }
 }
