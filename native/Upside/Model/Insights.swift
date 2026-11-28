@@ -144,7 +144,11 @@ extension BudgetStore {
 
             let amounts = sorted.map { -$0.amount }
             let median = amounts.sorted()[amounts.count / 2]
-            guard amounts.allSatisfy({ abs($0 - median) * 100 <= median * 35 }) || steadyThenChanged(amounts)
+            // Utilities, phone and other bills go up and down with the
+            // season: the same company once a month is a bill whatever the
+            // amount. Elsewhere a steady price is what makes it a bill.
+            let billCategory = category(last.categoryId)?.group == "Bills"
+            guard billCategory || amounts.allSatisfy({ abs($0 - median) * 100 <= median * 35 }) || steadyThenChanged(amounts)
             else { return nil }
 
             // Bills categories, or the exact same price 3+ times (a gym).

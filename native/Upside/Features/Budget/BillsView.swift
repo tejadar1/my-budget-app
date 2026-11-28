@@ -57,6 +57,8 @@ struct BillsView: View {
     @State private var stopping: Recurring?
     /// The bill whose last month is being picked.
     @State private var picking: Recurring?
+    /// The bills category tapped, to say what's held and offer All paid.
+    @State private var held: BudgetStore.BillLine?
 
     var body: some View {
         let all = store.recurringCharges()
@@ -82,7 +84,7 @@ struct BillsView: View {
             if !lines.isEmpty {
                 Section {
                     ForEach(lines) { line in
-                        HStack {
+                        let row = HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(line.category.name)
                                 Text(line.stillToCome > 0
@@ -95,11 +97,19 @@ struct BillsView: View {
                                 .monospacedDigit()
                                 .foregroundStyle(line.stillToCome > 0 ? Color.primary : Theme.accent)
                         }
+                        if line.stillToCome > 0 {
+                            Button { held = line } label: { row.contentShape(Rectangle()) }
+                                .buttonStyle(.plain)
+                                .swipeActions { allPaidButton(line) }
+                                .contextMenu { allPaidButton(line) }
+                        } else {
+                            row
+                        }
                     }
                 } header: {
                     Text("Counted in your plan")
                 } footer: {
-                    Text("Each bill counts at least its usual, so unpaid bills are planned for.")
+                    Text("Bills still to come are held from your spending money. All paid already? Swipe left: All paid.")
                 }
             }
             if !due.isEmpty {
@@ -204,12 +214,46 @@ struct BillsView: View {
         .sheet(item: $picking) { bill in
             LastPaymentSheet(bill: bill)
         }
+        .confirmationDialog(held.map { "\($0.category.name): \(Money.short($0.stillToCome)) held" } ?? "",
+                            isPresented: Binding(get: { held != nil }, set: { if !$0 { held = nil } }),
+                            titleVisibility: .visible, presenting: held) { line in
+            Button("All paid for \(monthName)") {
+                withAnimation { store.markBillCategoryDone(line.category.id) }
+                Haptics.success()
+            }
+        } message: { line in
+            Text(heldReason(line))
+        }
     }
 
     private func stop(_ bill: Recurring, afterThisMonth: Bool) {
         withAnimation { store.stopBill(bill, afterThisMonth: afterThisMonth) }
         Haptics.success()
         stopping = nil
+    }
+
+    /// Why a category still holds money: the bills still to come, or a
+    /// usual its known bills don't explain.
+    private func heldReason(_ line: BudgetStore.BillLine) -> String {
+        let bills = store.recurringCharges().filter { $0.categoryId == line.category.id }
+        let due = bills.filter { !$0.paidThisMonth }.map { Merchant.clean($0.name) }
+        let paid = bills.filter(\.paidThisMonth).map { Merchant.clean($0.name) }
+        if !due.isEmpty {
+            return "Still to come: \(due.joined(separator: ", ")). If you've paid already, tap All paid."
+        }
+        let paidText = paid.isEmpty ? "" : "\(paid.joined(separator: " and ")) \(paid.count == 1 ? "is" : "are") paid. "
+        return paidText + "Held because this usually comes to \(Money.short(line.usual)) a month. Nothing else coming? Tap All paid."
+    }
+
+    /// Swipe on a category: everything this month is paid, stop holding money.
+    private func allPaidButton(_ line: BudgetStore.BillLine) -> some View {
+        Button {
+            withAnimation { store.markBillCategoryDone(line.category.id) }
+            Haptics.success()
+        } label: {
+            Label("All paid", systemImage: "checkmark.circle")
+        }
+        .tint(Theme.accent)
     }
 
     /// Swipe right: "Paid", for a bill paid somewhere Upside can't see.

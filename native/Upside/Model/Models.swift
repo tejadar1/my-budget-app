@@ -306,6 +306,8 @@ struct BudgetData: Codable {
     var billsKept: [String]?
     /// Bills you said are paid this month ("2026-11:veolia").
     var billsMarkedPaid: [String]?
+    /// Bills categories you said are all paid this month ("2026-11:utilities").
+    var billCategoriesDone: [String]?
     /// Whose paycheck each income source is (by payer key), for paychecks
     /// into a joint account.
     var incomeOwners: [String: Owner]?

@@ -58,31 +58,62 @@ extension BudgetStore {
         var stillToCome: Cents { max(0, expected - paid) }
     }
 
-    /// Each Bills category expects at least its usual (3-month average),
-    /// or more when a known bill is still due, so bills that vary or
-    /// haven't been paid yet are still counted. Past months: what was paid.
+    /// What each Bills category expects this month. Past months: what was paid.
+    ///
+    /// The bills Upside knows (Con Edison, Veolia…) count at what's paid,
+    /// or their latest amount while still due. Only the part of the
+    /// category's usual (3-month average) those bills don't explain is held
+    /// on top, for a bill that varies too much to be recognized, unless
+    /// that much has been paid already. With no known bills, the usual is
+    /// held. So once every utility bill is paid, a high-winter average
+    /// doesn't keep holding money. "All paid" releases the rest yourself.
     func billLines(_ month: Date) -> [BillLine] {
         let isCurrent = month == currentMonth
         let bills = isCurrent ? recurringCharges() : []
-        let due = Dictionary(grouping: bills.filter { !$0.paidThisMonth }, by: { $0.categoryId ?? "" })
-        // Bills you marked paid somewhere Upside can't see: their usual is
-        // taken care of, so the category doesn't expect it again.
-        let said = Set(data.billsMarkedPaid ?? [])
-        let markedPaid = Dictionary(grouping: bills.filter { said.contains(Self.paidKey($0.id, month)) },
-                                    by: { $0.categoryId ?? "" }).mapValues { $0.reduce(0) { $0 + $1.amount } }
+        let byCategory = Dictionary(grouping: bills, by: { $0.categoryId ?? "" })
+        let done = Set(data.billCategoriesDone ?? [])
         let funded = goalFundedCategories
         return expenseCategories.filter { $0.group == "Bills" }.compactMap { c in
             let paid = spent(c.id, in: month)
             // A stopped bill leaves its category's usual at once.
             let usual = max(0, (averageSpent(c.id, before: month) ?? 0) - stoppedShare(c.id, before: month))
-            let knownDue = (due[c.id] ?? []).reduce(0) { $0 + $1.amount }
-            // A bill with its own goal is saved for there; only count what's
-            // actually charged, not its usual every month.
-            let floor = funded.contains(c.id) ? 0 : max(0, usual - (markedPaid[c.id] ?? 0))
-            let expected = isCurrent ? max(floor, paid + knownDue) : paid
+            let known = byCategory[c.id] ?? []
+            let knownDue = known.filter { !$0.paidThisMonth }.reduce(0) { $0 + $1.amount }
+            let expected: Cents
+            if !isCurrent || done.contains(Self.paidKey(c.id, month)) {
+                expected = paid
+            } else if funded.contains(c.id) {
+                // A bill with its own goal is saved for there; only count what's
+                // actually charged, not its usual every month.
+                expected = paid + knownDue
+            } else if known.isEmpty {
+                expected = max(usual, paid)
+            } else {
+                let knownUsual = known.reduce(0) { $0 + billUsual($1, before: month) }
+                let paidKnown = max(0, -spendingTransactions.filter { t in
+                    t.categoryId == c.id && isInMonth(t.date, month) && known.contains { Self.charge(t, isFor: $0.id) }
+                }.reduce(0) { $0 + $1.amount })
+                let otherUsual = max(0, usual - knownUsual)
+                let otherPaid = max(0, paid - paidKnown)
+                expected = paidKnown + knownDue + max(otherUsual, otherPaid)
+            }
             return expected > 0 || paid > 0 ? BillLine(category: c, paid: paid, usual: usual, expected: max(expected, paid)) : nil
         }
         .sorted { $0.expected > $1.expected }
+    }
+
+    /// A known bill's usual month (3-month average of its own charges).
+    func billUsual(_ bill: Recurring, before month: Date) -> Cents {
+        let charges = spendingTransactions.filter { $0.categoryId == bill.categoryId && Self.charge($0, isFor: bill.id) }
+        return max(0, -(perAccountAverage(charges, before: month) ?? 0))
+    }
+
+    /// "All paid for the month": a bills category stops holding money for
+    /// bills that haven't come, for this month only.
+    func markBillCategoryDone(_ categoryId: String) {
+        var keys = Set(data.billCategoriesDone ?? [])
+        keys.insert(Self.paidKey(categoryId, currentMonth))
+        data.billCategoriesDone = keys.sorted()
     }
 
     func monthPlan(_ month: Date) -> MonthPlan {

@@ -3,6 +3,8 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next (0.36.4): Room that's really spare
+- Bills that go up and down (utilities, phone) are recognized as the same bill whatever they come to. Once the usual ones have come this month, even for less than usual, nothing more is held for that category. Before, Utilities could keep holding $300+ after every bill was paid, because its three-month average was higher.
+- Tap a bills category that's still holding money (Bills & subscriptions › Counted in your plan) to see why (which bills are still to come, or "usually $967 a month") and All paid for the month. Swipe left does the same.
 - "Lower limits with room left" only takes what's truly spare: each category keeps enough for the rest of the month at its usual pace. Before, it took everything unspent, so mid-month Gifts could drop to $0 and Commuting to $10, and the next purchase there was over. On the 20th, a $300 Gifts limit that usually sees $150 offers $250, not $300; on the last day of the month, all of it.
 
 ## 0.36.3: Every number agrees

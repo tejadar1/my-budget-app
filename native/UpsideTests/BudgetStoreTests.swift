@@ -863,6 +863,40 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertFalse(store.missedBills().contains { $0.id == bill.id })
     }
 
+    func testUtilitiesThatVaryAreDoneOnceTheUsualBillsArePaid() {
+        let store = makeStore()   // today: Oct 15
+        // Con Edison swings with the season ($900, $600, $300); Veolia is $200.
+        for (m, amount) in [(7, 90_000), (8, 60_000), (9, 30_000)] {
+            store.data.transactions.append(Transaction(id: "c\(m)", accountId: "r", date: date(2026, m, 5),
+                                                       amount: -amount, payee: "CON EDISON", categoryId: "utilities"))
+            store.data.transactions.append(Transaction(id: "v\(m)", accountId: "r", date: date(2026, m, 10),
+                                                       amount: -20_000, payee: "VEOLIA", categoryId: "utilities"))
+        }
+        // October: both came, lower than usual.
+        store.data.transactions.append(Transaction(id: "c10", accountId: "r", date: date(2026, 10, 5),
+                                                   amount: -25_000, payee: "CON EDISON", categoryId: "utilities"))
+        store.data.transactions.append(Transaction(id: "v10", accountId: "r", date: date(2026, 10, 10),
+                                                   amount: -15_000, payee: "VEOLIA", categoryId: "utilities"))
+        XCTAssertTrue(store.recurringCharges().contains { $0.name == "CON EDISON" }, "a bill, whatever it comes to")
+        let line = store.billLines(store.currentMonth).first { $0.category.id == "utilities" }!
+        XCTAssertEqual(line.usual, 80_000)
+        XCTAssertEqual(line.paid, 40_000)
+        XCTAssertEqual(line.stillToCome, 0, "the same two bills came: nothing more is held")
+    }
+
+    func testABillsCategoryYouSayIsAllPaidStopsHolding() {
+        let store = makeStore()
+        // Irregular water charges, no pattern Upside can call a bill.
+        store.data.transactions += [
+            Transaction(id: "w1", accountId: "r", date: date(2026, 7, 3), amount: -30_000, payee: "TOWN WATER", categoryId: "utilities"),
+            Transaction(id: "w2", accountId: "r", date: date(2026, 9, 25), amount: -60_000, payee: "CITY GAS CO", categoryId: "utilities"),
+        ]
+        let before = store.billLines(store.currentMonth).first { $0.category.id == "utilities" }
+        XCTAssertEqual(before?.stillToCome, 30_000, "its usual is held")
+        store.markBillCategoryDone("utilities")
+        XCTAssertNil(store.billLines(store.currentMonth).first { $0.category.id == "utilities" }, "nothing held, nothing paid")
+    }
+
     func testFindsSubscriptionsByPattern() {
         let store = makeStore()
         for (m, d) in [(8, 3), (9, 4), (10, 3)] {
