@@ -3,6 +3,7 @@
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
 ## Next (0.38.1): Tap or swipe
+- Bank logos on accounts: each bank's own icon, from its own website, kept on your phone (no logo service learns which banks you use). Banks without one get a letter on their color.
 - Nothing is hidden behind a long-press any more. Everything is a tap or a swipe:
   - Goals: Add an extra $100, Bill paid start over, and Delete are on the goal's page.
   - Transactions: swipe left for Business or Transfer; tap a purchase to move it.

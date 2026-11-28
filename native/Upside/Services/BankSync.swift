@@ -83,6 +83,7 @@ enum BankSync {
             let institution = sf.org.name ?? sf.org.domain ?? "Bank"
             if let i = data.accounts.firstIndex(where: { $0.id == sf.id }) {
                 data.accounts[i].balance = balance
+                if let domain = BankLogo.host(sf.org.domain) { data.accounts[i].domain = domain }
                 data.accounts[i].lastSynced = Date()
                 data.accounts[i].bankUpdated = bankDate(sf)
             } else {
@@ -91,7 +92,8 @@ enum BankSync {
                     id: sf.id, name: sf.name, institution: institution, kind: kind,
                     balance: balance,
                     owner: BudgetStore.guessOwner(sf.name, people: data.people),
-                    isOnBudget: kind.isOnBudgetByDefault, lastSynced: Date(), bankUpdated: bankDate(sf)))
+                    isOnBudget: kind.isOnBudgetByDefault, lastSynced: Date(), bankUpdated: bankDate(sf),
+                    domain: BankLogo.host(sf.org.domain)))
             }
 
             // A pending item the bank no longer sends was replaced (often by

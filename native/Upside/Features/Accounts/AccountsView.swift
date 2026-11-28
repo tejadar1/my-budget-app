@@ -125,6 +125,8 @@ struct WalletCard: View {
     var body: some View {
         VStack(alignment: .leading) {
             HStack(alignment: .top) {
+                BankLogo(institution: account.institution, domain: account.domain, size: 34)
+                    .shadow(color: .black.opacity(0.15), radius: 2, y: 1)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(account.name).font(.headline).lineLimit(1)
                     Text([account.institution, account.isOnBudget ? nil : "Off budget"]
@@ -171,7 +173,10 @@ struct WhoseCard: View {
             }
             ForEach(store.unclaimedAccounts) { account in
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(account.fullName).font(.subheadline.weight(.semibold))
+                    HStack(spacing: 10) {
+                        BankLogo(institution: account.institution, domain: account.domain, size: 24)
+                        Text(account.fullName).font(.subheadline.weight(.semibold))
+                    }
                     OwnerPicker(owner: Binding(
                         get: { account.owner },
                         set: { store.setOwner(account.id, $0) }), people: store.people)
@@ -275,7 +280,7 @@ struct ReorderAccountsView: View {
             List {
                 ForEach(store.data.accounts) { account in
                     HStack(spacing: 12) {
-                        OwnerBadge(owner: account.owner, people: store.people, size: 28)
+                        BankLogo(institution: account.institution, domain: account.domain, size: 28)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(account.name)
                             Text(account.isHidden ? "\(account.institution) · Hidden" : account.institution)
@@ -325,7 +330,8 @@ private struct AccountGroupSection: View {
                 }
                 ForEach(accounts) { account in
                     Divider().padding(.vertical, 10)
-                    HStack {
+                    HStack(spacing: 12) {
+                        BankLogo(institution: account.institution, domain: account.domain, size: 28)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(account.name)
                             Text(account.institution).font(.caption).foregroundStyle(.secondary)

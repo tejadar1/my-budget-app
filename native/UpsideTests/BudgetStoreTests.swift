@@ -939,6 +939,18 @@ final class BudgetStoreTests: XCTestCase {
         XCTAssertFalse(store.attention().contains { if case .subscription = $0 { return true } else { return false } })
     }
 
+    func testBankLogosComeFromTheBanksOwnSite() {
+        XCTAssertEqual(BankLogo.host("https://www.chase.com/"), "chase.com")
+        XCTAssertEqual(BankLogo.host("www.ally.com"), "ally.com")
+        XCTAssertNil(BankLogo.host(""))
+        XCTAssertNil(BankLogo.host("Chase"), "a name isn't a web address")
+        // The connection's address wins; a known bank's name is the fallback.
+        XCTAssertEqual(BankLogo.site(institution: "Chase", domain: "https://chase.com"), "chase.com")
+        XCTAssertEqual(BankLogo.site(institution: "Bank of America", domain: nil), "bankofamerica.com")
+        XCTAssertEqual(BankLogo.site(institution: "BofA", domain: nil), "bankofamerica.com")
+        XCTAssertNil(BankLogo.site(institution: "Hometown Credit Union", domain: nil), "unknown: the letter badge")
+    }
+
     func testFindsSubscriptionsByPattern() {
         let store = makeStore()
         for (m, d) in [(8, 3), (9, 4), (10, 3)] {

@@ -115,6 +115,8 @@ struct Account: Identifiable, Codable, Hashable {
     /// When the bank itself last updated this account, which can lag
     /// days behind our own sync when a connection needs attention.
     var bankUpdated: Date? = nil
+    /// The bank's web address (from the bank connection), for its logo.
+    var domain: String? = nil
 
     var isHidden: Bool { hidden == true }
     /// Counts toward spending, income and Purchases to sort.
