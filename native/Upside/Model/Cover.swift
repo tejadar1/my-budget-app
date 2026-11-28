@@ -118,7 +118,7 @@ extension BudgetStore {
         .sorted { $0.over > $1.over }
     }
 
-    /// Where the room can come from: money not in any limit first, then
+    /// Where the room can come from: money not in a limit first, then
     /// categories with room left, most room first.
     func coverSources(for categoryId: String, in month: Date) -> [CoverSource] {
         var result: [CoverSource] = []

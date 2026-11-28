@@ -36,3 +36,18 @@ accounts, banks and way of budgeting are the test bed, not the spec.
 3. Bank wording beyond the banks we use (pair-matching already works anywhere).
 4. Later, for selling: a new name (Upside is taken), a privacy policy, and a
    bank connection users don't set up themselves (needs a server).
+
+## One vocabulary
+
+The same thing has one name everywhere: on every screen, in How Upside works, in release notes.
+
+| Say | Means | Not |
+|---|---|---|
+| **to spend** (label), **spending money** (in a sentence) | What's left of income after bills, savings, cards, trips and goals | "safe to spend", "available", "budget" |
+| **left to spend** | To spend, minus what's been spent | "remaining", "safe to spend" |
+| **limit** | What one everyday category has this month | "budget" for a category |
+| **not in a limit** | Spending money no limit has claimed | "not in any limit", "unassigned", "spare" |
+| **set aside** | Money taken off the top for trips and goals | "reserved", "saved for" |
+| **over**, **overspending** | Spent past a limit (or past its usual, with no limit) | "overrun", "deficit" |
+| **held** | A bill expected but not paid yet, still counted | "reserved", "pending" |
+| **choose what gives** | Paying for being over, by less savings, cards, trips, goals or limits with room left | "rebalance", "fix" |

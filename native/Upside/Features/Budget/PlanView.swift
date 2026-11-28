@@ -319,7 +319,7 @@ struct PlanView: View {
                     // Already paid for, or money no limit uses covers it: say so quietly, no button.
                     let summary = store.cutsSummary(in: month)
                     Label("\(overs) categor\(overs == 1 ? "y is" : "ies are") over, and it's paid for: "
-                          + (summary.map { "this month you \($0)." } ?? "money not in any limit covers it.")
+                          + (summary.map { "this month you \($0)." } ?? "money not in a limit covers it.")
                           + " Nothing else to do.",
                           systemImage: "checkmark.circle.fill")
                         .font(.footnote).foregroundStyle(.secondary)
@@ -368,7 +368,7 @@ struct PlanView: View {
             // Only money nothing uses: not limits, and not overspending.
             let spare = (n.toSpend - n.committed) / 1000 * 10
             if spare >= 10 {
-                Button("Save the \(Money.short(spare * 100)) not in any limit") { withAnimation { savings += spare } }
+                Button("Save the \(Money.short(spare * 100)) not in a limit") { withAnimation { savings += spare } }
             }
         } header: {
             Text("Everyday limits")

@@ -39,18 +39,15 @@ struct IncomeCard: View {
                 }
                 Divider()
                 let keep = store.setAside(in: month)
-                if let safe = store.safeToSpend(in: month), month == store.currentMonth {
+                if month == store.currentMonth {
+                    // The same number as the Budget card, so there's one answer.
+                    let left = store.monthPlan(month).leftToSpend
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(safe >= 0 ? "\(Money.short(safe)) safe to spend"
-                                       : "\(Money.short(-safe)) over")
+                        Text(left >= 0 ? "\(Money.short(left)) left to spend" : "\(Money.short(-left)) over")
                             .font(.headline)
-                            .foregroundStyle(safe >= 0 ? Theme.accent : Theme.over)
-                        let expecting = (usual ?? 0) > income
-                        Text((expecting ? "Counts your usual \(Money.short(usual ?? 0)) income. " : "")
-                             + (keep > 0
-                                ? (safe >= 0 ? "Keeps \(Money.short(keep)) for savings and trips, after bills left to pay."
-                                             : "This comes out of the \(Money.short(keep)) for savings and trips.")
-                                : "After bills left to pay this month."))
+                            .foregroundStyle(left >= 0 ? Theme.accent : Theme.over)
+                        Text(keep > 0 ? "After bills, and \(Money.short(keep)) for savings and trips."
+                                      : "After bills.")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                 }

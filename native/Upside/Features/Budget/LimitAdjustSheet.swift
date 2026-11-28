@@ -54,7 +54,7 @@ struct LimitAdjustSheet: View {
 
                 Section {
                     if over == 0 {
-                        Label(spare > 0 ? "Fits. \(Money.short(spare)) still not in any limit."
+                        Label(spare > 0 ? "Fits. \(Money.short(spare)) still not in a limit."
                                         : "Fits exactly: every dollar is in a limit.",
                               systemImage: "checkmark.circle.fill")
                             .foregroundStyle(Theme.accent)

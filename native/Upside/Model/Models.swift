@@ -310,6 +310,8 @@ struct BudgetData: Codable {
     var billCategoriesDone: [String]?
     /// New subscriptions and price increases you said to keep (see subscriptionKey).
     var subscriptionsKept: [String]?
+    /// Month-start steps done ("2026-12:income", "2026-12:plan", "2026-12:finished").
+    var monthStartDone: [String]?
     /// Whose paycheck each income source is (by payer key), for paychecks
     /// into a joint account.
     var incomeOwners: [String: Owner]?

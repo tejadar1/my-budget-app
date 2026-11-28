@@ -19,7 +19,7 @@ extension BudgetStore {
     /// What the month's limits will use, given limits by category (cents;
     /// missing = your usual; a limit lowered to $0 is $0): each limit, or what's already spent where
     /// that's more. Plan, Budget and Adjust limit all count it this way, so
-    /// money "not in any limit" never includes money overspending used.
+    /// money "not in a limit" never includes money overspending used.
     func committedSpending(limits: [String: Cents], in month: Date) -> Cents {
         everydayCategories.reduce(0) { sum, c in
             // A set limit gets what rolled over into it, as on Budget, the

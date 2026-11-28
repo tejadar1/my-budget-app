@@ -113,7 +113,7 @@ struct MonthPlanCard: View {
             let spare = month == store.currentMonth ? plan.toSpend - store.committedSpending(in: month) : 0
             if plan.everydayLimits > 0 && spare >= 1000 {
                 Button { onSavings?() } label: {
-                    line("Not in any limit", spare, note: "put it toward savings", chevron: true)
+                    line("Not in a limit", spare, note: "put it toward savings", chevron: true)
                         .opacity(0.85)
                 }
                 .buttonStyle(.plain)

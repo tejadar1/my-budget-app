@@ -2717,6 +2717,32 @@ final class OverrunTests: XCTestCase {
         XCTAssertEqual(s.monthPlan(october).toSpend - s.committedSpending(in: october), 0, "no spare to save")
     }
 
+    func testStartingAMonthWalksThroughThreeStepsThenGoesAway() {
+        let s = store()
+        s.now = { self.date(2026, 11, 2) }                    // the first days of November
+        guard let start = s.monthStart() else { return XCTFail("offered while November is being planned") }
+        XCTAssertFalse(start.incomeChecked)
+        XCTAssertFalse(start.planSet)
+        XCTAssertTrue(s.attention().contains(.monthStart(done: start.stepsDone)))
+        XCTAssertFalse(s.attention().contains { if case .checkIn = $0 { return true } else { return false } },
+                       "wrapping up October is its first step, not a second item")
+
+        s.confirmMonthIncome()
+        XCTAssertEqual(s.monthStart()?.incomeChecked, true)
+        s.confirmMonthPlan()
+        XCTAssertNotNil(s.data.originalLimits?[BudgetStore.monthKey(s.currentMonth)], "November's plan is kept for its recap")
+        if (s.monthStart()?.wrapUpLeft ?? 0) > 0 {
+            s.finishMonthStart()                                // done for now, with October still open
+        }
+        XCTAssertNil(s.monthStart(), "finished: it leaves Needs attention")
+        XCTAssertFalse(s.attention().contains { if case .monthStart = $0 { return true } else { return false } })
+
+        // Not offered once the month is under way.
+        let later = store()
+        later.now = { self.date(2026, 10, 20) }
+        XCTAssertNil(later.monthStart())
+    }
+
     func testRoomLeftKeepsEnoughForTheRestOfTheMonth() {
         // November 20: Gifts has a $300 limit, nothing spent, and usually $150.
         let s = store()

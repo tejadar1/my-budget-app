@@ -16,6 +16,8 @@ struct BudgetView: View {
     @State private var askHousehold: String?
     @State private var askMissed: Recurring?
     @State private var askSubscription: Recurring?
+    /// A sheet opened from Start December returns to it when closed.
+    @State private var backToStart = false
     /// "Ron's paycheck went down $500" from Needs attention.
     @State private var askPay: BudgetStore.PayChange?
 
@@ -107,24 +109,37 @@ struct BudgetView: View {
                 case .trips: TripsListView()
                 }
             }
-            .sheet(item: $sheet, onDismiss: {
-                if let next = nextSheet { nextSheet = nil; sheet = next }
-            }) { sheet in
-                switch sheet {
-                case .plan: PlanView()
-                case .planning: PlanView(mode: .planning)
-                case .limits: LimitsView()
-                case .savings(let month): SavingsSheet(month: month, openPlan: isCurrentMonth ? { then(.plan) } : nil)
-                case .checkIn: CheckInSheet { then(.planning) }
-                case .overrun(let id): OverrunSheet(month: store.currentMonth, focus: id)
-                case .bank: BankSheet()
-                case .extraIncome: ExtraIncomeSheet()
-                case .recap(let month): RecapView(month: month)
-                case .purchase(let id): TransactionSheet(transactionId: id)
-                }
-            }
+            .sheet(item: $sheet, onDismiss: sheetClosed) { sheetView($0) }
             .onAppear(perform: openFromLaunchArgs)
             .apply { questions($0) }
+        }
+    }
+
+    /// After a sheet closes: the next one asked for, or back to Start
+    /// December when a step was opened from it.
+    private func sheetClosed() {
+        if let next = nextSheet {
+            nextSheet = nil; sheet = next
+        } else if backToStart {
+            backToStart = false
+            if store.monthStart() != nil { sheet = .monthStart }
+        }
+    }
+
+    @ViewBuilder
+    private func sheetView(_ sheet: BudgetSheet) -> some View {
+        switch sheet {
+        case .plan: PlanView()
+        case .planning: PlanView(mode: .planning)
+        case .limits: LimitsView()
+        case .savings(let month): SavingsSheet(month: month, openPlan: isCurrentMonth ? { then(.plan) } : nil)
+        case .checkIn: CheckInSheet { then(.planning) }
+        case .monthStart: MonthStartSheet { next in backToStart = true; then(next) }
+        case .overrun(let id): OverrunSheet(month: store.currentMonth, focus: id)
+        case .bank: BankSheet()
+        case .extraIncome: ExtraIncomeSheet()
+        case .recap(let month): RecapView(month: month)
+        case .purchase(let id): TransactionSheet(transactionId: id)
         }
     }
 
@@ -197,6 +212,7 @@ struct BudgetView: View {
         case .rebalance: sheet = .overrun(nil)
         case .onPace(let id, _): path.append(Route.category(id, store.currentMonth))
         case .checkIn: sheet = .checkIn
+        case .monthStart: sheet = .monthStart
         case .extraIncome: sheet = .extraIncome
         case .toCheck: path.append(Route.review)
         case .household(let name): askHousehold = name
@@ -220,6 +236,7 @@ struct BudgetView: View {
         case "review": path.append(Route.review)
         case "trip": path.append(Route.trip(open.id))
         case "bills": path.append(Route.bills)
+        case "monthstart": sheet = .monthStart
         case "income": path.append(Route.income)
         case "trips": path.append(Route.trips)
         case "cards": path.append(Route.cards)
@@ -266,6 +283,8 @@ struct BudgetView: View {
 
 enum BudgetSheet: Identifiable, Hashable {
     case plan, limits, checkIn, bank, extraIncome
+    /// The first days of a month: Start December, step by step.
+    case monthStart
     /// Plan opened from the month's wrap-up: saving makes the month's plan.
     case planning
     case savings(Date)
@@ -435,12 +454,17 @@ struct RowDivider: View {
 struct AttentionList: View {
     @Environment(BudgetStore.self) private var store
     let open: (BudgetStore.Attention) -> Void
+    /// Three at a time keeps Budget calm; the rest are a tap away.
+    @State private var showAll = false
+    static let shown = 3
 
     var body: some View {
-        let items = store.attention()
-        if !items.isEmpty {
+        let all = store.attention()
+        let items = showAll ? all : Array(all.prefix(Self.shown))
+        if !all.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                SectionTitle(text: "Needs attention")
+                SectionTitle(text: "Needs attention",
+                             trailing: all.count > Self.shown ? "\(all.count)" : nil)
                 RowGroup {
                     ForEach(items) { item in
                         HStack(spacing: 0) {
@@ -468,6 +492,17 @@ struct AttentionList: View {
                             }
                         }
                         if item != items.last { RowDivider() }
+                    }
+                    if all.count > Self.shown {
+                        RowDivider()
+                        Button {
+                            withAnimation(.snappy) { showAll.toggle() }
+                        } label: {
+                            Text(showAll ? "Show less" : "Show \(all.count - Self.shown) more")
+                                .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.accent)
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -509,6 +544,11 @@ struct AttentionList: View {
             ListRow(title: "\(Money.short(amount)) more came in than planned",
                     subtitle: "Give it a job before it gets spent") {
                 SymbolIcon(symbol: "dollarsign.circle.fill", color: Theme.accent)
+            }
+        case .monthStart(let done):
+            ListRow(title: "Start \(store.currentMonth.formatted(.dateTime.month(.wide)))",
+                    subtitle: done == 0 ? "Three quick steps: last month, income, your plan" : "\(done) of 3 steps done") {
+                SymbolIcon(symbol: "sunrise.fill", color: .orange)
             }
         case .checkIn(let decisions):
             let name = store.month(-1, from: store.currentMonth).formatted(.dateTime.month(.wide))

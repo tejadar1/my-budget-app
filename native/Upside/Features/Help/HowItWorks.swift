@@ -47,7 +47,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
             return [
                 "Some money comes first: bills, savings, card paydown, trips and goals. What's left is your spending money, and your everyday limits share it.",
                 "Income − bills − savings − cards − trips − goals = spending money.",
-                "Money not in any limit is still yours. It covers surprises, or you can save it.",
+                "Money not in a limit is still yours. It covers surprises, or you can save it.",
                 "Bills count at least their usual until they're paid, so a bill that hasn't come yet is never spending money.",
                 "When a bill ends (cancelled, paid off), stop it in Bills: swipe left, then Stop, now or after a month you pick. From then on it isn't expected and its money is spending money again right away. If it charges again, it comes back.",
                 "A regular bill with no charge for six weeks shows in Needs attention: did it end?",
@@ -65,7 +65,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
         case .overspending:
             return [
                 "When a category goes past its limit, it stays over. Upside never raises the limit to hide it.",
-                "Money not in any limit covers it first, and you'll have that much less at month end.",
+                "Money not in a limit covers it first, and you'll have that much less at month end.",
                 "If there isn't any, something has to give, and you choose: limits that still have room, then goals, trips, cards, and savings last. Savings is never chosen for you.",
                 "Your choice changes this month only and can be undone. Once it's paid for, it leaves Needs attention, still shows as over in Categories, and the recap names it.",
                 "Limits that add up to more than you have work the same way: Choose what gives.",

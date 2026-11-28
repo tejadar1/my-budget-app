@@ -126,6 +126,7 @@ jobs:
             shot $mode 1e-overrun -demo -tab budget -open overrun -tight
             shot $mode 1f-savings -demo -tab budget -open savings
             shot $mode 1h-extra-income -demo -tab budget -open extra
+            shot $mode 1i-month-start -demo -tab budget -open monthstart
             shot $mode 2-accounts -demo -tab accounts
             shot $mode 2b-transactions -demo -tab transactions
             shot $mode 3-settings -demo -tab settings

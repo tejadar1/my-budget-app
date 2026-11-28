@@ -30,6 +30,8 @@ extension BudgetStore {
         case extraIncome(amount: Cents)
         /// Last month's check-in, with this many decisions left.
         case checkIn(decisions: Int)
+        /// The first days of a month: start it, step by step.
+        case monthStart(done: Int)
         /// Purchases sorted on a hunch.
         case toCheck(count: Int)
         /// A paycheck came in lower: plan on the new amount?
@@ -62,6 +64,7 @@ extension BudgetStore {
             case .onPace(let id, _): "pace-\(id)"
             case .extraIncome: "extra-income"
             case .checkIn: "checkin"
+            case .monthStart: "month-start"
             case .toCheck: "check"
             case .household(let name): "household-\(name)"
             case .billMissed(let id): "missed-\(id)"
@@ -101,7 +104,10 @@ extension BudgetStore {
         }
         let extra = monthPlan(currentMonth).extraIncome
         if extra >= 5_000 { items.append(.extraIncome(amount: extra)) }
-        if let check = monthCheckIn() {
+        // Starting the month covers last month's wrap-up as its first step.
+        if let start = monthStart() {
+            items.append(.monthStart(done: start.stepsDone))
+        } else if let check = monthCheckIn() {
             let decisions = [check.savingsShort, check.cardsShort, check.unspent, check.overspent].filter { $0 > 0 }.count
             items.append(.checkIn(decisions: decisions))
         }

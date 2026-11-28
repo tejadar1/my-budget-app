@@ -2,6 +2,12 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.37): A calmer start
+- Start the month in three steps: in the first days of a month, Needs attention offers "Start December": wrap up November, check the income to plan on, then your plan. Each step opens the screen that already does it and comes back; done steps get a check. "Done for now" leaves the rest in Plan.
+- Calmer Budget: Needs attention shows the three most important things, with "Show 4 more" for the rest.
+- One vocabulary: "to spend" and "spending money", "left to spend", "limit", "not in a limit", "set aside", "held" mean one thing each, everywhere.
+- Fixed: the month recap showed "safe to spend", worked out its own way, which could differ from the Budget card's "left to spend". It shows the Budget card's number now.
+
 ## 0.36.5: One charge, once
 - New subscriptions and price increases ask once, in Needs attention: "New: Peacock, $7.99 a month since August. Keep it?" or "Netflix went up $2.50. Now $17.99 a month. Keep it?" Keep it, I'm cancelling it (it stops counting after this month), or Not a subscription. A later increase asks again.
 - Income: swipe left on a source that isn't income (a friend paying you back) and tap Not income. Its deposits leave income and wait in Check these to be sorted, and Upside forgets that they're income.
