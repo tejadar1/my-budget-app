@@ -123,13 +123,14 @@ enum BankSync {
                     date: Date(timeIntervalSince1970: TimeInterval(t.transacted_at ?? t.posted)),
                     amount: amount, payee: payee,
                     categoryId: sorted.category,
-                    isPending: t.pending ?? false,
+                    isPending: (t.pending ?? false) || looksPending(payee),
                     isTransfer: isTransfer,
                     bankCategory: t.extra?.bankCategory,
                     autoSort: sorted.autoSort))
             }
         }
         data.transactions.sort { $0.date > $1.date }
+        dropReplacedPending(&data, now: Date())
         markTransfers(&data)
         // New ones only: a deposit you said isn't a reimbursement stays that way.
         for i in data.transactions.indices where added.contains(data.transactions[i].id)
@@ -140,6 +141,43 @@ enum BankSync {
         BudgetStore.keepNotBillsOutOfBills(&data)
         store.data = data
         store.detectSubscriptions()
+    }
+
+    /// Some banks don't flag a pending charge, only name it: "UBER PENDING TRANSACTION".
+    static func looksPending(_ payee: String) -> Bool {
+        BudgetStore.nameWords(payee).contains("pending")   // a word: not "Pendington Cafe"
+    }
+
+    /// A pending charge is replaced when its final charge arrives, usually
+    /// under a new ID and often for a bit more (a tip): same account, same
+    /// company, within ten days after, within 30% of the amount. Kept, it
+    /// counts twice, and the final charge's category or Business mark
+    /// doesn't apply to it. However old: a sync only re-reads recent days.
+    /// A pending charge three weeks old with nothing to match has been
+    /// dropped by the bank.
+    static func dropReplacedPending(_ data: inout BudgetData, now: Date) {
+        let pending = data.transactions.filter { $0.isPending || looksPending($0.payee) }
+        guard !pending.isEmpty else { return }
+        var claimed = Set<String>()
+        var drop = Set<String>()
+        for p in pending.sorted(by: { $0.date < $1.date }) {
+            let word = BudgetStore.companyWord(p.payee)
+            let match = data.transactions.first { t in
+                t.id != p.id && !claimed.contains(t.id) && t.accountId == p.accountId
+                    && !t.isPending && !looksPending(t.payee)
+                    && t.date >= p.date.addingTimeInterval(-86_400) && t.date <= p.date.addingTimeInterval(10 * 86_400)
+                    && (t.amount < 0) == (p.amount < 0)
+                    && abs(t.amount - p.amount) * 100 <= abs(p.amount) * 30
+                    && word != nil && BudgetStore.companyWord(t.payee) == word
+            }
+            if let match {
+                claimed.insert(match.id)
+                drop.insert(p.id)
+            } else if now.timeIntervalSince(p.date) > 21 * 86_400 {
+                drop.insert(p.id)
+            }
+        }
+        data.transactions.removeAll { drop.contains($0.id) }
     }
 
     /// Removes pending transactions in `accountId` the bank didn't send

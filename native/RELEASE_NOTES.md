@@ -2,6 +2,9 @@
 
 Newest first. The top section goes into TestFlight's "What to Test" for each build.
 
+## Next (0.36.5): One charge, once
+- Fixed: a pending charge stayed next to its final charge when the bank named it "pending" without flagging it (an "Uber Pending Transaction" for $132.97 beside the $138.91 ride with the tip), or when it was older than the two weeks each sync re-reads. It counted twice, and in Commuting even though the ride was Business. A pending charge now goes once its final charge arrives (same account and company, within ten days, within 30% for a tip), however old; one the bank never finished goes after three weeks.
+
 ## 0.36.4: Room that's really spare
 - Bills that go up and down (utilities, phone) are recognized as the same bill whatever they come to. Once the usual ones have come this month, even for less than usual, nothing more is held for that category. Before, Utilities could keep holding $300+ after every bill was paid, because its three-month average was higher.
 - Tap a bills category that's still holding money (Bills & subscriptions › Counted in your plan) to see why (which bills are still to come, or "usually $967 a month") and All paid for the month. Swipe left does the same. The money goes back into your spending money (Plan offers to save it; month end asks what to do with what's left).

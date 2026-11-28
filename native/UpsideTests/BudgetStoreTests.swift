@@ -1910,6 +1910,34 @@ final class TransferTests: XCTestCase {
         XCTAssertEqual(Set(s.incomeTransactions.map(\.id)), ["d1", "d2"])
     }
 
+    func testAPendingChargeGoesOnceItsFinalChargeArrivesHoweverOld() {
+        var data = BudgetData()
+        let now = Date(timeIntervalSince1970: 1_790_000_000)
+        func ago(_ d: Double) -> Date { now.addingTimeInterval(-d * 86_400) }
+        var posted = Transaction(id: "c:posted", accountId: "c", date: ago(19), amount: -13_891,
+                                 payee: "UBER *TRIP HELP.UBER.COM", categoryId: "commute")
+        posted.business = true
+        data.transactions = [
+            // Named pending by the bank, not flagged; $132.97 before the tip.
+            Transaction(id: "c:pend", accountId: "c", date: ago(20), amount: -13_297,
+                        payee: "UBER PENDING TRANSACTION", categoryId: "commute"),
+            posted,
+            // A recent pending ride with no final charge yet: stays.
+            Transaction(id: "c:recent", accountId: "c", date: ago(1), amount: -2_109,
+                        payee: "UBER", categoryId: "commute", isPending: true),
+            // An old pending charge the bank never finished: gone.
+            Transaction(id: "c:stale", accountId: "c", date: ago(30), amount: -4_500,
+                        payee: "HOTEL HOLD", categoryId: "travel", isPending: true),
+            // Not pending, just a name.
+            Transaction(id: "c:cafe", accountId: "c", date: ago(40), amount: -1_200,
+                        payee: "PENDINGTON CAFE", categoryId: "dining"),
+        ]
+        XCTAssertTrue(BankSync.looksPending("UBER PENDING TRANSACTION"))
+        XCTAssertFalse(BankSync.looksPending("PENDINGTON CAFE"))
+        BankSync.dropReplacedPending(&data, now: now)
+        XCTAssertEqual(Set(data.transactions.map(\.id)), ["c:posted", "c:recent", "c:cafe"])
+    }
+
     func testAPendingItemTheBankReplacedIsDropped() {
         var data = BudgetData()
         let now = Date(timeIntervalSince1970: 1_790_000_000)
